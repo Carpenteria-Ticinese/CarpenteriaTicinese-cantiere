@@ -618,12 +618,17 @@ async function renderCantiere(){
   const el=document.getElementById('cant-detail-content');
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
 
-  const {data:giornate}=await sb.from('giornate')
+  try{
+  const {data:giornate,error:ge}=await sb.from('giornate')
     .select('*, operai(nome,cognome)')
     .eq('cantiere_id',curCant.id)
     .order('data',{ascending:false});
+  if(ge)throw ge;
 
   const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
+  // Costo totale stimato (tariffa 78 CHF/h default)
+  const tariffa=78;
+  const totCosto=totOre*tariffa;
   const byOp={};
   (giornate||[]).forEach(g=>{
     const k=g.operaio_id;
@@ -631,13 +636,15 @@ async function renderCantiere(){
     byOp[k].ore+=parseFloat(g.ore_totali||0);
   });
 
-  // Controlla se ha preventivo caricato
-  const {data:prev}=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single().catch(()=>({data:null}));
+  // Controlla se ha preventivo caricato — con try/catch separato
+  let prev=null;
+  try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single();prev=r.data;}catch(e){prev=null;}
 
   el.innerHTML=`
-    <div class="sg" style="margin-bottom:16px">
+    <div class="sg3" style="margin-bottom:16px">
       <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
       <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
+      <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
     </div>
 
     <!-- AZIONI PRINCIPALI -->
@@ -678,6 +685,9 @@ async function renderCantiere(){
         </div>
       </div>`).join('')}
   `;
+  }catch(err){
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore caricamento:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">🔄 Riprova</button></div>`;
+  }
 }
 
 async function openCantLog(gid){
