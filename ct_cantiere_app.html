@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#c8a84b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CT Cantiere">
+<title>CT Cantiere</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;--s1:#161616;--s2:#202020;--s3:#2a2a2a;--border:#2e2e2e;
+  --gold:#c8a84b;--gold2:#e8c87a;--gdim:rgba(200,168,75,0.1);
+  --text:#f0ece2;--t2:#857f73;--t3:#3e3a34;
+  --green:#4caf7d;--red:#e05555;--blue:#5588e0;--orange:#e08840;
+  --r:14px;--rsm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── LOADING ── */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px}
+.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── LOGIN ── */
+#login{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+#login.on{display:flex}
+.lbox{width:100%;max-width:360px;background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:32px 24px}
+.llogo{text-align:center;margin-bottom:28px}
+.llogo b{display:block;font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.llogo h1{font-size:22px;font-weight:800}
+.lerr{background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);color:var(--red);font-size:13px;padding:10px 14px;border-radius:var(--rsm);margin-bottom:14px;display:none}
+.lerr.on{display:block}
+
+/* ── APP ── */
+#app{display:none}
+#app.on{display:block}
+
+/* ── TOPBAR ── */
+.top{position:sticky;top:0;z-index:100;background:rgba(13,13,13,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.top-brand{display:flex;flex-direction:column}
+.top-brand b{font-size:10px;letter-spacing:3px;color:var(--gold);font-weight:700;text-transform:uppercase}
+.top-brand span{font-size:15px;font-weight:800}
+.top-r{display:flex;gap:8px;align-items:center}
+.ubadge{font-size:11px;color:var(--t2);background:var(--s2);padding:4px 10px;border-radius:20px;border:1px solid var(--border)}
+.rbadge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:1px;text-transform:uppercase}
+.r-tit{background:var(--gdim);color:var(--gold);border:1px solid rgba(200,168,75,.3)}
+.r-cap{background:rgba(76,175,125,.1);color:var(--green);border:1px solid rgba(76,175,125,.2)}
+
+/* ── BREADCRUMB ── */
+.bread{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--border);font-size:12px;color:var(--t2);overflow-x:auto;scrollbar-width:none}
+.bread::-webkit-scrollbar{display:none}
+.bread-item{cursor:pointer;white-space:nowrap;transition:color .2s}
+.bread-item:hover{color:var(--gold)}
+.bread-item.active{color:var(--text);font-weight:700}
+.bread-sep{color:var(--t3);font-size:10px}
+
+/* ── SCREENS ── */
+.scr{display:none;padding:16px;max-width:680px;margin:0 auto}
+.scr.on{display:block}
+
+/* ── FORM ── */
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:15px;padding:11px 13px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--gold)}
+.fi[type=time],.fi[type=date],.fi[type=number]{font-family:'DM Mono',monospace;font-size:14px}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%23857f73'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.ft{min-height:70px;resize:vertical;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:var(--rsm);font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s;width:100%}
+.btn-g{background:var(--gold);color:#1a1000}
+.btn-g:active{background:var(--gold2);transform:scale(.98)}
+.btn-s{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-s:active{background:var(--s3)}
+.btn-d{background:rgba(224,85,85,.1);color:var(--red);border:1px solid rgba(224,85,85,.2)}
+.btn-sm{padding:8px 14px;font-size:12px;width:auto}
+.btn-icon{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:9px 12px;cursor:pointer;color:var(--t2);display:flex;align-items:center;gap:5px;font-size:13px;font-family:'Bricolage Grotesque',sans-serif;font-weight:600;transition:all .15s}
+
+/* ── CANTIERE CARD (HOME) ── */
+.cant-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.cant-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold);opacity:0;transition:opacity .2s}
+.cant-card:hover::before,.cant-card:active::before{opacity:1}
+.cant-card:active{border-color:var(--gold)}
+.cant-nome{font-size:18px;font-weight:800;margin-bottom:4px}
+.cant-meta{font-size:12px;color:var(--t2);margin-bottom:10px}
+.cant-stats{display:flex;gap:10px}
+.cant-stat{font-size:11px;font-weight:600;padding:4px 10px;background:var(--s2);border-radius:4px;color:var(--t2)}
+.cant-stat.gold{color:var(--gold);background:var(--gdim)}
+.cant-status{position:absolute;top:14px;right:14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:10px}
+.st-attivo{background:rgba(76,175,125,.15);color:var(--green)}
+.st-pausa{background:rgba(224,136,64,.15);color:var(--orange)}
+.st-compl{background:var(--s3);color:var(--t3)}
+
+/* ── ORE BOX ── */
+.ore-box{background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:16px;text-align:center;margin-bottom:14px}
+.ore-num{font-family:'DM Mono',monospace;font-size:42px;font-weight:500;color:var(--gold);line-height:1}
+.ore-lbl{font-size:11px;color:var(--t2);margin-top:6px;letter-spacing:1px;text-transform:uppercase}
+
+/* ── METEO BTN ── */
+.meteo-row{display:flex;gap:8px;flex-wrap:wrap}
+.meteo-b{flex:1;min-width:70px;padding:10px 6px;background:var(--s2);border:2px solid var(--border);border-radius:var(--rsm);cursor:pointer;text-align:center;transition:all .15s;font-size:20px}
+.meteo-b span{display:block;font-size:10px;color:var(--t2);margin-top:3px;font-weight:700;letter-spacing:.5px}
+.meteo-b.on{border-color:var(--gold);background:var(--gdim)}
+
+/* ── VOCE LAVORO ── */
+.voce-row{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:8px}
+.voce-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.voce-sel{flex:1;background:var(--s3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:13px;padding:8px 28px 8px 10px;outline:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%23857f73'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.voce-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:2px 6px;flex-shrink:0}
+.voce-del:hover{color:var(--red)}
+.voce-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vlbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:3px}
+.vnum{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--gold);font-family:'DM Mono',monospace;font-size:14px;padding:8px 10px;outline:none;text-align:center}
+.vnum.qty{color:var(--t2)}
+.vnum:focus{border-color:var(--gold)}
+
+/* ── OPERAIO GIORNATA ── */
+.op-giornata{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.op-g-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.op-g-nome{font-size:16px;font-weight:800}
+.op-g-ore{font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);font-weight:500}
+
+/* ── REPORT TABLE ── */
+.rtable{width:100%;border-collapse:collapse;font-size:13px}
+.rtable th{background:var(--s2);padding:9px 10px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);font-weight:700;border-bottom:1px solid var(--border)}
+.rtable td{padding:9px 10px;border-bottom:1px solid var(--border)}
+.rtable tr:last-child td{border-bottom:none}
+.mono{font-family:'DM Mono',monospace;color:var(--gold)}
+
+/* ── STATS ── */
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.sg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sb{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.sv{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;color:var(--gold)}
+.sl{font-size:10px;color:var(--t2);letter-spacing:.5px;margin-top:3px;font-weight:700;text-transform:uppercase}
+
+/* ── ANALISI OPERAI ── */
+.or-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.or-row:last-child{border-bottom:none}
+.or-pos{font-family:'DM Mono',monospace;font-size:18px;width:28px;flex-shrink:0;text-align:center}
+.p1{color:var(--gold)}.p2{color:var(--t2)}.p3{color:var(--orange)}
+.or-nome{flex:1;min-width:0}
+.or-nome strong{display:block;font-size:14px;font-weight:700}
+.or-nome small{font-size:10px;color:var(--t3)}
+.or-bar{width:80px;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;flex-shrink:0}
+.or-fill{height:6px;border-radius:3px}
+.or-val{font-family:'DM Mono',monospace;font-size:12px;width:85px;text-align:right;flex-shrink:0;font-weight:600}
+.b-best{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);white-space:nowrap;flex-shrink:0}
+.b-slow{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(224,85,85,.1);color:var(--red);white-space:nowrap;flex-shrink:0}
+
+/* ── FOTO ── */
+.foto-drop{border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .2s}
+.foto-drop:active{border-color:var(--gold);background:var(--gdim)}
+.foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.fthumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden}
+.fthumb img{width:100%;height:100%;object-fit:cover}
+.fdel{position:absolute;top:3px;right:3px;width:20px;height:20px;background:rgba(0,0,0,.7);border-radius:50%;border:none;color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* ── MODAL ── */
+.ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.mod{background:var(--s1);border-radius:20px 20px 0 0;padding:18px 16px 36px;width:100%;max-width:520px;max-height:93vh;overflow-y:auto}
+.mod-h{width:32px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.mod-t{font-size:18px;font-weight:800;margin-bottom:14px}
+
+/* ── MISC ── */
+hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.sec{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:10px;margin-top:4px}
+.empty{text-align:center;padding:48px 16px;color:var(--t3)}
+.empty-i{font-size:40px;margin-bottom:12px}
+.empty p{font-size:14px;line-height:1.6}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;padding:10px 22px;border-radius:20px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+.bsp{height:40px}
+.warn{background:rgba(224,136,64,.08);border:1px solid rgba(224,136,64,.25);border-radius:var(--rsm);padding:10px 13px;font-size:12px;color:var(--orange);margin-top:6px;display:none}
+.warn.on{display:block}
+.chip{font-size:11px;color:var(--t2);background:var(--s2);border-radius:4px;padding:3px 8px;font-weight:600}
+.chipg{color:var(--gold);background:var(--gdim)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.admin-only{display:none}
+.is-tit .admin-only{display:block}
+
+/* ── IMPORT EXCEL ── */
+.import-box{border:2px dashed rgba(200,168,75,.4);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gdim)}
+.import-box:active{border-color:var(--gold)}
+.import-box p{font-size:13px;color:var(--t2);margin-top:8px;line-height:1.5}
+
+/* ── NEXT OPERAIO BANNER ── */
+.next-op-banner{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.next-op-banner h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.next-op-banner p{font-size:12px;color:var(--t2)}
+.next-op-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div style="font-size:13px;letter-spacing:4px;color:var(--gold);font-weight:700;text-transform:uppercase">Carpenteria Ticinese</div>
+  <div class="spin"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lbox">
+    <div class="llogo">
+      <b>Carpenteria Ticinese Sàgl</b>
+      <h1>Gestione Cantieri</h1>
+    </div>
+    <div class="lerr" id="lerr"></div>
+    <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="l-email" autocomplete="email" placeholder="nome@carpenteriaticinese.ch"></div>
+    <div class="fg"><label class="fl">Password</label><input type="password" class="fi" id="l-pass" autocomplete="current-password" placeholder="••••••••"></div>
+    <button class="btn btn-g" onclick="doLogin()">Accedi →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top">
+    <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
+    <div class="top-r">
+      <span class="rbadge" id="rbadge">—</span>
+      <span class="ubadge" id="ubadge">—</span>
+      <button class="btn-icon" onclick="doLogout()">Esci</button>
+    </div>
+  </div>
+
+  <!-- BREADCRUMB -->
+  <div class="bread" id="bread"></div>
+
+  <!-- HOME: Lista cantieri -->
+  <div class="scr on" id="scr-home">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="sec" style="margin:0">I tuoi cantieri</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-icon btn-sm admin-only" onclick="openModalCantiere(null)">➕ Cantiere</button>
+        <button class="btn-icon btn-sm" onclick="goTo('report')">📊 Report</button>
+        <button class="btn-icon btn-sm admin-only" onclick="goTo('admin')">⚙️</button>
+      </div>
+    </div>
+    <div id="home-list"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- CANTIERE DETAIL -->
+  <div class="scr" id="scr-cantiere">
+    <div id="cant-detail-content"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- NUOVA GIORNATA STEP 1: Info giornata -->
+  <div class="scr" id="scr-giornata-1">
+    <div class="card" style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+      <div class="sec">Dati della giornata</div>
+      <div class="row2">
+        <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="g1-data"></div>
+        <div class="fg"><label class="fl">Cantiere</label><div id="g1-cant-nome" style="font-size:15px;font-weight:700;padding:11px 0;color:var(--gold)">—</div></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Meteo</label>
+        <div class="meteo-row">
+          <div class="meteo-b" data-m="☀️ Sole" onclick="setMeteo(this)">☀️<span>Sole</span></div>
+          <div class="meteo-b" data-m="⛅ Nuvoloso" onclick="setMeteo(this)">⛅<span>Nuvole</span></div>
+          <div class="meteo-b" data-m="🌧️ Pioggia" onclick="setMeteo(this)">🌧️<span>Pioggia</span></div>
+          <div class="meteo-b" data-m="❄️ Neve" onclick="setMeteo(this)">❄️<span>Neve</span></div>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="fg"><label class="fl">Inizio</label><input type="time" class="fi" id="g1-ini" value="07:00" oninput="calcOre1()"></div>
+        <div class="fg"><label class="fl">Fine</label><input type="time" class="fi" id="g1-fine" value="17:00" oninput="calcOre1()"></div>
+        <div class="fg"><label class="fl">Pausa (min)</label><input type="number" class="fi" id="g1-pausa" value="60" min="0" max="120" step="15" oninput="calcOre1()"></div>
+      </div>
+      <div class="ore-box"><div class="ore-num" id="g1-ore">8.00</div><div class="ore-lbl">ore di lavoro nette</div></div>
+      <div class="fg"><label class="fl">Materiali ricevuti</label><input type="text" class="fi" id="g1-mat" placeholder="es. BSH 200ml, Flumroc 50 lastre, viti 10 scatole..."></div>
+      <div class="fg"><label class="fl">Visite / Presenze esterne</label><input type="text" class="fi" id="g1-visite" placeholder="es. DL Arch. Rossi, committente, ispettore..."></div>
+    </div>
+    <div class="row2">
+      <button class="btn btn-s" onclick="goToCantiere()">← Indietro</button>
+      <button class="btn btn-g" onclick="goStep2()">Avanti — Operai →</button>
+    </div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- NUOVA GIORNATA STEP 2: Operai -->
+  <div class="scr" id="scr-giornata-2">
+    <!-- Banner riepilogo giornata -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center">
+      <div style="font-size:24px" id="g2-meteo-icon">☀️</div>
+      <div>
+        <div style="font-size:13px;font-weight:700" id="g2-cant-nome">—</div>
+        <div style="font-size:12px;color:var(--t2)" id="g2-info">—</div>
+      </div>
+      <div style="margin-left:auto;font-family:'DM Mono';font-size:20px;color:var(--gold);font-weight:500" id="g2-ore">8.00h</div>
+    </div>
+
+    <!-- Lista operai già salvati -->
+    <div class="sec">Operai registrati questa giornata</div>
+    <div id="g2-salvati"></div>
+
+    <!-- Form prossimo operaio -->
+    <div id="g2-form-wrap">
+      <div style="background:var(--s1);border:1px solid rgba(200,168,75,.3);border-radius:var(--r);padding:16px;margin-bottom:12px">
+        <div class="sec">Aggiungi operaio</div>
+        <div class="fg"><label class="fl">Operaio</label><select class="fs" id="g2-operaio"></select></div>
+        <div class="row2">
+          <div class="fg">
+            <label class="fl">Ora inizio</label>
+            <input type="time" class="fi" id="g2-ini" oninput="calcOre2()">
+          </div>
+          <div class="fg">
+            <label class="fl">Ora fine</label>
+            <input type="time" class="fi" id="g2-fine" oninput="calcOre2()">
+          </div>
+        </div>
+        <div class="row2" style="margin-bottom:10px">
+          <div class="fg"><label class="fl">Pausa (min)</label><input type="number" class="fi" id="g2-pausa" value="60" min="0" max="120" step="15" oninput="calcOre2()"></div>
+          <div class="ore-box" style="margin-bottom:0;padding:10px 14px">
+            <div class="ore-num" style="font-size:26px" id="g2-ore-op">8.00</div>
+            <div class="ore-lbl">ore operaio</div>
+          </div>
+        </div>
+
+        <!-- Lavori svolti -->
+        <div class="fg">
+          <label class="fl">Lavori svolti</label>
+          <div id="g2-voci"></div>
+          <div class="warn" id="g2-warn">⚠️ Somma ore lavori supera le ore totali dell'operaio</div>
+          <button class="btn btn-s" style="margin-top:8px" onclick="addVoce2()">➕ Aggiungi lavoro</button>
+        </div>
+
+        <div class="fg"><label class="fl">Note operaio</label><textarea class="ft" id="g2-note" placeholder="Avanzamento, problemi, imprevisti..." style="min-height:60px"></textarea></div>
+
+        <!-- Foto -->
+        <div class="fg">
+          <label class="fl">Foto</label>
+          <div class="foto-drop" onclick="document.getElementById('foto-inp').click()">
+            <div style="font-size:26px">📷</div>
+            <p style="font-size:12px;color:var(--t2);margin-top:4px">Tocca per scattare o scegliere</p>
+          </div>
+          <input type="file" id="foto-inp" accept="image/*" multiple capture="environment" style="display:none" onchange="addFoto(event)">
+          <div class="foto-grid" id="foto-prv"></div>
+        </div>
+
+        <button class="btn btn-g" onclick="salvaOperaio()" id="btn-salva-op">💾 Salva operaio</button>
+      </div>
+    </div>
+
+    <hr>
+    <button class="btn btn-s" onclick="chiudiGiornata()" id="btn-chiudi-g">✅ Chiudi giornata — torna ai cantieri</button>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- REPORT GENERALE -->
+  <div class="scr" id="scr-report">
+    <div class="sec">Report generale</div>
+    <div class="row2" style="margin-bottom:14px">
+      <div class="fg"><label class="fl">Mese</label><input type="month" class="fi" id="rep-mese" style="font-family:'DM Mono',monospace;font-size:13px" onchange="renderReport()"></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="rep-tipo" onchange="renderReport()"><option value="stipendi">💰 Stipendi</option><option value="cantieri">🏗️ Cantieri</option><option value="analisi">📐 Analisi</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇️ Esporta CSV</button>
+      <button class="btn btn-s btn-sm" onclick="exportExcel()">⬇️ Esporta Excel</button>
+    </div>
+    <div id="report-content"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="scr admin-only" id="scr-admin">
+    <div class="sec">Cantieri</div>
+    <div id="adm-cantieri"></div>
+    <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px">➕ Nuovo cantiere</button>
+    <div class="sec">Operai</div>
+    <div id="adm-operai"></div>
+    <button class="btn btn-s" onclick="openModalOp(null)" style="margin-bottom:20px">➕ Nuovo operaio</button>
+    <div class="sec admin-only">Utenti</div>
+    <div id="adm-utenti" class="admin-only"></div>
+    <div class="bsp"></div>
+  </div>
+</div>
+
+<!-- MODAL: DETTAGLIO CANTIERE GIORNATA -->
+<div class="ov" id="mod-cant-log">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div id="mod-cant-log-content"></div>
+    <button class="btn btn-s" onclick="closeModal('mod-cant-log')" style="margin-top:14px">Chiudi</button>
+  </div>
+</div>
+
+<!-- MODAL: IMPORT PREVENTIVO -->
+<div class="ov" id="mod-import">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">📥 Importa voci dal preventivo</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">
+      Carica il file <strong>CT_Preventivatore_v3_GRANDE.xlsx</strong>. Le voci del foglio OFFERTA diventano automaticamente le lavorazioni selezionabili per questo cantiere.
+    </p>
+    <div class="import-box" onclick="document.getElementById('xlsx-inp').click()">
+      <div style="font-size:36px">📊</div>
+      <p>Tocca per selezionare il file Excel del preventivo</p>
+    </div>
+    <input type="file" id="xlsx-inp" accept=".xlsx,.xls" style="display:none" onchange="importPreventivo(event)">
+    <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--t2)"></div>
+    <hr>
+    <button class="btn btn-s" onclick="closeModal('mod-import')">Chiudi</button>
+  </div>
+</div>
+
+<!-- MODAL: ANALISI LAVORAZIONE -->
+<div class="ov" id="mod-analisi">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div id="mod-analisi-content"></div>
+    <button class="btn btn-s" onclick="closeModal('mod-analisi')" style="margin-top:14px">Chiudi</button>
+  </div>
+</div>
+
+<!-- MODAL: CANTIERE (admin) -->
+<div class="ov" id="mod-cant">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-cant-t">Nuovo cantiere</div>
+    <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="c-nome"></div>
+    <div class="fg"><label class="fl">Luogo</label><input type="text" class="fi" id="c-luogo"></div>
+    <div class="fg"><label class="fl">Committente</label><input type="text" class="fi" id="c-comm"></div>
+    <div class="fg"><label class="fl">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-cant')">Annulla</button>
+      <button class="btn btn-g" onclick="saveCant()">Salva</button>
+    </div>
+    <div id="del-cant-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- MODAL: OPERAIO (admin) -->
+<div class="ov" id="mod-op">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-op-t">Nuovo operaio</div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="o-nome"></div>
+      <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
+    </div>
+    <div class="fg"><label class="fl">Ruolo</label><select class="fs" id="o-ruolo"><option>Caposquadra</option><option>Carpentiere</option><option>Lattoniere</option><option>Apprendista</option><option>Operaio generico</option></select></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-op')">Annulla</button>
+      <button class="btn btn-g" onclick="saveOp()">Salva</button>
+    </div>
+    <div id="del-op-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+const SB_URL='https://wgidgbauhivdctdxfjnk.supabase.co';
+const SB_KEY='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+// ════════════════════════════════════════════════════════
+// STATO
+// ════════════════════════════════════════════════════════
+let USER=null,PROF=null;
+let CANTIERI=[],OPERAI=[],LAVS=[];
+let curCant=null; // cantiere selezionato
+let fFiles=[],fB64=[];
+// Stato giornata corrente
+let GIO={cantId:null,data:null,meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
+let editCid=null,editOid=null;
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){USER=session.user;await afterLogin();}
+  else showLogin();
+}
+
+function showLogin(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('login').classList.add('on');
+}
+
+async function afterLogin(){
+  try{
+    const {data:prof}=await sb.from('profili').select('*').eq('id',USER.id).single();
+    PROF=prof;
+    await Promise.all([loadCantieri(),loadOperai()]);
+    const nome=(PROF?.nome||USER.email).split('@')[0];
+    document.getElementById('ubadge').textContent=nome;
+    const ruolo=PROF?.ruolo||'caposquadra';
+    const rb=document.getElementById('rbadge');
+    rb.textContent=ruolo;rb.className='rbadge '+(ruolo==='titolare'?'r-tit':'r-cap');
+    if(ruolo==='titolare')document.getElementById('app').classList.add('is-tit');
+    document.getElementById('loading').style.display='none';
+    document.getElementById('login').classList.remove('on');
+    document.getElementById('app').classList.add('on');
+    const now=new Date();
+    document.getElementById('rep-mese').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    renderHome();
+    setBread([{label:'Cantieri'}]);
+  }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
+}
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const err=document.getElementById('lerr');err.classList.remove('on');
+  if(!email||!pass){err.textContent='Inserisci email e password';err.classList.add('on');return;}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){err.textContent=error.message;err.classList.add('on');return;}
+  USER=data.user;
+  document.getElementById('login').classList.remove('on');
+  document.getElementById('loading').style.display='flex';
+  await afterLogin();
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
+
+// ════════════════════════════════════════════════════════
+// LOAD
+// ════════════════════════════════════════════════════════
+async function loadCantieri(){const {data}=await sb.from('cantieri').select('*').order('nome');CANTIERI=data||[];}
+async function loadOperai(){const {data}=await sb.from('operai').select('*').eq('attivo',true).order('cognome');OPERAI=data||[];}
+async function loadLavs(cantId){
+  // Carica lavorazioni: prima quelle specifiche del cantiere, poi quelle globali
+  const {data:lavC}=await sb.from('lavorazioni').select('*').eq('cantiere_id',cantId).order('categoria,nome');
+  const {data:lavG}=await sb.from('lavorazioni').select('*').is('cantiere_id',null).order('categoria,nome');
+  LAVS=[...(lavC||[]),...(lavG||[])];
+}
+
+// ════════════════════════════════════════════════════════
+// BREADCRUMB
+// ════════════════════════════════════════════════════════
+function setBread(items){
+  const el=document.getElementById('bread');
+  if(items.length<=1&&items[0]?.label==='Cantieri'){el.style.display='none';return;}
+  el.style.display='flex';
+  el.innerHTML=items.map((it,i)=>{
+    const isLast=i===items.length-1;
+    const span=`<span class="bread-item${isLast?' active':''}" ${it.onclick?`onclick="${it.onclick}"`:''}">${it.label}</span>`;
+    return i<items.length-1?span+'<span class="bread-sep">›</span>':span;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGAZIONE
+// ════════════════════════════════════════════════════════
+function showScr(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.getElementById('scr-'+id).classList.add('on');
+}
+
+function goTo(p){
+  showScr(p==='home'?'home':p==='cantiere'?'cantiere':p==='giornata-1'?'giornata-1':p==='giornata-2'?'giornata-2':p==='report'?'report':'admin');
+  document.getElementById('top-title').textContent=
+    p==='home'?'Cantieri':p==='cantiere'?(curCant?.nome||'Cantiere'):
+    p==='giornata-1'?'Nuova giornata':p==='giornata-2'?'Registra operai':
+    p==='report'?'Report':'Admin';
+}
+
+// ════════════════════════════════════════════════════════
+// HOME — Lista cantieri
+// ════════════════════════════════════════════════════════
+async function renderHome(){
+  const list=document.getElementById('home-list');
+  list.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  // Carica ore per cantiere velocemente
+  const {data:stats}=await sb.from('giornate').select('cantiere_id,ore_totali');
+  const orePerCant={};
+  (stats||[]).forEach(g=>{if(!orePerCant[g.cantiere_id])orePerCant[g.cantiere_id]=0;orePerCant[g.cantiere_id]+=parseFloat(g.ore_totali||0);});
+  const attivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
+  if(!attivi.length){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo.<br>Aggiungine uno dall\'Admin ⚙️</p></div>';return;}
+  list.innerHTML=attivi.map(c=>{
+    const ore=orePerCant[c.id]||0;
+    const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
+    return `<div class="cant-card" onclick="enterCantiere('${c.id}')">
+      <span class="cant-status ${stCls}">${c.stato}</span>
+      <div class="cant-nome">${c.nome}</div>
+      <div class="cant-meta">${[c.luogo,c.committente].filter(Boolean).join(' · ')||'—'}</div>
+      <div class="cant-stats">
+        <span class="cant-stat gold">⏱ ${ore.toFixed(1)}h totali</span>
+        <span class="cant-stat">📋 Vedi registro</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════
+// ENTRA NEL CANTIERE
+// ════════════════════════════════════════════════════════
+async function enterCantiere(id){
+  curCant=CANTIERI.find(c=>c.id===id);
+  if(!curCant)return;
+  await loadLavs(id);
+  goTo('cantiere');
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,active:true}]);
+  renderCantiere();
+}
+
+function goHome(){curCant=null;goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
+function goToCantiere(){if(curCant)enterCantiere(curCant.id);else goHome();}
+
+async function renderCantiere(){
+  const el=document.getElementById('cant-detail-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+
+  try{
+  const {data:giornate,error:ge}=await sb.from('giornate')
+    .select('*, operai(nome,cognome)')
+    .eq('cantiere_id',curCant.id)
+    .order('data',{ascending:false});
+  if(ge)throw ge;
+
+  const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
+  // Costo totale stimato (tariffa 78 CHF/h default)
+  const tariffa=78;
+  const totCosto=totOre*tariffa;
+  const byOp={};
+  (giornate||[]).forEach(g=>{
+    const k=g.operaio_id;
+    if(!byOp[k])byOp[k]={op:g.operai,ore:0};
+    byOp[k].ore+=parseFloat(g.ore_totali||0);
+  });
+
+  // Controlla se ha preventivo caricato — con try/catch separato
+  let prev=null;
+  try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single();prev=r.data;}catch(e){prev=null;}
+
+  el.innerHTML=`
+    <div class="sg3" style="margin-bottom:16px">
+      <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
+      <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
+      <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
+    </div>
+
+    <!-- AZIONI PRINCIPALI -->
+    <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">
+      ➕ Nuova giornata
+    </button>
+    <div class="row2" style="margin-bottom:16px">
+      <button class="btn btn-s" onclick="openModalImport()">
+        📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}
+      </button>
+      <button class="btn btn-s" onclick="exportCantiere()">
+        ⬇️ Esporta dati
+      </button>
+    </div>
+
+    ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:16px">✅ Preventivo caricato — ${prev.n_voci} voci disponibili · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
+
+    <!-- ORE PER OPERAIO -->
+    ${Object.values(byOp).length?`
+    <div class="sec">Ore per operaio</div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px">
+      <table class="rtable"><thead><tr><th>Operaio</th><th>Ore</th></tr></thead>
+      <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore})=>
+        `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td></tr>`
+      ).join('')}</tbody></table>
+    </div>`:''}
+
+    <!-- ULTIME GIORNATE -->
+    <div class="sec">Ultime giornate</div>
+    ${(giornate||[]).slice(0,10).map(g=>`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="openCantLog('${g.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">${g.operai?.nome||''} ${g.operai?.cognome||''}</div>
+            <div style="font-size:12px;color:var(--t2)">${fmtDate(g.data)} ${g.meteo?'· '+g.meteo.split(' ')[0]:''}</div>
+          </div>
+          <div class="mono" style="font-size:18px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
+        </div>
+      </div>`).join('')}
+  `;
+  }catch(err){
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore caricamento:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">🔄 Riprova</button></div>`;
+  }
+}
+
+async function openCantLog(gid){
+  const {data:g}=await sb.from('giornate').select('*, operai(*), voci_lavoro(*, lavorazioni(nome,um))').eq('id',gid).single();
+  if(!g)return;
+  const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
+  const vociHtml=(g.voci_lavoro||[]).map(v=>`<tr><td>${v.lavorazioni?.nome||v.lavorazione_nome||'—'}</td><td class="mono">${parseFloat(v.ore||0).toFixed(2)}h</td><td style="color:var(--t2);font-size:12px">${v.quantita?v.quantita+' '+(v.um||''):'—'}</td></tr>`).join('');
+  document.getElementById('mod-cant-log-content').innerHTML=`
+    <div class="mod-t">${g.operai?.nome||''} ${g.operai?.cognome||''}</div>
+    <div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:14px">
+      <div style="font-size:14px;font-weight:700">${fmtDate(g.data)} ${g.meteo||''}</div>
+      <div style="font-family:'DM Mono';font-size:24px;color:var(--gold);margin-top:6px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
+      <div style="font-size:12px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti||60}min pausa</div>
+    </div>
+    ${vociHtml?`<div class="sec">Lavori svolti</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>Lavorazione</th><th>Ore</th><th>Quantità</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
+    ${(mats||[]).length?`<div class="sec">Materiali ricevuti</div><div style="font-size:13px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
+    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6">${g.note}</div>`:''}
+  `;
+  openModal('mod-cant-log');
+}
+
+// ════════════════════════════════════════════════════════
+// NUOVA GIORNATA — STEP 1
+// ════════════════════════════════════════════════════════
+function startNuovaGiornata(){
+  const now=new Date();
+  GIO={cantId:curCant.id,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
+  document.getElementById('g1-data').value=GIO.data;
+  document.getElementById('g1-cant-nome').textContent=curCant.nome;
+  document.getElementById('g1-ini').value='07:00';
+  document.getElementById('g1-fine').value='17:00';
+  document.getElementById('g1-pausa').value='60';
+  document.getElementById('g1-mat').value='';
+  document.getElementById('g1-visite').value='';
+  document.querySelectorAll('.meteo-b').forEach(b=>{b.classList.remove('on');});
+  calcOre1();
+  showScr('giornata-1');
+  document.getElementById('top-title').textContent='Nuova giornata — '+curCant.nome;
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Nuova giornata'}]);
+}
+
+function calcOre1(){
+  const ini=document.getElementById('g1-ini').value,fine=document.getElementById('g1-fine').value;
+  const pausa=parseInt(document.getElementById('g1-pausa').value)||60;
+  if(!ini||!fine)return;
+  const [h1,m1]=ini.split(':').map(Number),[h2,m2]=fine.split(':').map(Number);
+  const ore=Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60);
+  document.getElementById('g1-ore').textContent=ore.toFixed(2);
+}
+
+function setMeteo(el){document.querySelectorAll('.meteo-b').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+
+function goStep2(){
+  const data=document.getElementById('g1-data').value;
+  const ini=document.getElementById('g1-ini').value,fine=document.getElementById('g1-fine').value;
+  const pausa=parseInt(document.getElementById('g1-pausa').value)||60;
+  const meteoEl=document.querySelector('.meteo-b.on');
+  if(!data||!ini||!fine){showToast('Inserisci data e orari','e');return;}
+  GIO.data=data;GIO.ini=ini;GIO.fine=fine;GIO.pausa=pausa;
+  GIO.meteo=meteoEl?meteoEl.dataset.m:null;
+  GIO.mat=document.getElementById('g1-mat').value.trim();
+  GIO.visite=document.getElementById('g1-visite').value.trim();
+  setupStep2();
+}
+
+// ════════════════════════════════════════════════════════
+// NUOVA GIORNATA — STEP 2: Operai
+// ════════════════════════════════════════════════════════
+function setupStep2(){
+  // Banner info
+  const metIc=GIO.meteo?GIO.meteo.split(' ')[0]:'—';
+  const ore=calcOreRaw(GIO.ini,GIO.fine,GIO.pausa);
+  document.getElementById('g2-meteo-icon').textContent=metIc;
+  document.getElementById('g2-cant-nome').textContent=curCant.nome;
+  document.getElementById('g2-info').textContent=`${GIO.data} · ${GIO.ini} → ${GIO.fine} · -${GIO.pausa}min`;
+  document.getElementById('g2-ore').textContent=ore.toFixed(2)+'h';
+
+  // Pre-popola orari operaio uguale alla giornata
+  document.getElementById('g2-ini').value=GIO.ini;
+  document.getElementById('g2-fine').value=GIO.fine;
+  document.getElementById('g2-pausa').value=GIO.pausa;
+  calcOre2();
+
+  // Operai select — escludi già salvati
+  refreshOperaiSelect();
+
+  // Reset voci e foto
+  document.getElementById('g2-voci').innerHTML='';
+  document.getElementById('foto-prv').innerHTML='';
+  document.getElementById('g2-note').value='';
+  fFiles=[];fB64=[];
+
+  renderSalvati();
+  showScr('giornata-2');
+  document.getElementById('top-title').textContent='Operai — '+GIO.data;
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
+}
+
+function refreshOperaiSelect(){
+  const salvIds=GIO.operaiSalvati.map(o=>o.opId);
+  const disponibili=OPERAI.filter(o=>!salvIds.includes(o.id));
+  const sel=document.getElementById('g2-operaio');
+  sel.innerHTML=disponibili.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome} · ${o.ruolo}</option>`).join('');
+  // Nascondi form se non ci sono più operai disponibili
+  const hasDisp=disponibili.length>0;
+  document.getElementById('g2-form-wrap').style.display=hasDisp?'block':'none';
+}
+
+function renderSalvati(){
+  const el=document.getElementById('g2-salvati');
+  if(!GIO.operaiSalvati.length){el.innerHTML='<div style="font-size:13px;color:var(--t3);margin-bottom:12px">Nessun operaio ancora registrato</div>';return;}
+  el.innerHTML=GIO.operaiSalvati.map((op,i)=>`
+    <div class="op-giornata">
+      <div class="op-g-header">
+        <div>
+          <div class="op-g-nome">✅ ${op.nome}</div>
+          <div style="font-size:12px;color:var(--t2)">${op.ini} → ${op.fine} · ${op.voci.length} lavori</div>
+        </div>
+        <div class="op-g-ore">${op.ore.toFixed(2)}h</div>
+      </div>
+      ${op.voci.length?`<div class="chips">${op.voci.slice(0,3).map(v=>`<span class="chip">${v.nome.split('(')[0].trim().substring(0,30)}</span>`).join('')}${op.voci.length>3?`<span class="chip">+${op.voci.length-3}</span>`:''}</div>`:''}
+    </div>`).join('');
+}
+
+function calcOre2(){
+  const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
+  const pausa=parseInt(document.getElementById('g2-pausa').value)||60;
+  const ore=calcOreRaw(ini,fine,pausa);
+  document.getElementById('g2-ore-op').textContent=ore.toFixed(2);
+  checkVociWarn();
+}
+
+function calcOreRaw(ini,fine,pausa){
+  if(!ini||!fine)return 0;
+  const [h1,m1]=ini.split(':').map(Number),[h2,m2]=fine.split(':').map(Number);
+  return Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60);
+}
+
+function checkVociWarn(){
+  const ore=parseFloat(document.getElementById('g2-ore-op').textContent)||0;
+  const somma=[...document.querySelectorAll('.voce-ore-inp')].reduce((s,i)=>s+(parseFloat(i.value)||0),0);
+  document.getElementById('g2-warn').classList.toggle('on',somma>ore+0.1);
+}
+
+function addVoce2(lavId='',ore='',qty='',um=''){
+  const cats={};
+  LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
+  const opts='<option value="">— Seleziona lavorazione —</option>'+
+    Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+
+    '<option value="__nuova__">✏️ Nuova voce libera...</option>';
+  const div=document.createElement('div');div.className='voce-row';
+  div.innerHTML=`
+    <div class="voce-top">
+      <select class="voce-sel" onchange="onChangeVoce(this)">${opts}</select>
+      <button class="voce-del" onclick="this.closest('.voce-row').remove();checkVociWarn()">✕</button>
+    </div>
+    <div id="nuova-voce-wrap" style="display:none;margin-bottom:8px">
+      <input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px">
+    </div>
+    <div class="voce-nums">
+      <div><span class="vlbl">Ore lavorate</span><input type="number" class="vnum voce-ore-inp" placeholder="0.00" min="0" max="16" step="0.25" value="${ore||''}" oninput="checkVociWarn()"></div>
+      <div><span class="vlbl">Quantità (facoltativo)</span><div style="display:flex;gap:4px"><input type="number" class="vnum qty voce-qty-inp" placeholder="—" min="0" step="0.01" value="${qty||''}" style="flex:1"><input type="text" class="vnum voce-um-inp" placeholder="um" value="${um||''}" style="width:44px;font-size:11px"></div></div>
+    </div>`;
+  const sel=div.querySelector('.voce-sel');
+  if(lavId)sel.value=lavId;
+  document.getElementById('g2-voci').appendChild(div);
+}
+
+function onChangeVoce(sel){
+  const row=sel.closest('.voce-row');
+  const isNuova=sel.value==='__nuova__';
+  row.querySelector('#nuova-voce-wrap').style.display=isNuova?'block':'none';
+  if(!isNuova){
+    const lav=LAVS.find(l=>l.id===sel.value);
+    if(lav)row.querySelector('.voce-um-inp').value=lav.um||'h';
+  }
+}
+
+async function salvaOperaio(){
+  const opId=document.getElementById('g2-operaio').value;
+  if(!opId){showToast('Seleziona un operaio','e');return;}
+  const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
+  const pausa=parseInt(document.getElementById('g2-pausa').value)||60;
+  if(!ini||!fine){showToast('Inserisci orari','e');return;}
+  const ore=calcOreRaw(ini,fine,pausa);
+  const note=document.getElementById('g2-note').value.trim();
+
+  const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    // Salva giornata
+    const {data:newG,error:ge}=await sb.from('giornate').insert({
+      cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,
+      ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,
+      meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,
+      created_by:USER.id
+    }).select().single();
+    if(ge)throw ge;
+
+    // Voci lavoro
+    const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
+      const sel=row.querySelector('.voce-sel');
+      const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;
+      if(!oreV)return null;
+      const qty=parseFloat(row.querySelector('.voce-qty-inp').value)||null;
+      const um=row.querySelector('.voce-um-inp').value.trim()||null;
+      const isNuova=sel.value==='__nuova__';
+      const nomeLav=isNuova?row.querySelector('.nuova-voce-nome').value.trim():null;
+      const lav=LAVS.find(l=>l.id===sel.value);
+      return {giornata_id:newG.id,lavorazione_id:isNuova?null:sel.value||null,
+        lavorazione_nome:isNuova?nomeLav:(lav?.nome||null),ore:oreV,quantita:qty,um:um||lav?.um||null};
+    }).filter(Boolean);
+    if(vociRows.length)await sb.from('voci_lavoro').insert(vociRows);
+
+    // Materiali (solo primo operaio)
+    if(GIO.mat&&GIO.operaiSalvati.length===0){
+      await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id});
+    }
+
+    // Foto
+    for(const file of fFiles){
+      const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
+      const path=`${cn}/${GIO.data}/${Date.now()}_${file.name}`;
+      const {error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
+      if(!ue)await sb.from('foto').insert({cantiere_id:GIO.cantId,giornata_id:newG.id,data:GIO.data,storage_path:path,nome_file:file.name,created_by:USER.id});
+    }
+
+    // Aggiungi a lista salvati
+    const op=OPERAI.find(o=>o.id===opId);
+    const vociNomi=vociRows.map(v=>({nome:v.lavorazione_nome||LAVS.find(l=>l.id===v.lavorazione_id)?.nome||'—'}));
+    GIO.operaiSalvati.push({opId,nome:op?.nome+' '+op?.cognome,ini,fine,ore,voci:vociNomi});
+
+    // Reset form prossimo operaio (copia orari)
+    refreshOperaiSelect();
+    renderSalvati();
+    document.getElementById('g2-voci').innerHTML='';
+    document.getElementById('foto-prv').innerHTML='';
+    document.getElementById('g2-note').value='';
+    fFiles=[];fB64=[];
+    // Orari già pre-copiati dalla giornata
+    showToast(`${op?.nome} salvato ✓`);
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent='💾 Salva operaio';btn.disabled=false;}
+}
+
+function chiudiGiornata(){
+  if(GIO.operaiSalvati.length===0&&!confirm('Nessun operaio registrato. Uscire comunque?'))return;
+  goToCantiere();
+}
+
+// ════════════════════════════════════════════════════════
+// IMPORT PREVENTIVO EXCEL
+// ════════════════════════════════════════════════════════
+function openModalImport(){openModal('mod-import');document.getElementById('import-status').textContent='';}
+
+async function importPreventivo(e){
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('import-status').textContent='⏳ Lettura del file...';
+  try{
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data,{type:'array'});
+    // Leggi foglio OFFERTA
+    const ws=wb.Sheets['OFFERTA'];
+    if(!ws){document.getElementById('import-status').textContent='❌ Foglio OFFERTA non trovato';return;}
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+
+    const voci=[];
+    const seen=new Set();
+    rows.forEach(row=>{
+      if(!row||!row[1]||!row[2]||!row[3])return; // col B=pos, C=desc, D=um
+      const pos=String(row[1]||'').trim();
+      const desc=String(row[2]||'').trim();
+      const um=String(row[3]||'').trim();
+      const hc=parseFloat(row[6])||0; // col G = ore cant
+      const mat=parseFloat(row[5])||0; // col F = prezzo mat
+      if(!pos||!desc||pos.includes('NB')||pos.includes('---'))return;
+      if(desc.length<5)return;
+      // Evita duplicati
+      const key=pos+'|'+desc.substring(0,40);
+      if(seen.has(key))return;
+      seen.add(key);
+      // Determina categoria dal capitolo
+      const posNum=parseFloat(pos)||0;
+      let cat='Varie';
+      if(posNum<2)cat='Installazione';
+      else if(posNum<10)cat='Cantiere';
+      else if(posNum<100)cat='Copritetto';
+      else if(posNum<200)cat='Pareti';
+      else if(posNum<400)cat='Finiture interne';
+      else if(posNum<500)cat='Facciata';
+      else if(posNum<700)cat='Carpenteria tetto';
+      else if(posNum<800)cat='Lattoneria';
+      else if(posNum<900)cat='Impermeabilizz.';
+      else if(posNum<1000)cat='Solaio/interno';
+      else cat='Lattoneria';
+      voci.push({
+        codice:pos,
+        nome:`${desc} (${pos})`.substring(0,120),
+        um:um||'h',
+        categoria:cat,
+        h_um_preventivo:hc>0?hc:null,
+        prezzo_mat_preventivo:mat>0?mat:null,
+        cantiere_id:curCant.id,
+      });
+    });
+
+    if(!voci.length){document.getElementById('import-status').textContent='❌ Nessuna voce trovata';return;}
+
+    document.getElementById('import-status').textContent=`⏳ Importo ${voci.length} voci...`;
+
+    // Elimina lavorazioni precedenti del cantiere
+    await sb.from('lavorazioni').delete().eq('cantiere_id',curCant.id);
+
+    // Inserisci a blocchi di 100
+    for(let i=0;i<voci.length;i+=100){
+      const {error}=await sb.from('lavorazioni').insert(voci.slice(i,i+100));
+      if(error)throw error;
+    }
+
+    // Registra preventivo
+    await sb.from('preventivi_cantiere').upsert({cantiere_id:curCant.id,nome_file:file.name,n_voci:voci.length,created_by:USER.id},{onConflict:'cantiere_id'});
+
+    // Ricarica lavorazioni
+    await loadLavs(curCant.id);
+    document.getElementById('import-status').textContent=`✅ Importate ${voci.length} voci dal preventivo`;
+    showToast(`${voci.length} voci importate ✓`);
+    // Aggiorna cantiere
+    setTimeout(()=>{renderCantiere();},800);
+  }catch(err){document.getElementById('import-status').textContent='❌ Errore: '+err.message;}
+  finally{e.target.value='';}
+}
+
+// ════════════════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════════════════
+async function exportCantiere(){
+  if(!curCant){showToast('Seleziona un cantiere','e');return;}
+  const {data:giornate}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), voci_lavoro(*, lavorazioni(nome))').eq('cantiere_id',curCant.id).order('data');
+  if(!giornate?.length){showToast('Nessun dato da esportare','e');return;}
+
+  const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)','Ore totali','Lavorazione','Ore lavoro','Quantità','UM','Note']];
+  giornate.forEach(g=>{
+    const opNome=(g.operai?.nome||'')+' '+(g.operai?.cognome||'');
+    if(!(g.voci_lavoro||[]).length){
+      rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2),'','','','',g.note||'']);
+    }else{
+      g.voci_lavoro.forEach((v,i)=>{
+        rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,i===0?parseFloat(g.ore_totali||0).toFixed(2):'',v.lavorazioni?.nome||v.lavorazione_nome||'',parseFloat(v.ore||0).toFixed(2),v.quantita||'',v.um||'',i===0?g.note||'':'']);
+      });
+    }
+  });
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'Giornate');
+  XLSX.writeFile(wb,`CT_${curCant.nome.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('Excel scaricato ✓');
+}
+
+async function exportCSV(){
+  // Export completo di tutto (stipendi)
+  const mese=document.getElementById('rep-mese').value;
+  if(!mese){showToast('Seleziona un mese','e');return;}
+  const [y,m]=mese.split('-');
+  const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('operaio_id').order('data');
+  if(!data?.length){showToast('Nessun dato','e');return;}
+  const rows=[['Data','Cantiere','Operaio','Ruolo','Inizio','Fine','Pausa','Ore']];
+  data.forEach(g=>rows.push([g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2)]));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`CT_Stipendi_${mese}.csv`;a.click();
+  showToast('CSV scaricato ✓');
+}
+
+async function exportExcel(){
+  const mese=document.getElementById('rep-mese').value;
+  if(!mese){showToast('Seleziona un mese','e');return;}
+  const [y,m]=mese.split('-');
+  const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome), voci_lavoro(ore,lavorazione_nome,lavorazioni(nome))').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('data');
+  if(!data?.length){showToast('Nessun dato','e');return;}
+  const wb=XLSX.utils.book_new();
+  // Foglio stipendi
+  const rstip=[['Operaio','Ruolo','Giorni lavorati','Ore totali']];
+  const byOp={};data.forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:new Set(),ore:0};byOp[g.operaio_id].giorni.add(g.data);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);});
+  Object.values(byOp).sort((a,b)=>(a.op?.cognome||'').localeCompare(b.op?.cognome||'')).forEach(({op,giorni,ore})=>rstip.push([`${op?.nome||''} ${op?.cognome||''}`,op?.ruolo||'',giorni.size,ore.toFixed(2)]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rstip),'Stipendi');
+  // Foglio dettaglio
+  const rdet=[['Data','Cantiere','Operaio','Ore','Lavorazione','Ore lavoro']];
+  data.forEach(g=>{(g.voci_lavoro||[{}]).forEach(v=>rdet.push([g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2),v.lavorazioni?.nome||v.lavorazione_nome||'',v.ore?parseFloat(v.ore).toFixed(2):'']));});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rdet),'Dettaglio');
+  XLSX.writeFile(wb,`CT_Report_${mese}.xlsx`);
+  showToast('Excel scaricato ✓');
+}
+
+// ════════════════════════════════════════════════════════
+// REPORT
+// ════════════════════════════════════════════════════════
+async function renderReport(){
+  const el=document.getElementById('report-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const tipo=document.getElementById('rep-tipo').value;
+  const mese=document.getElementById('rep-mese').value;
+  if(!mese){el.innerHTML='<div class="empty">Seleziona un mese</div>';return;}
+  const [y,m]=mese.split('-');
+  const from=`${y}-${m}-01`,to=`${y}-${m}-${new Date(y,m,0).getDate()}`;
+
+  if(tipo==='stipendi'){
+    const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('operaio_id').order('data');
+    if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">💰</div><p>Nessun dato.</p></div>';return;}
+    const byOp={};data.forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:[],ore:0};byOp[g.operaio_id].giorni.push(g);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);});
+    el.innerHTML=Object.values(byOp).map(({op,giorni,ore})=>`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><div style="font-size:16px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${op?.ruolo||''} · ${giorni.length} giorni</div></div>
+          <div style="font-family:'DM Mono';font-size:28px;color:var(--gold);font-weight:500">${ore.toFixed(2)}<span style="font-size:14px">h</span></div>
+        </div>
+        <div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Orario</th><th>Ore</th></tr></thead>
+        <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${g.cantieri?.nome||'—'}</td><td style="font-family:'DM Mono';font-size:11px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td></tr>`).join('')}</tbody></table></div>
+      </div>`).join('');
+  }else if(tipo==='cantieri'){
+    const {data}=await sb.from('giornate').select('*, cantieri(nome,luogo), operai(nome,cognome)').gte('data',from).lte('data',to);
+    if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun dato.</p></div>';return;}
+    const byCant={};data.forEach(g=>{if(!byCant[g.cantiere_id])byCant[g.cantiere_id]={cant:g.cantieri,ore:0,giorni:0};byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);byCant[g.cantiere_id].giorni++;});
+    el.innerHTML=Object.values(byCant).sort((a,b)=>b.ore-a.ore).map(({cant,ore,giorni})=>`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="enterCantiere('${CANTIERI.find(c=>c.nome===cant?.nome)?.id||''}')">
+        <div style="display:flex;justify-content:space-between">
+          <div><div style="font-size:16px;font-weight:800">${cant?.nome||'—'}</div><div style="font-size:12px;color:var(--t2)">${cant?.luogo||''} · ${giorni} giornate</div></div>
+          <div class="mono" style="font-size:24px">${ore.toFixed(1)}h</div>
+        </div>
+      </div>`).join('');
+  }else{
+    // Analisi lavorazioni
+    const {data:voci}=await sb.from('voci_lavoro').select('ore,quantita,um,lavorazione_id,lavorazione_nome,lavorazioni(nome,um,categoria),giornate!inner(operaio_id,operai(nome,cognome))').gte('giornate.data',from).lte('giornate.data',to).gt('ore',0);
+    if(!voci?.length){el.innerHTML='<div class="empty"><div class="empty-i">📐</div><p>Nessun dato.</p></div>';return;}
+    const byL={};voci.forEach(v=>{
+      const n=v.lavorazioni?.nome||v.lavorazione_nome||'—';
+      const k=v.lavorazione_id||'_'+n;
+      const um=v.lavorazioni?.um||v.um||'h';
+      if(!byL[k])byL[k]={nome:n,um,cat:v.lavorazioni?.categoria||'',misure:[],byOp:{}};
+      const hpu=v.quantita>0?parseFloat(v.ore)/parseFloat(v.quantita):null;
+      const opId=v.giornate?.operaio_id,opN=v.giornate?.operai?v.giornate.operai.nome+' '+v.giornate.operai.cognome:'—';
+      byL[k].misure.push({ore:parseFloat(v.ore||0),hpu});
+      if(opId&&hpu!==null){if(!byL[k].byOp[opId])byL[k].byOp[opId]={nome:opN,vals:[]};byL[k].byOp[opId].vals.push(hpu);}
+    });
+    el.innerHTML=Object.entries(byL).sort((a,b)=>a[1].nome.localeCompare(b[1].nome)).map(([k,d])=>{
+      const cQ=d.misure.filter(m=>m.hpu!==null);
+      const med=cQ.length?cQ.reduce((s,m)=>s+m.hpu,0)/cQ.length:null;
+      const opRank=Object.entries(d.byOp).filter(([,op])=>op.vals.length>0).map(([,op])=>({nome:op.nome,media:op.vals.reduce((s,v)=>s+v,0)/op.vals.length,n:op.vals.length})).sort((a,b)=>a.media-b.media);
+      const dStr=encodeURIComponent(JSON.stringify({nome:d.nome,um:d.um,cat:d.cat,misure:d.misure,byOp:d.byOp,lavId:k}));
+      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openAnalisiMod('${dStr}')">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <div><div style="font-size:14px;font-weight:700">${d.nome}</div><div style="font-size:11px;color:var(--t3)">${d.cat}</div></div>
+          <span style="font-family:'DM Mono';font-size:11px;color:var(--gold);background:var(--gdim);padding:3px 8px;border-radius:4px">${d.um}</span>
+        </div>
+        <div class="sg3">
+          <div class="sb"><div class="sv">${med?med.toFixed(4):'—'}</div><div class="sl">h/${d.um}</div></div>
+          <div class="sb"><div class="sv">${d.misure.length}</div><div class="sl">mis.</div></div>
+          <div class="sb"><div class="sv">${opRank.length>0?opRank[0].nome.split(' ')[0]:'—'}</div><div class="sl">★ Migliore</div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function openAnalisiMod(dStr){
+  const d=JSON.parse(decodeURIComponent(dStr));
+  const cQ=d.misure.filter(m=>m.hpu!==null);
+  const med=cQ.length?cQ.reduce((s,m)=>s+m.hpu,0)/cQ.length:null;
+  const opRank=Object.entries(d.byOp||{}).filter(([,op])=>op.vals.length>0).map(([,op])=>({nome:op.nome,media:op.vals.reduce((s,v)=>s+v,0)/op.vals.length,n:op.vals.length})).sort((a,b)=>a.media-b.media);
+  const maxM=opRank.length?opRank[opRank.length-1].media:1;
+  document.getElementById('mod-analisi-content').innerHTML=`
+    <div class="mod-t">${d.nome}</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px">${d.cat} · ${d.um}</div>
+    <div class="sg3" style="margin-bottom:14px">
+      <div class="sb"><div class="sv">${med?med.toFixed(4):'—'}</div><div class="sl">h/${d.um}</div></div>
+      <div class="sb"><div class="sv">${d.misure.length}</div><div class="sl">Misurazioni</div></div>
+      <div class="sb"><div class="sv">${d.misure.reduce((s,m)=>s+m.ore,0).toFixed(1)}</div><div class="sl">Ore tot.</div></div>
+    </div>
+    ${opRank.length?`
+    <div class="sec">Classifica operai — h/${d.um}</div>
+    <div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:10px">
+      ${opRank.map((op,i)=>{
+        const pct=(op.media/maxM*100).toFixed(0);
+        const bc=i===0?'var(--green)':i===opRank.length-1&&opRank.length>2?'var(--red)':'var(--blue)';
+        return `<div class="or-row">
+          <div class="or-pos ${['p1','p2','p3'][i]||''}">${i===0?'★':i+1}</div>
+          <div class="or-nome"><strong>${op.nome}</strong><small>${op.n} mis.</small></div>
+          <div class="or-bar"><div class="or-fill" style="width:${pct}%;background:${bc}"></div></div>
+          <div class="or-val" style="color:${bc}">${op.media.toFixed(4)}</div>
+          ${i===0?'<span class="b-best">Migliore</span>':i===opRank.length-1&&opRank.length>2?'<span class="b-slow">Lento</span>':'<span></span>'}
+        </div>`;
+      }).join('')}
+      ${opRank.length>1?`<div style="font-size:12px;color:var(--t2);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">💡 Usa <strong style="color:var(--gold)">${opRank[0].nome.split(' ')[0]}</strong> per questo lavoro — è il ${((opRank[opRank.length-1].media/opRank[0].media-1)*100).toFixed(0)}% più veloce del più lento.</div>`:''}
+    </div>`:'<div style="font-size:13px;color:var(--t3)">Serve almeno 2 operai misurati per la classifica.</div>'}
+  `;
+  openModal('mod-analisi');
+}
+
+// ════════════════════════════════════════════════════════
+// ADMIN
+// ════════════════════════════════════════════════════════
+async function renderAdmin(){
+  document.getElementById('adm-cantieri').innerHTML=CANTIERI.map(c=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-weight:700">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div>
+      <button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button>
+    </div>`).join('');
+  document.getElementById('adm-operai').innerHTML=OPERAI.map(o=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-weight:700">${o.nome} ${o.cognome}</div><div style="font-size:12px;color:var(--t2)">${o.ruolo}</div></div>
+      <button class="btn-icon btn-sm" onclick="openModalOp('${o.id}')">✏️</button>
+    </div>`).join('');
+  if(PROF?.ruolo==='titolare'){
+    const {data:profili}=await sb.from('profili').select('*');
+    document.getElementById('adm-utenti').innerHTML=(profili||[]).map(p=>`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:600">${p.nome}</div>
+        <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span>
+      </div>`).join('');
+  }
+}
+
+function openModalCantiere(id){
+  editCid=id;const c=id?CANTIERI.find(x=>x.id===id):null;
+  document.getElementById('mod-cant-t').textContent=c?'Modifica cantiere':'Nuovo cantiere';
+  document.getElementById('c-nome').value=c?.nome||'';document.getElementById('c-luogo').value=c?.luogo||'';
+  document.getElementById('c-comm').value=c?.committente||'';document.getElementById('c-stato').value=c?.stato||'Attivo';
+  document.getElementById('del-cant-w').innerHTML=c?`<button class="btn btn-d" onclick="deleteCant('${id}')">🗑️ Elimina</button>`:'';
+  openModal('mod-cant');
+}
+async function saveCant(){
+  const nome=document.getElementById('c-nome').value.trim();if(!nome){showToast('Inserisci nome','e');return;}
+  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),committente:document.getElementById('c-comm').value.trim(),stato:document.getElementById('c-stato').value};
+  if(editCid)await sb.from('cantieri').update(p).eq('id',editCid);else await sb.from('cantieri').insert(p);
+  await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Salvato ✓');
+}
+async function deleteCant(id){if(!confirm('Eliminare cantiere?'))return;await sb.from('cantieri').delete().eq('id',id);await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();}
+
+function openModalOp(id){
+  editOid=id;const o=id?OPERAI.find(x=>x.id===id):null;
+  document.getElementById('mod-op-t').textContent=o?'Modifica operaio':'Nuovo operaio';
+  document.getElementById('o-nome').value=o?.nome||'';document.getElementById('o-cogn').value=o?.cognome||'';
+  document.getElementById('o-ruolo').value=o?.ruolo||'Carpentiere';
+  document.getElementById('del-op-w').innerHTML=o?`<button class="btn btn-d" onclick="deleteOp('${id}')">🗑️ Rimuovi</button>`:'';
+  openModal('mod-op');
+}
+async function saveOp(){
+  const nome=document.getElementById('o-nome').value.trim(),cogn=document.getElementById('o-cogn').value.trim();
+  if(!nome||!cogn){showToast('Inserisci nome e cognome','e');return;}
+  const p={nome,cognome:cogn,ruolo:document.getElementById('o-ruolo').value};
+  if(editOid)await sb.from('operai').update(p).eq('id',editOid);else await sb.from('operai').insert(p);
+  await loadOperai();closeModal('mod-op');renderAdmin();showToast('Salvato ✓');
+}
+async function deleteOp(id){if(!confirm('Rimuovere?'))return;await sb.from('operai').update({attivo:false}).eq('id',id);await loadOperai();closeModal('mod-op');renderAdmin();}
+
+// ════════════════════════════════════════════════════════
+// FOTO
+// ════════════════════════════════════════════════════════
+function addFoto(e){
+  Array.from(e.target.files).forEach(f=>{fFiles.push(f);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(f);});e.target.value='';
+}
+function renderFoto(){
+  document.getElementById('foto-prv').innerHTML=fB64.map((b,i)=>`<div class="fthumb"><img src="${b}"><button class="fdel" onclick="delFoto(${i})">×</button></div>`).join('');
+}
+function delFoto(i){fFiles.splice(i,1);fB64.splice(i,1);renderFoto();}
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('on');document.body.style.overflow='';}
+document.querySelectorAll('.ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
+function fmtDate(d){if(!d)return '—';return new Date(d+'T12:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'});}
+let tT;
+function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.style.background=type==='e'?'var(--red)':'var(--green)';t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),2500);}
+
+init();
+</script>
+</body>
+</html>
