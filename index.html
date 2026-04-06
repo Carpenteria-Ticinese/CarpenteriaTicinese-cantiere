@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#c8a84b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CT Cantiere">
 <title>CT Cantiere</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -178,7 +182,14 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .empty p{font-size:14px;line-height:1.6}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;padding:10px 22px;border-radius:20px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
-.bsp{height:40px}
+.bsp{height:80px}
+/* ── NAVBAR BOTTOM ── */
+.navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;transition:color .2s;gap:3px}
+.nb-icon{font-size:22px;line-height:1}
+.nb-label{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
+.nb.on .nb-label{color:var(--gold)}
+.nb.on .nb-icon{filter:drop-shadow(0 0 4px rgba(200,168,75,.5))}
 .warn{background:rgba(224,136,64,.08);border:1px solid rgba(224,136,64,.25);border-radius:var(--rsm);padding:10px 13px;font-size:12px;color:var(--orange);margin-top:6px;display:none}
 .warn.on{display:block}
 .chip{font-size:11px;color:var(--t2);background:var(--s2);border-radius:4px;padding:3px 8px;font-weight:600}
@@ -241,7 +252,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="sec" style="margin:0">I tuoi cantieri</div>
       <div style="display:flex;gap:8px">
         <button class="btn-icon btn-sm admin-only" onclick="openModalCantiere(null)">➕ Cantiere</button>
-        <button class="btn-icon btn-sm" onclick="goTo('report')">📊 Report</button>
+        <button class="btn-icon btn-sm" onclick="navTo('report')">📊 Report</button>
         <button class="btn-icon btn-sm admin-only" onclick="goTo('admin')">⚙️</button>
       </div>
     </div>
@@ -362,7 +373,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="sec">Report generale</div>
     <div class="row2" style="margin-bottom:14px">
       <div class="fg"><label class="fl">Mese</label><input type="month" class="fi" id="rep-mese" style="font-family:'DM Mono',monospace;font-size:13px" onchange="renderReport()"></div>
-      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="rep-tipo" onchange="renderReport()"><option value="stipendi">💰 Stipendi</option><option value="cantieri">🏗️ Cantieri</option><option value="analisi">📐 Analisi</option></select></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="rep-tipo" onchange="renderReport()"><option value="stipendi">💰 Stipendi</option><option value="cantieri">🏗️ Cantieri</option><option value="analisi">📐 Analisi</option><option value="assenze">🏖️ Assenze</option></select></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇️ Esporta CSV</button>
@@ -384,7 +395,69 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div id="adm-utenti" class="admin-only"></div>
     <div class="bsp"></div>
   </div>
-</div>
+
+  <!-- ══ SPESE / SCONTRINI / FATTURE ══ -->
+  <div class="scr" id="scr-spese">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="sec" style="margin:0">Spese & Documenti</div>
+      <button class="btn-icon btn-sm" onclick="openModalSpesa(null)">➕ Aggiungi</button>
+    </div>
+    <div class="row2" style="margin-bottom:12px">
+      <select class="fs" id="sp-cantiere" onchange="renderSpese()">
+        <option value="">Tutti i cantieri</option>
+      </select>
+      <select class="fs" id="sp-stato" onchange="renderSpese()">
+        <option value="">Tutti</option>
+        <option value="Da pagare">Da pagare</option>
+        <option value="Pagato">Pagato</option>
+      </select>
+    </div>
+    <div id="sp-totali" style="margin-bottom:12px"></div>
+    <div id="spese-list"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- ══ LAVORI A REGIA ══ -->
+  <div class="scr" id="scr-regia">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="sec" style="margin:0">Lavori a Regia</div>
+      <button class="btn-icon btn-sm" onclick="openModalRegia(null)">➕ Aggiungi</button>
+    </div>
+    <div class="row2" style="margin-bottom:12px">
+      <select class="fs" id="reg-cantiere" onchange="renderRegia()">
+        <option value="">Tutti i cantieri</option>
+      </select>
+      <select class="fs" id="reg-stato" onchange="renderRegia()">
+        <option value="">Tutti</option>
+        <option value="false">Da fatturare</option>
+        <option value="true">Fatturati</option>
+      </select>
+    </div>
+    <div id="reg-totali" style="margin-bottom:12px"></div>
+    <div id="regia-list"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-s" onclick="exportRegia()">⬇️ Esporta regia per fattura</button>
+    </div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- ══ ASSENZE ══ -->
+  <div class="scr" id="scr-assenze">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="sec" style="margin:0">Assenze & Ferie</div>
+      <button class="btn-icon btn-sm" onclick="openModalAssenza(null)">➕ Aggiungi</button>
+    </div>
+    <div class="row2" style="margin-bottom:12px">
+      <select class="fs" id="ass-operaio" onchange="renderAssenze()">
+        <option value="">Tutti gli operai</option>
+      </select>
+      <input type="month" class="fi" id="ass-mese" style="font-family:'DM Mono',monospace;font-size:13px" onchange="renderAssenze()">
+    </div>
+    <div id="assenze-list"></div>
+    <div class="bsp"></div>
+  </div>
+
+</div><!-- fine #app -->
 
 <!-- MODAL: DETTAGLIO CANTIERE GIORNATA -->
 <div class="ov" id="mod-cant-log">
@@ -462,6 +535,143 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL: NUOVA SPESA -->
+<div class="ov" id="mod-spesa">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-spesa-t">Nuova spesa / documento</div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="sp-cant-sel"></select></div>
+      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="sp-data"></div>
+    </div>
+    <div class="fg"><label class="fl">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Tipo documento</label>
+        <select class="fs" id="sp-tipo-doc">
+          <option>Scontrino</option><option>Bolla di consegna</option><option>Fattura fornitore</option><option>Altro</option>
+        </select></div>
+      <div class="fg"><label class="fl">Tipo spesa</label>
+        <select class="fs" id="sp-tipo-spesa">
+          <option>Materiale</option><option>Gasolio</option><option>Autostrada</option><option>Pranzo</option><option>Regia</option><option>Trasporto</option><option>Altro</option>
+        </select></div>
+    </div>
+    <div class="fg"><label class="fl">Descrizione</label><input type="text" class="fi" id="sp-desc" placeholder="es. Gasolio cantiere, Flumroc fattura n.123..."></div>
+    <div class="row3">
+      <div class="fg"><label class="fl">Importo</label><input type="number" class="fi" id="sp-importo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl">Valuta</label><select class="fs" id="sp-valuta"><option>CHF</option><option>EUR</option></select></div>
+      <div class="fg"><label class="fl">Stato</label>
+        <select class="fs" id="sp-stato-pag" onchange="toggleMetodoPag(this)">
+          <option>Da pagare</option><option>Pagato</option>
+        </select></div>
+    </div>
+    <div class="fg" id="sp-metodo-wrap">
+      <label class="fl">Chi ha pagato / come</label>
+      <select class="fs" id="sp-metodo">
+        <option>Carta aziendale</option><option>Carta privata operaio</option><option>Contanti</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Foto scontrino / bolla / fattura</label>
+      <div class="foto-drop" onclick="document.getElementById('sp-foto-inp').click()">
+        <div style="font-size:26px">📷</div>
+        <p style="font-size:12px;color:var(--t2);margin-top:4px">Tocca per fotografare o scegliere</p>
+      </div>
+      <input type="file" id="sp-foto-inp" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="addFotoSpesa(event)">
+      <div id="sp-foto-prv" style="margin-top:8px"></div>
+    </div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="sp-note" style="min-height:50px" placeholder="Note aggiuntive..."></textarea></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-spesa')">Annulla</button>
+      <button class="btn btn-g" onclick="salvaSpesa()" id="btn-salva-sp">💾 Salva</button>
+    </div>
+    <div id="del-sp-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- MODAL: NUOVA REGIA -->
+<div class="ov" id="mod-regia">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-regia-t">Nuovo lavoro a regia</div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="reg-cant-sel"></select></div>
+      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="reg-data"></div>
+    </div>
+    <div class="fg"><label class="fl">Operaio</label><select class="fs" id="reg-op-sel"></select></div>
+    <div class="fg"><label class="fl">Tipo</label>
+      <select class="fs" id="reg-tipo">
+        <option>Ore</option><option>Materiale</option><option>Trasferta</option><option>Nolo attrezzatura</option><option>Altro</option>
+      </select></div>
+    <div class="fg"><label class="fl">Descrizione</label><input type="text" class="fi" id="reg-desc" placeholder="es. Posa extra gronda nord, Materiale aggiuntivo BSH..."></div>
+    <div class="row3">
+      <div class="fg"><label class="fl">Quantità</label><input type="number" class="fi" id="reg-qty" placeholder="0" step="0.25" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl">UM</label><input type="text" class="fi" id="reg-um" placeholder="h / ml / m²" value="h"></div>
+      <div class="fg"><label class="fl">Fatturato?</label>
+        <select class="fs" id="reg-fatt"><option value="false">No — da fatturare</option><option value="true">Sì — già fatturato</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Costo CT (CHF/um)</label><input type="number" class="fi" id="reg-costo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl">Prezzo cliente (CHF/um)</label><input type="number" class="fi" id="reg-prezzo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+    </div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="reg-note" style="min-height:50px" placeholder="Descrizione dettagliata per la fattura..."></textarea></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-regia')">Annulla</button>
+      <button class="btn btn-g" onclick="salvaRegia()" id="btn-salva-reg">💾 Salva</button>
+    </div>
+    <div id="del-reg-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- MODAL: NUOVA ASSENZA -->
+<div class="ov" id="mod-assenza">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-ass-t">Registra assenza</div>
+    <div class="fg"><label class="fl">Operaio</label><select class="fs" id="ass-op-sel"></select></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="ass-data"></div>
+      <div class="fg"><label class="fl">Giorni</label>
+        <select class="fs" id="ass-giorni">
+          <option value="1">1 giorno intero</option>
+          <option value="0.5">½ giornata (mattino)</option>
+          <option value="0.5b">½ giornata (pomeriggio)</option>
+        </select></div>
+    </div>
+    <div class="fg"><label class="fl">Motivo</label>
+      <select class="fs" id="ass-motivo">
+        <option>Malattia</option><option>Ferie</option><option>Agenzia — operaio temporaneo</option><option>Infortunio</option><option>Permesso</option><option>Altro</option>
+      </select></div>
+    <div class="fg"><label class="fl">Cantiere (facoltativo)</label><select class="fs" id="ass-cant-sel"><option value="">Nessuno</option></select></div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="ass-note" style="min-height:50px"></textarea></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-assenza')">Annulla</button>
+      <button class="btn btn-g" onclick="salvaAssenza()">💾 Salva</button>
+    </div>
+    <div id="del-ass-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- NAVBAR BOTTOM -->
+<div class="navbar" id="navbar">
+  <div class="nb on" id="nb-home" onclick="navTo('home')">
+    <div class="nb-icon">🏠</div><div class="nb-label">Cantieri</div>
+  </div>
+  <div class="nb" id="nb-giornata" onclick="navTo('nuova')">
+    <div class="nb-icon">➕</div><div class="nb-label">Giornata</div>
+  </div>
+  <div class="nb" id="nb-spese" onclick="navTo('spese')">
+    <div class="nb-icon">🧾</div><div class="nb-label">Spese</div>
+  </div>
+  <div class="nb" id="nb-report" onclick="navTo('report')">
+    <div class="nb-icon">📊</div><div class="nb-label">Report</div>
+  </div>
+  <div class="nb admin-only" id="nb-admin" onclick="navTo('admin')">
+    <div class="nb-icon">⚙️</div><div class="nb-label">Admin</div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════
 // CONFIG
@@ -499,7 +709,7 @@ async function afterLogin(){
   try{
     const {data:prof}=await sb.from('profili').select('*').eq('id',USER.id).single();
     PROF=prof;
-    await Promise.all([loadCantieri(),loadOperai()]);
+    await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     const nome=(PROF?.nome||USER.email).split('@')[0];
     document.getElementById('ubadge').textContent=nome;
     const ruolo=PROF?.ruolo||'caposquadra';
@@ -626,8 +836,8 @@ async function renderCantiere(){
   if(ge)throw ge;
 
   const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
-  // Costo totale stimato (tariffa 78 CHF/h default)
-  const tariffa=78;
+  // BUG8 FIX: tariffa configurabile
+  const tariffa=IMPOSTAZIONI.tariffa_ora||78;
   const totCosto=totOre*tariffa;
   const byOp={};
   (giornate||[]).forEach(g=>{
@@ -651,12 +861,20 @@ async function renderCantiere(){
     <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">
       ➕ Nuova giornata
     </button>
-    <div class="row2" style="margin-bottom:16px">
+    <div class="row2" style="margin-bottom:10px">
       <button class="btn btn-s" onclick="openModalImport()">
         📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}
       </button>
       <button class="btn btn-s" onclick="exportCantiere()">
         ⬇️ Esporta dati
+      </button>
+    </div>
+    <div class="row2" style="margin-bottom:16px">
+      <button class="btn btn-s" onclick="apriRegiaCantiere()">
+        🔧 Lavori a regia
+      </button>
+      <button class="btn btn-s" onclick="apriSpeseCantiere()">
+        🧾 Spese & Fatture
       </button>
     </div>
 
@@ -688,6 +906,24 @@ async function renderCantiere(){
   }catch(err){
     el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore caricamento:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">🔄 Riprova</button></div>`;
   }
+}
+
+function apriRegiaCantiere(){
+  populateSpeseSel();
+  showScr('regia');
+  document.getElementById('top-title').textContent='Regia — '+curCant.nome;
+  document.getElementById('reg-cantiere').value=curCant.id;
+  renderRegia();
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Regia'}]);
+}
+
+function apriSpeseCantiere(){
+  populateSpeseSel();
+  showScr('spese');
+  document.getElementById('top-title').textContent='Spese — '+curCant.nome;
+  document.getElementById('sp-cantiere').value=curCant.id;
+  renderSpese();
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Spese'}]);
 }
 
 async function openCantLog(gid){
@@ -844,7 +1080,7 @@ function addVoce2(lavId='',ore='',qty='',um=''){
       <select class="voce-sel" onchange="onChangeVoce(this)">${opts}</select>
       <button class="voce-del" onclick="this.closest('.voce-row').remove();checkVociWarn()">✕</button>
     </div>
-    <div id="nuova-voce-wrap" style="display:none;margin-bottom:8px">
+    <div class="nuova-voce-wrap" style="display:none;margin-bottom:8px">
       <input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px">
     </div>
     <div class="voce-nums">
@@ -859,7 +1095,9 @@ function addVoce2(lavId='',ore='',qty='',um=''){
 function onChangeVoce(sel){
   const row=sel.closest('.voce-row');
   const isNuova=sel.value==='__nuova__';
-  row.querySelector('#nuova-voce-wrap').style.display=isNuova?'block':'none';
+  // BUG5 FIX: usa classe invece di ID per trovare il wrap nella riga
+  const wrap=row.querySelector('.nuova-voce-wrap');
+  if(wrap)wrap.style.display=isNuova?'block':'none';
   if(!isNuova){
     const lav=LAVS.find(l=>l.id===sel.value);
     if(lav)row.querySelector('.voce-um-inp').value=lav.um||'h';
@@ -1094,17 +1332,38 @@ async function renderReport(){
   const from=`${y}-${m}-01`,to=`${y}-${m}-${new Date(y,m,0).getDate()}`;
 
   if(tipo==='stipendi'){
-    const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('operaio_id').order('data');
-    if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">💰</div><p>Nessun dato.</p></div>';return;}
-    const byOp={};data.forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:[],ore:0};byOp[g.operaio_id].giorni.push(g);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);});
-    el.innerHTML=Object.values(byOp).map(({op,giorni,ore})=>`
+    // BUG11 FIX: carica giornate E assenze insieme
+    const [{data},{data:assenze}]=await Promise.all([
+      sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('operaio_id').order('data'),
+      sb.from('assenze').select('*, operai(nome,cognome,ruolo)').gte('data',from).lte('data',to)
+    ]);
+    if(!data?.length&&!assenze?.length){el.innerHTML='<div class="empty"><div class="empty-i">💰</div><p>Nessun dato.</p></div>';return;}
+    const byOp={};
+    (data||[]).forEach(g=>{
+      if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:[],ore:0,assenze:[]};
+      byOp[g.operaio_id].giorni.push(g);
+      byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);
+    });
+    (assenze||[]).forEach(a=>{
+      if(!byOp[a.operaio_id])byOp[a.operaio_id]={op:a.operai,giorni:[],ore:0,assenze:[]};
+      byOp[a.operaio_id].assenze.push(a);
+    });
+    const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
+    el.innerHTML=Object.values(byOp).map(({op,giorni,ore,assenze:ass})=>`
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div><div style="font-size:16px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${op?.ruolo||''} · ${giorni.length} giorni</div></div>
+          <div>
+            <div style="font-size:16px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div>
+            <div style="font-size:12px;color:var(--t2)">${op?.ruolo||''} · ${giorni.length} giorni lavorati${ass.length?` · ${ass.length} assenze`:''}</div>
+          </div>
           <div style="font-family:'DM Mono';font-size:28px;color:var(--gold);font-weight:500">${ore.toFixed(2)}<span style="font-size:14px">h</span></div>
         </div>
         <div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Orario</th><th>Ore</th></tr></thead>
         <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${g.cantieri?.nome||'—'}</td><td style="font-family:'DM Mono';font-size:11px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td></tr>`).join('')}</tbody></table></div>
+        ${ass.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Assenze</div>
+          ${ass.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--t2)">${motivoIcon[a.motivo]||'❓'} <span>${fmtDate(a.data)}</span> <span style="color:var(--text)">${a.motivo}</span> <span>${parseFloat(a.giorni)===1?'(giorno intero)':'(mezza giornata)'}</span></div>`).join('')}
+        </div>`:''}
       </div>`).join('');
   }else if(tipo==='cantieri'){
     const {data}=await sb.from('giornate').select('*, cantieri(nome,luogo), operai(nome,cognome)').gte('data',from).lte('data',to);
@@ -1116,6 +1375,34 @@ async function renderReport(){
           <div><div style="font-size:16px;font-weight:800">${cant?.nome||'—'}</div><div style="font-size:12px;color:var(--t2)">${cant?.luogo||''} · ${giorni} giornate</div></div>
           <div class="mono" style="font-size:24px">${ore.toFixed(1)}h</div>
         </div>
+      </div>`).join('');
+  }else if(tipo==='assenze'){
+    // Report assenze dedicato
+    const {data:assenze}=await sb.from('assenze').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('data',{ascending:false});
+    if(!assenze?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>Nessuna assenza nel periodo.</p></div>';return;}
+    const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
+    const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
+    const byOpA={};
+    assenze.forEach(a=>{
+      if(!byOpA[a.operaio_id])byOpA[a.operaio_id]={op:a.operai,ass:[],totGiorni:0};
+      byOpA[a.operaio_id].ass.push(a);
+      byOpA[a.operaio_id].totGiorni+=parseFloat(a.giorni)||1;
+    });
+    el.innerHTML=Object.values(byOpA).map(({op,ass,totGiorni})=>`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><div style="font-size:16px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${op?.ruolo||''}</div></div>
+          <div style="font-family:'DM Mono';font-size:22px;color:var(--orange);font-weight:500">${totGiorni}<span style="font-size:13px"> gg</span></div>
+        </div>
+        ${ass.map(a=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)">
+            <span style="font-size:20px">${motivoIcon[a.motivo]||'❓'}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:${motivoColor[a.motivo]||'var(--t2)'}">${a.motivo}</div>
+              <div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${parseFloat(a.giorni)===1?'giorno intero':'mezza giornata'}${a.cantieri?.nome?' · '+a.cantieri.nome:''}</div>
+              ${a.note?`<div style="font-size:11px;color:var(--t3)">${a.note}</div>`:''}
+            </div>
+          </div>`).join('')}
       </div>`).join('');
   }else{
     // Analisi lavorazioni
@@ -1199,6 +1486,30 @@ async function renderAdmin(){
       <div><div style="font-weight:700">${o.nome} ${o.cognome}</div><div style="font-size:12px;color:var(--t2)">${o.ruolo}</div></div>
       <button class="btn-icon btn-sm" onclick="openModalOp('${o.id}')">✏️</button>
     </div>`).join('');
+
+  // BUG8 - Impostazioni tariffa oraria
+  const admEl=document.getElementById('adm-utenti').parentElement||document.getElementById('scr-admin');
+  const existingImp=document.getElementById('adm-impostazioni');
+  if(!existingImp){
+    const impDiv=document.createElement('div');
+    impDiv.id='adm-impostazioni';
+    impDiv.innerHTML=`
+      <div class="sec" style="margin-top:20px">Impostazioni</div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px">
+        <div class="fg">
+          <label class="fl">Tariffa oraria manodopera (CHF/h)</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px">
+            <button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button>
+          </div>
+          <div style="font-size:11px;color:var(--t2);margin-top:6px">Usata per calcolare il costo manodopera nei cantieri</div>
+        </div>
+      </div>`;
+    document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest('.sec')||document.getElementById('scr-admin').lastChild);
+  }else{
+    document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
+  }
+
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
     document.getElementById('adm-utenti').innerHTML=(profili||[]).map(p=>`
@@ -1207,6 +1518,13 @@ async function renderAdmin(){
         <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span>
       </div>`).join('');
   }
+}
+
+function aggiornaTariffa(){
+  const val=parseFloat(document.getElementById('imp-tariffa').value);
+  if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}
+  IMPOSTAZIONI.tariffa_ora=val;
+  saveImpostazioni();
 }
 
 function openModalCantiere(id){
@@ -1264,6 +1582,453 @@ let tT;
 function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.style.background=type==='e'?'var(--red)':'var(--green)';t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),2500);}
 
 init();
+
+// ════════════════════════════════════════════════════════
+// STATO GLOBALE IMPOSTAZIONI
+// ════════════════════════════════════════════════════════
+let IMPOSTAZIONI={tariffa_ora:78}; // CHF/h default — modificabile da Admin
+
+async function loadImpostazioni(){
+  // Carica da localStorage come fallback veloce
+  const cached=localStorage.getItem('ct_impostazioni');
+  if(cached)try{IMPOSTAZIONI={...IMPOSTAZIONI,...JSON.parse(cached)};}catch(e){}
+}
+
+function saveImpostazioni(){
+  localStorage.setItem('ct_impostazioni',JSON.stringify(IMPOSTAZIONI));
+  showToast('Impostazioni salvate ✓');
+}
+
+// ════════════════════════════════════════════════════════
+// NAVBAR
+// ════════════════════════════════════════════════════════
+function navTo(dest){
+  document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
+  // BUG1 FIX: mappa dest → id navbar corretto
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin'};
+  const nbId=nbMap[dest]||'nb-home';
+  const nb=document.getElementById(nbId);
+  if(nb)nb.classList.add('on');
+
+  if(dest==='home'){
+    goHome();
+  }else if(dest==='nuova'){
+    if(curCant){startNuovaGiornata();}
+    else{showToast('Seleziona prima un cantiere dalla home','e');document.getElementById('nb-home').classList.add('on');}
+  }else if(dest==='spese'){
+    showScr('spese');
+    document.getElementById('top-title').textContent='Spese & Documenti';
+    populateSpeseSel();
+    renderSpese();
+    setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);
+  }else if(dest==='report'){
+    showScr('report');
+    document.getElementById('top-title').textContent='Report';
+    renderReport();
+    setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);
+  }else if(dest==='admin'){
+    showScr('admin');
+    document.getElementById('top-title').textContent='Admin';
+    renderAdmin();
+    setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// SPESE / SCONTRINI / FATTURE
+// ════════════════════════════════════════════════════════
+let spFotoFile=null, editSpId=null;
+
+function populateSpeseSel(){
+  const opts='<option value="">Tutti i cantieri</option>'+CANTIERI.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('sp-cantiere').innerHTML=opts;
+  document.getElementById('sp-cant-sel').innerHTML=CANTIERI.filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('sp-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
+  // Regia
+  document.getElementById('reg-cant-sel').innerHTML=CANTIERI.filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('reg-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
+  // Assenze
+  document.getElementById('ass-op-sel').innerHTML=OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
+  document.getElementById('ass-cant-sel').innerHTML='<option value="">Nessuno</option>'+CANTIERI.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('reg-cantiere').innerHTML='<option value="">Tutti i cantieri</option>'+CANTIERI.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('ass-operaio').innerHTML='<option value="">Tutti gli operai</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
+}
+
+function toggleMetodoPag(sel){
+  document.getElementById('sp-metodo-wrap').style.display=sel.value==='Pagato'?'block':'none';
+}
+
+async function renderSpese(){
+  const el=document.getElementById('spese-list');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const cantF=document.getElementById('sp-cantiere').value;
+  const statoF=document.getElementById('sp-stato').value;
+  let q=sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)').order('data',{ascending:false});
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(statoF)q=q.eq('stato_pag',statoF);
+  const {data,error}=await q.limit(100);
+  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;document.getElementById('sp-totali').innerHTML='';return;}
+
+  // BUG2 FIX: calcola totali sempre (anche con filtro stato)
+  const totDaPagare=(data||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
+  const totPagato=(data||[]).filter(s=>s.stato_pag==='Pagato').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
+  document.getElementById('sp-totali').innerHTML=`
+    <div class="row2">
+      <div style="background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:10px 14px">
+        <div style="font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Da pagare</div>
+        <div style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totDaPagare.toFixed(2)} CHF</div>
+      </div>
+      <div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:10px 14px">
+        <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:1px">Pagato</div>
+        <div style="font-family:'DM Mono';font-size:20px;color:var(--green)">${totPagato.toFixed(2)} CHF</div>
+      </div>
+    </div>`;
+
+  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🧾</div><p>Nessuna spesa registrata.<br>Premi ➕ per aggiungere.</p></div>';return;}
+
+  const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
+  el.innerHTML=data.map(s=>{
+    const icon=tipoDocIcon[s.tipo_doc]||'📋';
+    const isPag=s.stato_pag==='Pagato';
+    return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalSpesa('${s.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font-size:24px">${icon}</span>
+          <div>
+            <div style="font-size:14px;font-weight:700">${s.descrizione||s.tipo_spesa}</div>
+            <div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div>
+            <div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'DM Mono';font-size:18px;font-weight:600;color:${isPag?'var(--gold)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div>
+          <div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px;background:${isPag?'rgba(76,175,125,.15)':'rgba(224,85,85,.15)'};color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}</div>
+        </div>
+      </div>
+      ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
+      ${s.note?`<div style="font-size:12px;color:var(--t2);margin-top:4px">📝 ${s.note}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openModalSpesa(id){
+  editSpId=id; spFotoFile=null;
+  document.getElementById('sp-foto-prv').innerHTML='';
+  populateSpeseSel(); // BUG3 FIX: sempre popola prima
+  if(!id){
+    document.getElementById('mod-spesa-t').textContent='Nuova spesa / documento';
+    document.getElementById('sp-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('sp-importo').value='';
+    document.getElementById('sp-desc').value='';
+    document.getElementById('sp-note').value='';
+    document.getElementById('sp-stato-pag').value='Da pagare';
+    document.getElementById('sp-metodo-wrap').style.display='none';
+    document.getElementById('del-sp-w').innerHTML='';
+    // Se si arriva da un cantiere specifico, pre-seleziona
+    if(curCant)document.getElementById('sp-cant-sel').value=curCant.id;
+  }else{
+    // Carica dati esistenti
+    sb.from('spese').select('*').eq('id',id).single().then(({data:s})=>{
+      if(!s)return;
+      document.getElementById('mod-spesa-t').textContent='Modifica spesa';
+      document.getElementById('sp-cant-sel').value=s.cantiere_id||'';
+      document.getElementById('sp-op-sel').value=s.operaio_id||'';
+      document.getElementById('sp-data').value=s.data||'';
+      document.getElementById('sp-tipo-doc').value=s.tipo_doc||'Scontrino';
+      document.getElementById('sp-tipo-spesa').value=s.tipo_spesa||'Materiale';
+      document.getElementById('sp-desc').value=s.descrizione||'';
+      document.getElementById('sp-importo').value=s.importo||'';
+      document.getElementById('sp-valuta').value=s.valuta||'CHF';
+      document.getElementById('sp-stato-pag').value=s.stato_pag||'Da pagare';
+      document.getElementById('sp-metodo-wrap').style.display=s.stato_pag==='Pagato'?'block':'none';
+      if(s.metodo_pag)document.getElementById('sp-metodo').value=s.metodo_pag;
+      document.getElementById('sp-note').value=s.note||'';
+      document.getElementById('del-sp-w').innerHTML=`<button class="btn btn-d" onclick="deleteSpesa('${id}')">🗑️ Elimina</button>`;
+    });
+  }
+  openModal('mod-spesa');
+}
+
+function addFotoSpesa(e){
+  spFotoFile=e.target.files[0];
+  if(!spFotoFile)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const isImg=spFotoFile.type.startsWith('image/');
+    document.getElementById('sp-foto-prv').innerHTML=isImg
+      ?`<img src="${ev.target.result}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:200px;object-fit:contain">`
+      :`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:13px;color:var(--t2);margin-top:8px">📄 ${spFotoFile.name}</div>`;
+  };
+  r.readAsDataURL(spFotoFile);
+  e.target.value='';
+}
+
+async function salvaSpesa(){
+  const cantId=document.getElementById('sp-cant-sel').value;
+  const data=document.getElementById('sp-data').value;
+  const desc=document.getElementById('sp-desc').value.trim();
+  if(!cantId||!data||!desc){showToast('Compila cantiere, data e descrizione','e');return;}
+  const btn=document.getElementById('btn-salva-sp');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const statoPag=document.getElementById('sp-stato-pag').value;
+    const payload={
+      cantiere_id:cantId,
+      operaio_id:document.getElementById('sp-op-sel').value||null,
+      data,tipo_doc:document.getElementById('sp-tipo-doc').value,
+      tipo_spesa:document.getElementById('sp-tipo-spesa').value,
+      descrizione:desc,
+      importo:parseFloat(document.getElementById('sp-importo').value)||null,
+      valuta:document.getElementById('sp-valuta').value,
+      stato_pag:statoPag,
+      metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,
+      note:document.getElementById('sp-note').value.trim()||null,
+      created_by:USER.id
+    };
+    let spId=editSpId;
+    if(editSpId){
+      await sb.from('spese').update(payload).eq('id',editSpId);
+    }else{
+      const {data:newSp,error}=await sb.from('spese').insert(payload).select().single();
+      if(error)throw error;
+      spId=newSp.id;
+    }
+    // Upload foto
+    if(spFotoFile&&spId){
+      const cant=CANTIERI.find(c=>c.id===cantId);
+      const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
+      const ext=spFotoFile.name.split('.').pop();
+      const path=`${cn}/${data}/${Date.now()}_spesa.${ext}`;
+      const {error:ue}=await sb.storage.from('cantiere-spese').upload(path,spFotoFile);
+      if(!ue)await sb.from('spese').update({foto_path:path}).eq('id',spId);
+    }
+    closeModal('mod-spesa');renderSpese();showToast('Spesa salvata ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent='💾 Salva';btn.disabled=false;}
+}
+
+async function deleteSpesa(id){
+  if(!confirm('Eliminare questa spesa?'))return;
+  await sb.from('spese').delete().eq('id',id);
+  closeModal('mod-spesa');renderSpese();showToast('Eliminata');
+}
+
+// ════════════════════════════════════════════════════════
+// LAVORI A REGIA
+// ════════════════════════════════════════════════════════
+let editRegId=null;
+
+async function renderRegia(){
+  const el=document.getElementById('regia-list');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const cantF=document.getElementById('reg-cantiere').value;
+  const statoF=document.getElementById('reg-stato').value;
+  let q=sb.from('regia').select('*, cantieri(nome), operai(nome,cognome)').order('data',{ascending:false});
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(statoF!=='')q=q.eq('fatturato',statoF==='true');
+  const {data,error}=await q.limit(100);
+  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
+
+  const totFatt=(data||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
+  document.getElementById('reg-totali').innerHTML=`
+    <div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px">
+      <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da fatturare</div>
+      <div style="font-family:'DM Mono';font-size:22px;color:var(--gold)">${totFatt.toFixed(2)} CHF</div>
+    </div>`;
+
+  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🔧</div><p>Nessun lavoro a regia.<br>Premi ➕ per aggiungere.</p></div>';return;}
+  const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
+  el.innerHTML=data.map(r=>{
+    const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));
+    return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalRegia('${r.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0">
+          <span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span>
+          <div style="min-width:0">
+            <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.descrizione}</div>
+            <div style="font-size:11px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)}</div>
+            <div style="font-size:11px;color:var(--t2)">${r.operai?.nome||''} ${r.operai?.cognome||''} · ${r.tipo}</div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          <div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:var(--gold)">${totR.toFixed(2)} CHF</div>
+          <div style="font-size:10px;color:var(--t2)">${parseFloat(r.quantita||0).toFixed(2)} ${r.um}</div>
+          <div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;background:${r.fatturato?'rgba(76,175,125,.15)':'var(--gdim)'};color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'Fatturato':'Da fatturare'}</div>
+        </div>
+      </div>
+      ${r.note?`<div style="font-size:12px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${r.note}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openModalRegia(id){
+  editRegId=id;
+  if(!id){
+    document.getElementById('mod-regia-t').textContent='Nuovo lavoro a regia';
+    document.getElementById('reg-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('reg-desc').value='';document.getElementById('reg-qty').value='';
+    document.getElementById('reg-um').value='h';document.getElementById('reg-costo').value='';
+    document.getElementById('reg-prezzo').value='';document.getElementById('reg-note').value='';
+    document.getElementById('reg-fatt').value='false';
+    document.getElementById('del-reg-w').innerHTML='';
+  }else{
+    sb.from('regia').select('*').eq('id',id).single().then(({data:r})=>{
+      if(!r)return;
+      document.getElementById('mod-regia-t').textContent='Modifica regia';
+      document.getElementById('reg-cant-sel').value=r.cantiere_id||'';
+      document.getElementById('reg-op-sel').value=r.operaio_id||'';
+      document.getElementById('reg-data').value=r.data||'';
+      document.getElementById('reg-tipo').value=r.tipo||'Ore';
+      document.getElementById('reg-desc').value=r.descrizione||'';
+      document.getElementById('reg-qty').value=r.quantita||'';
+      document.getElementById('reg-um').value=r.um||'h';
+      document.getElementById('reg-costo').value=r.costo_unitario||'';
+      document.getElementById('reg-prezzo').value=r.prezzo_unitario||'';
+      document.getElementById('reg-fatt').value=r.fatturato?'true':'false';
+      document.getElementById('reg-note').value=r.note||'';
+      document.getElementById('del-reg-w').innerHTML=`<button class="btn btn-d" onclick="deleteRegia('${id}')">🗑️ Elimina</button>`;
+    });
+  }
+  openModal('mod-regia');
+}
+
+async function salvaRegia(){
+  const cantId=document.getElementById('reg-cant-sel').value;
+  const data=document.getElementById('reg-data').value;
+  const desc=document.getElementById('reg-desc').value.trim();
+  if(!cantId||!data||!desc){showToast('Compila cantiere, data e descrizione','e');return;}
+  const btn=document.getElementById('btn-salva-reg');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const payload={
+      cantiere_id:cantId,operaio_id:document.getElementById('reg-op-sel').value||null,
+      data,tipo:document.getElementById('reg-tipo').value,descrizione:desc,
+      quantita:parseFloat(document.getElementById('reg-qty').value)||null,
+      um:document.getElementById('reg-um').value||'h',
+      costo_unitario:parseFloat(document.getElementById('reg-costo').value)||null,
+      prezzo_unitario:parseFloat(document.getElementById('reg-prezzo').value)||null,
+      fatturato:document.getElementById('reg-fatt').value==='true',
+      note:document.getElementById('reg-note').value.trim()||null,
+      created_by:USER.id
+    };
+    if(editRegId)await sb.from('regia').update(payload).eq('id',editRegId);
+    else{const {error}=await sb.from('regia').insert(payload);if(error)throw error;}
+    closeModal('mod-regia');renderRegia();showToast('Salvato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent='💾 Salva';btn.disabled=false;}
+}
+
+async function deleteRegia(id){
+  if(!confirm('Eliminare questo elemento?'))return;
+  await sb.from('regia').delete().eq('id',id);
+  closeModal('mod-regia');renderRegia();showToast('Eliminato');
+}
+
+async function exportRegia(){
+  const cantF=document.getElementById('reg-cantiere').value;
+  // BUG10 FIX: sempre esporta tutti i non fatturati, non filtra per stato UI
+  let q=sb.from('regia').select('*, cantieri(nome), operai(nome,cognome)').eq('fatturato',false).order('cantiere_id').order('data');
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  const {data}=await q;
+  if(!data?.length){showToast('Nessun lavoro a regia da fatturare','e');return;}
+  const rows=[['Data','Cantiere','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Totale CHF','Note']];
+  data.forEach(r=>rows.push([
+    r.data,r.cantieri?.nome||'',`${r.operai?.nome||''} ${r.operai?.cognome||''}`,
+    r.tipo,r.descrizione,parseFloat(r.quantita||0).toFixed(3),r.um,
+    parseFloat(r.prezzo_unitario||0).toFixed(2),
+    (parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),
+    r.note||''
+  ]));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Regia da fatturare');
+  XLSX.writeFile(wb,`CT_Regia_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('Excel regia scaricato ✓');
+}
+
+// ════════════════════════════════════════════════════════
+// ASSENZE
+// ════════════════════════════════════════════════════════
+let editAssId=null;
+
+async function renderAssenze(){
+  const el=document.getElementById('assenze-list');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const opF=document.getElementById('ass-operaio').value;
+  const meseF=document.getElementById('ass-mese').value;
+  let q=sb.from('assenze').select('*, operai(nome,cognome), cantieri(nome)').order('data',{ascending:false});
+  if(opF)q=q.eq('operaio_id',opF);
+  if(meseF){const [y,m]=meseF.split('-');q=q.gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`);}
+  const {data,error}=await q.limit(100);
+  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
+  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>Nessuna assenza registrata.</p></div>';return;}
+
+  const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
+  const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
+  el.innerHTML=data.map(a=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')">
+      <span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
+        <div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>
+        ${a.cantieri?.nome?`<div style="font-size:11px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}
+        ${a.note?`<div style="font-size:12px;color:var(--t2)">📝 ${a.note}</div>`:''}
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span>
+    </div>`).join('');
+}
+
+function openModalAssenza(id){
+  editAssId=id;
+  if(!id){
+    document.getElementById('mod-ass-t').textContent='Registra assenza';
+    document.getElementById('ass-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('ass-giorni').value='1';
+    document.getElementById('ass-note').value='';
+    document.getElementById('del-ass-w').innerHTML='';
+  }else{
+    sb.from('assenze').select('*').eq('id',id).single().then(({data:a})=>{
+      if(!a)return;
+      document.getElementById('mod-ass-t').textContent='Modifica assenza';
+      document.getElementById('ass-op-sel').value=a.operaio_id||'';
+      document.getElementById('ass-data').value=a.data||'';
+      document.getElementById('ass-giorni').value=a.giorni||'1';
+      document.getElementById('ass-motivo').value=a.motivo||'Malattia';
+      document.getElementById('ass-cant-sel').value=a.cantiere_id||'';
+      document.getElementById('ass-note').value=a.note||'';
+      document.getElementById('del-ass-w').innerHTML=`<button class="btn btn-d" onclick="deleteAssenza('${id}')">🗑️ Elimina</button>`;
+    });
+  }
+  openModal('mod-assenza');
+}
+
+async function salvaAssenza(){
+  const opId=document.getElementById('ass-op-sel').value;
+  const data=document.getElementById('ass-data').value;
+  if(!opId||!data){showToast('Seleziona operaio e data','e');return;}
+  const payload={
+    operaio_id:opId,data,
+    giorni:parseFloat(document.getElementById('ass-giorni').value)||1, // 0.5b → 0.5 automaticamente con parseFloat
+    motivo:document.getElementById('ass-motivo').value,
+    cantiere_id:document.getElementById('ass-cant-sel').value||null,
+    note:document.getElementById('ass-note').value.trim()||null,
+    created_by:USER.id
+  };
+  if(editAssId)await sb.from('assenze').update(payload).eq('id',editAssId);
+  else{const {error}=await sb.from('assenze').insert(payload);if(error){showToast('Errore: '+error.message,'e');return;}}
+  closeModal('mod-assenza');renderAssenze();showToast('Assenza salvata ✓');
+}
+
+async function deleteAssenza(id){
+  if(!confirm('Eliminare questa assenza?'))return;
+  await sb.from('assenze').delete().eq('id',id);
+  closeModal('mod-assenza');renderAssenze();showToast('Eliminata');
+}
+
+// Aggiungi assenze al riepilogo stipendi
+// (richiamato da renderReport → tipo stipendi)
+async function getAssenzePerMese(from,to){
+  const {data}=await sb.from('assenze').select('*, operai(nome,cognome)').gte('data',from).lte('data',to);
+  return data||[];
+}
+
 </script>
 </body>
 </html>
