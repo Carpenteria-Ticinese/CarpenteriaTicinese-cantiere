@@ -457,6 +457,25 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
+  <!-- NAVBAR BOTTOM — dentro #app così segue display:none/block -->
+  <div class="navbar" id="navbar">
+    <div class="nb on" id="nb-home" onclick="navTo('home')">
+      <div class="nb-icon">🏠</div><div class="nb-label">Cantieri</div>
+    </div>
+    <div class="nb" id="nb-giornata" onclick="navTo('nuova')">
+      <div class="nb-icon">➕</div><div class="nb-label">Giornata</div>
+    </div>
+    <div class="nb" id="nb-spese" onclick="navTo('spese')">
+      <div class="nb-icon">🧾</div><div class="nb-label">Spese</div>
+    </div>
+    <div class="nb" id="nb-report" onclick="navTo('report')">
+      <div class="nb-icon">📊</div><div class="nb-label">Report</div>
+    </div>
+    <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none">
+      <div class="nb-icon">⚙️</div><div class="nb-label">Admin</div>
+    </div>
+  </div>
+
 </div><!-- fine #app -->
 
 <!-- MODAL: DETTAGLIO CANTIERE GIORNATA -->
@@ -653,24 +672,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
-<!-- NAVBAR BOTTOM -->
-<div class="navbar" id="navbar">
-  <div class="nb on" id="nb-home" onclick="navTo('home')">
-    <div class="nb-icon">🏠</div><div class="nb-label">Cantieri</div>
-  </div>
-  <div class="nb" id="nb-giornata" onclick="navTo('nuova')">
-    <div class="nb-icon">➕</div><div class="nb-label">Giornata</div>
-  </div>
-  <div class="nb" id="nb-spese" onclick="navTo('spese')">
-    <div class="nb-icon">🧾</div><div class="nb-label">Spese</div>
-  </div>
-  <div class="nb" id="nb-report" onclick="navTo('report')">
-    <div class="nb-icon">📊</div><div class="nb-label">Report</div>
-  </div>
-  <div class="nb admin-only" id="nb-admin" onclick="navTo('admin')">
-    <div class="nb-icon">⚙️</div><div class="nb-label">Admin</div>
-  </div>
-</div>
 
 <script>
 // ════════════════════════════════════════════════════════
@@ -715,7 +716,12 @@ async function afterLogin(){
     const ruolo=PROF?.ruolo||'caposquadra';
     const rb=document.getElementById('rbadge');
     rb.textContent=ruolo;rb.className='rbadge '+(ruolo==='titolare'?'r-tit':'r-cap');
-    if(ruolo==='titolare')document.getElementById('app').classList.add('is-tit');
+    if(ruolo==='titolare'){
+      document.getElementById('app').classList.add('is-tit');
+      // Mostra bottone Admin nella navbar
+      const nbAdmin=document.getElementById('nb-admin');
+      if(nbAdmin)nbAdmin.style.display='flex';
+    }
     document.getElementById('loading').style.display='none';
     document.getElementById('login').classList.remove('on');
     document.getElementById('app').classList.add('on');
