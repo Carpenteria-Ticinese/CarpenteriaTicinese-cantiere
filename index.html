@@ -243,7 +243,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
-      <span class="ubadge" id="ubadge">—</span>
+      <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span>
       <button class="btn-icon" onclick="doLogout()">Esci</button>
     </div>
   </div>
@@ -769,6 +769,26 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
+<!-- MODAL: CAMBIO PASSWORD -->
+<div class="ov" id="mod-pwd">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">🔑 Cambia password</div>
+    <div class="fg"><label class="fl">Nuova password</label>
+      <input type="password" class="fi" id="pwd-new" placeholder="Minimo 6 caratteri" autocomplete="new-password">
+    </div>
+    <div class="fg"><label class="fl">Conferma password</label>
+      <input type="password" class="fi" id="pwd-conf" placeholder="Ripeti la password" autocomplete="new-password">
+    </div>
+    <div id="pwd-err" class="lerr"></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-pwd')">Annulla</button>
+      <button class="btn btn-g" id="btn-pwd" onclick="cambiaPwd()">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════
 // CONFIG
@@ -841,6 +861,29 @@ async function doLogin(){
   await afterLogin();
 }
 async function doLogout(){await sb.auth.signOut();location.reload();}
+
+function openModalPwd(){
+  document.getElementById('pwd-new').value='';
+  document.getElementById('pwd-conf').value='';
+  document.getElementById('pwd-err').textContent='';
+  document.getElementById('pwd-err').classList.remove('on');
+  openModal('mod-pwd');
+}
+
+async function cambiaPwd(){
+  const np=document.getElementById('pwd-new').value;
+  const cp=document.getElementById('pwd-conf').value;
+  const err=document.getElementById('pwd-err');
+  err.classList.remove('on');
+  if(!np||np.length<6){err.textContent='La password deve avere almeno 6 caratteri';err.classList.add('on');return;}
+  if(np!==cp){err.textContent='Le due password non corrispondono';err.classList.add('on');return;}
+  const btn=document.getElementById('btn-pwd');btn.textContent='⏳...';btn.disabled=true;
+  const {error}=await sb.auth.updateUser({password:np});
+  btn.textContent='💾 Salva';btn.disabled=false;
+  if(error){err.textContent='Errore: '+error.message;err.classList.add('on');return;}
+  closeModal('mod-pwd');
+  showToast('Password aggiornata ✓');
+}
 
 // ════════════════════════════════════════════════════════
 // LOAD
