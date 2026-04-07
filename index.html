@@ -462,6 +462,22 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
+  <!-- ══ LAVORAZIONI CANTIERE ══ -->
+  <div class="scr" id="scr-lavori">
+    <div id="lav-content"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- ══ ANAGRAFICA CANTIERE ══ -->
+  <div class="scr" id="scr-anagrafica">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="sec" style="margin:0">Figure del cantiere</div>
+      <button class="btn-icon btn-sm" onclick="openModalFigura(null)">➕ Aggiungi</button>
+    </div>
+    <div id="anagrafica-content"></div>
+    <div class="bsp"></div>
+  </div>
+
   <!-- NAVBAR BOTTOM — dentro #app così segue display:none/block -->
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')">
@@ -677,6 +693,78 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
+<!-- MODAL: FIGURA CANTIERE -->
+<div class="ov" id="mod-figura">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-fig-t">Aggiungi figura</div>
+    <div class="fg"><label class="fl">Ruolo</label>
+      <select class="fs" id="fig-ruolo">
+        <option>Direttore Lavori (DL)</option>
+        <option>Assistente di cantiere</option>
+        <option>Geometra</option>
+        <option>Ispettore</option>
+        <option>Committente</option>
+        <option>Subappaltatore</option>
+        <option>Altro</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="fig-nome"></div>
+      <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="fig-cogn"></div>
+    </div>
+    <div class="fg"><label class="fl">Azienda / Studio</label><input type="text" class="fi" id="fig-azienda" placeholder="es. Studio Arch. Rossi"></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Telefono</label><input type="tel" class="fi" id="fig-tel" placeholder="+41 79 ..."></div>
+      <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="fig-email" placeholder="nome@studio.ch"></div>
+    </div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="fig-note" style="min-height:50px" placeholder="Informazioni aggiuntive..."></textarea></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-figura')">Annulla</button>
+      <button class="btn btn-g" onclick="salvaFigura()">💾 Salva</button>
+    </div>
+    <div id="del-fig-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- MODAL: MODIFICA GIORNATA -->
+<div class="ov" id="mod-modifica-g">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">✏️ Modifica giornata</div>
+    <div id="modifica-g-info" style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--t2)"></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Ora inizio</label><input type="time" class="fi" id="mg-ini" oninput="calcOreModifica()"></div>
+      <div class="fg"><label class="fl">Ora fine</label><input type="time" class="fi" id="mg-fine" oninput="calcOreModifica()"></div>
+    </div>
+    <div class="row2" style="margin-bottom:10px">
+      <div class="fg"><label class="fl">Pausa (min)</label><input type="number" class="fi" id="mg-pausa" min="0" max="120" step="15" oninput="calcOreModifica()"></div>
+      <div class="ore-box" style="padding:10px 14px;margin-bottom:0">
+        <div class="ore-num" style="font-size:24px" id="mg-ore">0.00</div>
+        <div class="ore-lbl">ore nette</div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Meteo</label>
+      <div class="meteo-row">
+        <div class="meteo-b" data-m="☀️ Sole" onclick="setMeteoMod(this)">☀️<span>Sole</span></div>
+        <div class="meteo-b" data-m="⛅ Nuvoloso" onclick="setMeteoMod(this)">⛅<span>Nuvole</span></div>
+        <div class="meteo-b" data-m="🌧️ Pioggia" onclick="setMeteoMod(this)">🌧️<span>Pioggia</span></div>
+        <div class="meteo-b" data-m="❄️ Neve" onclick="setMeteoMod(this)">❄️<span>Neve</span></div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="mg-note" style="min-height:60px"></textarea></div>
+    <div class="fg"><label class="fl">Materiali ricevuti</label><input type="text" class="fi" id="mg-mat" placeholder="es. BSH 200ml, Flumroc 50 lastre..."></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-modifica-g')">Annulla</button>
+      <button class="btn btn-g" id="btn-salva-modifica" onclick="salvaModificaGiornata()">💾 Salva modifiche</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-d" id="btn-elimina-g" onclick="eliminaGiornataModifica()">🗑️ Elimina giornata</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════════════════
@@ -903,9 +991,13 @@ async function renderCantiere(){
         <button class="btn btn-s" onclick="openModalImport()">📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}</button>
         <button class="btn btn-s" onclick="exportCantiere()">⬇️ Esporta dati</button>
       </div>
-      <div class="row2" style="margin-bottom:16px">
+      <div class="row2" style="margin-bottom:8px">
         <button class="btn btn-s" onclick="apriRegiaCantiere()">🔧 Regia ${regia?.length?'('+regia.length+')':''}</button>
         <button class="btn btn-s" onclick="apriSpeseCantiere()">🧾 Spese ${spese?.length?'('+spese.length+')':''}</button>
+      </div>
+      <div class="row2" style="margin-bottom:16px">
+        <button class="btn btn-s" onclick="apriLavoriCantiere()">📐 Lavorazioni</button>
+        <button class="btn btn-s" onclick="apriAnagraficaCantiere()">👥 Figure cantiere</button>
       </div>
 
       ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
@@ -938,12 +1030,15 @@ async function renderCantiere(){
           </div>
           <!-- Operai del giorno -->
           ${operai.map(g=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openCantLog('${g.id}')">
-              <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border)">
+              <div style="cursor:pointer;flex:1" onclick="openCantLog('${g.id}')">
                 <span style="font-size:13px;font-weight:600">👷 ${g.operai?.nome||''} ${g.operai?.cognome||''}</span>
                 ${g.meteo?`<span style="font-size:12px;margin-left:8px">${g.meteo.split(' ')[0]}</span>`:''}
               </div>
-              <div style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h ›</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h</span>
+                <button onclick="apriModificaGiornata('${g.id}')" style="background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--t2);font-size:11px;padding:3px 8px;cursor:pointer">✏️</button>
+              </div>
             </div>`).join('')}
           <!-- Spese del giorno -->
           ${speseGiorno.map(s=>`
@@ -976,6 +1071,338 @@ async function renderCantiere(){
   }catch(err){
     el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore caricamento:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">🔄 Riprova</button></div>`;
   }
+}
+
+function apriLavoriCantiere(){
+  showScr('lavori');
+  document.getElementById('top-title').textContent='Lavorazioni — '+curCant.nome;
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Lavorazioni'}]);
+  renderLavoriCantiere();
+}
+
+function apriAnagraficaCantiere(){
+  showScr('anagrafica');
+  document.getElementById('top-title').textContent='Figure — '+curCant.nome;
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Figure cantiere'}]);
+  renderAnagrafica();
+}
+
+// ════════════════════════════════════════════════════════
+// LAVORAZIONI CANTIERE — vista cronologica per lavorazione
+// ════════════════════════════════════════════════════════
+async function renderLavoriCantiere(){
+  const el=document.getElementById('lav-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+
+  // Carica tutte le voci lavoro del cantiere con dettaglio operaio e giornata
+  const {data:voci,error}=await sb.from('voci_lavoro')
+    .select('*, lavorazioni(nome,um,categoria), giornate!inner(id,data,operaio_id,pausa_minuti,ora_inizio,ora_fine,operai(nome,cognome,ruolo))')
+    .eq('giornate.cantiere_id',curCant.id)
+    .gt('ore',0)
+    .order('giornate.data',{ascending:false});
+
+  if(error||!voci?.length){
+    el.innerHTML='<div class="empty"><div class="empty-i">📐</div><p>Nessuna lavorazione registrata.<br>Inserisci giornate con i lavori svolti.</p></div>';
+    return;
+  }
+
+  // Raggruppa per lavorazione
+  const byLav={};
+  voci.forEach(v=>{
+    const nome=v.lavorazioni?.nome||v.lavorazione_nome||'Voce libera';
+    const um=v.lavorazioni?.um||v.um||'h';
+    const cat=v.lavorazioni?.categoria||'Altro';
+    const key=v.lavorazione_id||('__'+nome);
+    if(!byLav[key])byLav[key]={nome,um,cat,righe:[],totOre:0,totQty:0};
+    const op=v.giornate?.operai;
+    const opNome=op?(op.nome+' '+op.cognome):'—';
+    const isCapo=op?.ruolo==='Caposquadra';
+    byLav[key].righe.push({
+      data:v.giornate?.data,
+      gid:v.giornate?.id,
+      opNome,isCapo,
+      ruolo:op?.ruolo||'',
+      ore:parseFloat(v.ore||0),
+      qty:parseFloat(v.quantita||0)||null,
+    });
+    byLav[key].totOre+=parseFloat(v.ore||0);
+    byLav[key].totQty+=(parseFloat(v.quantita||0)||0);
+  });
+
+  // Ordina per categoria poi nome
+  const lavs=Object.values(byLav).sort((a,b)=>a.cat.localeCompare(b.cat)||a.nome.localeCompare(b.nome));
+
+  // Cerca il caposquadra per giornata
+  // (per ogni giorno, il caposquadra è chi ha ruolo Caposquadra o il primo registrato)
+  const capoPerGiornata={};
+  voci.forEach(v=>{
+    const gid=v.giornate?.id;
+    const op=v.giornate?.operai;
+    if(gid&&op&&(op.ruolo==='Caposquadra'||!capoPerGiornata[gid])){
+      capoPerGiornata[gid]=op.nome+' '+op.cognome;
+    }
+  });
+
+  el.innerHTML=`
+    <div style="font-size:13px;color:var(--t2);margin-bottom:16px">
+      ${lavs.length} lavorazioni · ${voci.length} registrazioni totali
+    </div>
+    ${lavs.map(d=>{
+      const mediaHpu=d.totQty>0?(d.totOre/d.totQty):null;
+      // Raggruppa righe per operaio (per classifica)
+      const byOp={};
+      d.righe.forEach(r=>{
+        if(!byOp[r.opNome])byOp[r.opNome]={nome:r.opNome,ore:0,qty:0,giorni:[]};
+        byOp[r.opNome].ore+=r.ore;
+        byOp[r.opNome].qty+=r.qty||0;
+        byOp[r.opNome].giorni.push(r.data);
+      });
+      const opRank=Object.values(byOp)
+        .map(o=>({...o,mediaHpu:o.qty>0?o.ore/o.qty:null}))
+        .sort((a,b)=>(a.mediaHpu||999)-(b.mediaHpu||999));
+
+      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px">
+
+        <!-- INTESTAZIONE LAVORAZIONE -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-size:15px;font-weight:800">${d.nome}</div>
+            <div style="font-size:11px;color:var(--t3)">${d.cat}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'DM Mono';font-size:18px;color:var(--gold);font-weight:500">${d.totOre.toFixed(2)}h</div>
+            ${d.totQty>0?`<div style="font-size:11px;color:var(--t2)">${d.totQty.toFixed(2)} ${d.um} · ${mediaHpu?mediaHpu.toFixed(4)+' h/'+d.um:''}</div>`:''}
+          </div>
+        </div>
+
+        <!-- CLASSIFICA OPERAI (se più di uno) -->
+        ${opRank.length>1?`
+        <div style="background:var(--s2);border-radius:var(--rsm);padding:10px;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:8px">★ Classifica velocità</div>
+          ${opRank.map((op,i)=>{
+            const maxH=opRank[opRank.length-1].mediaHpu||1;
+            const pct=op.mediaHpu?(op.mediaHpu/maxH*100).toFixed(0):'100';
+            const col=i===0?'var(--green)':i===opRank.length-1?'var(--red)':'var(--blue)';
+            return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+              <div style="font-size:14px;width:20px;text-align:center;flex-shrink:0">${i===0?'★':i+1}</div>
+              <div style="flex:1;font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${op.nome}</div>
+              <div style="width:60px;height:5px;background:var(--s3);border-radius:3px;flex-shrink:0"><div style="width:${pct}%;height:5px;background:${col};border-radius:3px"></div></div>
+              <div style="font-family:'DM Mono';font-size:11px;color:${col};width:75px;text-align:right;flex-shrink:0">${op.mediaHpu?op.mediaHpu.toFixed(4)+' h/'+d.um:op.ore.toFixed(2)+'h'}</div>
+            </div>`;
+          }).join('')}
+        </div>`:''}
+
+        <!-- CRONOLOGIA DETTAGLIATA -->
+        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Cronologia dettagliata</div>
+        <div style="overflow-x:auto">
+          <table class="rtable" style="font-size:12px">
+            <thead><tr>
+              <th>Data</th>
+              <th>Operaio</th>
+              <th>Ruolo</th>
+              <th>Caposquadra</th>
+              <th>Ore</th>
+              ${d.totQty>0?`<th>Quantità</th>`:''}
+            </tr></thead>
+            <tbody>
+              ${d.righe.sort((a,b)=>a.data.localeCompare(b.data)).map(r=>`
+                <tr style="cursor:pointer" onclick="openCantLog('${r.gid}')">
+                  <td style="white-space:nowrap">${fmtDate(r.data)}</td>
+                  <td style="font-weight:${r.isCapo?'700':'400'}">${r.opNome}${r.isCapo?' ★':''}</td>
+                  <td style="color:var(--t2)">${r.ruolo}</td>
+                  <td style="color:var(--t2)">${capoPerGiornata[r.gid]||'—'}</td>
+                  <td class="mono">${r.ore.toFixed(2)}h</td>
+                  ${d.totQty>0?`<td style="color:var(--t2)">${r.qty?r.qty.toFixed(2)+' '+d.um:'—'}</td>`:''}
+                </tr>`).join('')}
+              <tr style="background:var(--s2);font-weight:700">
+                <td colspan="4" style="text-align:right;color:var(--t2);font-size:11px">TOTALE</td>
+                <td class="mono">${d.totOre.toFixed(2)}h</td>
+                ${d.totQty>0?`<td style="font-family:'DM Mono';color:var(--gold)">${d.totQty.toFixed(2)} ${d.um}</td>`:''}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+// ANAGRAFICA CANTIERE — figure esterne
+// ════════════════════════════════════════════════════════
+let editFigId=null;
+
+async function renderAnagrafica(){
+  const el=document.getElementById('anagrafica-content');
+  if(!curCant){el.innerHTML='<div class="empty">Seleziona un cantiere</div>';return;}
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const {data,error}=await sb.from('cantiere_figure').select('*').eq('cantiere_id',curCant.id).order('ruolo');
+  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
+  if(!data?.length){
+    el.innerHTML='<div class="empty"><div class="empty-i">👥</div><p>Nessuna figura aggiunta.<br>Aggiungi DL, assistente, geometra...</p></div>';
+    return;
+  }
+  const ruoloIcon={'Direttore Lavori (DL)':'🏛️','Assistente di cantiere':'👷','Geometra':'📐','Ispettore':'🔍','Committente':'🤝','Subappaltatore':'🔧','Altro':'👤'};
+  el.innerHTML=data.map(f=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalFigura('${f.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font-size:24px">${ruoloIcon[f.ruolo]||'👤'}</span>
+          <div>
+            <div style="font-size:15px;font-weight:800">${f.nome} ${f.cognome||''}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px">${f.ruolo}</div>
+            ${f.azienda?`<div style="font-size:12px;color:var(--t2)">${f.azienda}</div>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${f.telefono?`<div style="font-size:13px;color:var(--blue)">${f.telefono}</div>`:''}
+          ${f.email?`<div style="font-size:12px;color:var(--t2)">${f.email}</div>`:''}
+        </div>
+      </div>
+      ${f.note?`<div style="font-size:12px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${f.note}</div>`:''}
+    </div>`).join('');
+}
+
+function openModalFigura(id){
+  editFigId=id;
+  if(!id){
+    document.getElementById('mod-fig-t').textContent='Aggiungi figura';
+    document.getElementById('fig-nome').value='';
+    document.getElementById('fig-cogn').value='';
+    document.getElementById('fig-azienda').value='';
+    document.getElementById('fig-tel').value='';
+    document.getElementById('fig-email').value='';
+    document.getElementById('fig-note').value='';
+    document.getElementById('del-fig-w').innerHTML='';
+  }else{
+    sb.from('cantiere_figure').select('*').eq('id',id).single().then(({data:f})=>{
+      if(!f)return;
+      document.getElementById('mod-fig-t').textContent='Modifica figura';
+      document.getElementById('fig-ruolo').value=f.ruolo||'Altro';
+      document.getElementById('fig-nome').value=f.nome||'';
+      document.getElementById('fig-cogn').value=f.cognome||'';
+      document.getElementById('fig-azienda').value=f.azienda||'';
+      document.getElementById('fig-tel').value=f.telefono||'';
+      document.getElementById('fig-email').value=f.email||'';
+      document.getElementById('fig-note').value=f.note||'';
+      document.getElementById('del-fig-w').innerHTML=`<button class="btn btn-d" onclick="deleteFigura('${id}')">🗑️ Elimina</button>`;
+    });
+  }
+  openModal('mod-figura');
+}
+
+async function salvaFigura(){
+  const nome=document.getElementById('fig-nome').value.trim();
+  if(!nome){showToast('Inserisci il nome','e');return;}
+  if(!curCant){showToast('Nessun cantiere selezionato','e');return;}
+  const payload={
+    cantiere_id:curCant.id,
+    ruolo:document.getElementById('fig-ruolo').value,
+    nome,cognome:document.getElementById('fig-cogn').value.trim()||null,
+    azienda:document.getElementById('fig-azienda').value.trim()||null,
+    telefono:document.getElementById('fig-tel').value.trim()||null,
+    email:document.getElementById('fig-email').value.trim()||null,
+    note:document.getElementById('fig-note').value.trim()||null,
+    created_by:USER.id
+  };
+  if(editFigId)await sb.from('cantiere_figure').update(payload).eq('id',editFigId);
+  else{const {error}=await sb.from('cantiere_figure').insert(payload);if(error){showToast('Errore: '+error.message,'e');return;}}
+  closeModal('mod-figura');renderAnagrafica();showToast('Salvato ✓');
+}
+
+async function deleteFigura(id){
+  if(!confirm('Eliminare questa figura?'))return;
+  await sb.from('cantiere_figure').delete().eq('id',id);
+  closeModal('mod-figura');renderAnagrafica();showToast('Eliminata');
+}
+
+// ════════════════════════════════════════════════════════
+// MODIFICA GIORNATA ESISTENTE
+// ════════════════════════════════════════════════════════
+let modificaGid=null;
+
+async function apriModificaGiornata(gid){
+  modificaGid=gid;
+  const {data:g}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').eq('id',gid).single();
+  if(!g)return;
+  const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
+
+  document.getElementById('modifica-g-info').innerHTML=
+    `<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${g.cantieri?.nome||''}`;
+
+  document.getElementById('mg-ini').value=g.ora_inizio||'07:00';
+  document.getElementById('mg-fine').value=g.ora_fine||'17:00';
+  document.getElementById('mg-pausa').value=g.pausa_minuti||60;
+  document.getElementById('mg-note').value=g.note||'';
+  document.getElementById('mg-mat').value=(mats||[])[0]?.descrizione||'';
+
+  // Meteo
+  document.querySelectorAll('.meteo-b[data-m]').forEach(b=>{
+    const isThis=b.dataset.m===g.meteo;
+    b.classList.toggle('on',isThis);
+  });
+
+  calcOreModifica();
+  openModal('mod-modifica-g');
+}
+
+function calcOreModifica(){
+  const ini=document.getElementById('mg-ini').value;
+  const fine=document.getElementById('mg-fine').value;
+  const pausa=parseInt(document.getElementById('mg-pausa').value)||60;
+  if(!ini||!fine)return;
+  const [h1,m1]=ini.split(':').map(Number),[h2,m2]=fine.split(':').map(Number);
+  const ore=Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60);
+  document.getElementById('mg-ore').textContent=ore.toFixed(2);
+}
+
+function setMeteoMod(el){
+  document.querySelectorAll('#mod-modifica-g .meteo-b').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function salvaModificaGiornata(){
+  if(!modificaGid)return;
+  const btn=document.getElementById('btn-salva-modifica');
+  btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const meteoEl=document.querySelector('#mod-modifica-g .meteo-b.on');
+    const ini=document.getElementById('mg-ini').value;
+    const fine=document.getElementById('mg-fine').value;
+    const pausa=parseInt(document.getElementById('mg-pausa').value)||60;
+    const note=document.getElementById('mg-note').value.trim();
+    const mat=document.getElementById('mg-mat').value.trim();
+
+    // Aggiorna giornata
+    const {data:g,error}=await sb.from('giornate')
+      .update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,
+        note:note||null,meteo:meteoEl?meteoEl.dataset.m:null})
+      .eq('id',modificaGid).select().single();
+    if(error)throw error;
+
+    // Aggiorna materiali
+    if(mat){
+      await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);
+      await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});
+    }
+
+    closeModal('mod-modifica-g');
+    showToast('Giornata aggiornata ✓');
+    renderCantiere();
+  }catch(err){
+    showToast('Errore: '+err.message,'e');
+  }finally{
+    btn.textContent='💾 Salva modifiche';btn.disabled=false;
+  }
+}
+
+async function eliminaGiornataModifica(){
+  if(!modificaGid)return;
+  if(!confirm('Eliminare questa giornata e tutti i lavori registrati?'))return;
+  await sb.from('giornate').delete().eq('id',modificaGid);
+  closeModal('mod-modifica-g');
+  showToast('Giornata eliminata');
+  renderCantiere();
 }
 
 function apriRegiaCantiere(){
