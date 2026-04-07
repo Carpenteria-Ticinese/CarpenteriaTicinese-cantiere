@@ -198,7 +198,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .admin-only{display:none}
 .is-tit .admin-only{display:block}
 
-/* ── IMPORT EXCEL ── */
+/* ── PLACEHOLDER VISIBILI SU SFONDO SCURO ── */
+::placeholder{color:#6b6560;opacity:1}
+::-webkit-input-placeholder{color:#6b6560;opacity:1}
+::-moz-placeholder{color:#6b6560;opacity:1}
+.vnum::placeholder{color:#5a554f;opacity:1}
+
 .import-box{border:2px dashed rgba(200,168,75,.4);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gdim)}
 .import-box:active{border-color:var(--gold)}
 .import-box p{font-size:13px;color:var(--t2);margin-top:8px;line-height:1.5}
@@ -835,80 +840,139 @@ async function renderCantiere(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
 
   try{
-  const {data:giornate,error:ge}=await sb.from('giornate')
-    .select('*, operai(nome,cognome)')
-    .eq('cantiere_id',curCant.id)
-    .order('data',{ascending:false});
-  if(ge)throw ge;
+    // Carica tutto in parallelo
+    const [
+      {data:giornate,error:ge},
+      {data:spese},
+      {data:regia},
+      {data:materialiList}
+    ] = await Promise.all([
+      sb.from('giornate').select('*, operai(nome,cognome)').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
+      sb.from('spese').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
+      sb.from('regia').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
+      sb.from('materiali').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}).limit(20),
+    ]);
+    if(ge)throw ge;
 
-  const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
-  // BUG8 FIX: tariffa configurabile
-  const tariffa=IMPOSTAZIONI.tariffa_ora||78;
-  const totCosto=totOre*tariffa;
-  const byOp={};
-  (giornate||[]).forEach(g=>{
-    const k=g.operaio_id;
-    if(!byOp[k])byOp[k]={op:g.operai,ore:0};
-    byOp[k].ore+=parseFloat(g.ore_totali||0);
-  });
+    const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
+    const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+    const totCosto=totOre*tariffa;
+    const totSpeseDaPagare=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
+    const totRegiaDaFatt=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
 
-  // Controlla se ha preventivo caricato — con try/catch separato
-  let prev=null;
-  try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single();prev=r.data;}catch(e){prev=null;}
+    const byOp={};
+    (giornate||[]).forEach(g=>{
+      if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,ore:0};
+      byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);
+    });
 
-  el.innerHTML=`
-    <div class="sg3" style="margin-bottom:16px">
-      <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
-      <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
-      <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
-    </div>
+    let prev=null;
+    try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single();prev=r.data;}catch(e){prev=null;}
 
-    <!-- AZIONI PRINCIPALI -->
-    <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">
-      ➕ Nuova giornata
-    </button>
-    <div class="row2" style="margin-bottom:10px">
-      <button class="btn btn-s" onclick="openModalImport()">
-        📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}
-      </button>
-      <button class="btn btn-s" onclick="exportCantiere()">
-        ⬇️ Esporta dati
-      </button>
-    </div>
-    <div class="row2" style="margin-bottom:16px">
-      <button class="btn btn-s" onclick="apriRegiaCantiere()">
-        🔧 Lavori a regia
-      </button>
-      <button class="btn btn-s" onclick="apriSpeseCantiere()">
-        🧾 Spese & Fatture
-      </button>
-    </div>
+    // Raggruppa giornate per data per il riepilogo
+    const byData={};
+    (giornate||[]).forEach(g=>{
+      if(!byData[g.data])byData[g.data]={data:g.data,operai:[],totOre:0};
+      byData[g.data].operai.push(g);
+      byData[g.data].totOre+=parseFloat(g.ore_totali||0);
+    });
+    const giornatePerData=Object.values(byData).sort((a,b)=>b.data.localeCompare(a.data));
 
-    ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:16px">✅ Preventivo caricato — ${prev.n_voci} voci disponibili · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
+    const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
+    const tipoRegiaIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
 
-    <!-- ORE PER OPERAIO -->
-    ${Object.values(byOp).length?`
-    <div class="sec">Ore per operaio</div>
-    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px">
-      <table class="rtable"><thead><tr><th>Operaio</th><th>Ore</th></tr></thead>
-      <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore})=>
-        `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td></tr>`
-      ).join('')}</tbody></table>
-    </div>`:''}
+    el.innerHTML=`
+      <!-- STATISTICHE RIEPILOGO -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
+        <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
+        <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
+      </div>
 
-    <!-- ULTIME GIORNATE -->
-    <div class="sec">Ultime giornate</div>
-    ${(giornate||[]).slice(0,10).map(g=>`
-      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="openCantLog('${g.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:700">${g.operai?.nome||''} ${g.operai?.cognome||''}</div>
-            <div style="font-size:12px;color:var(--t2)">${fmtDate(g.data)} ${g.meteo?'· '+g.meteo.split(' ')[0]:''}</div>
+      <!-- AVVISI -->
+      ${totSpeseDaPagare>0?`<div style="background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:8px;cursor:pointer" onclick="apriSpeseCantiere()">
+        🧾 Spese da pagare: <strong>${totSpeseDaPagare.toFixed(2)} CHF</strong> → tocca per vedere
+      </div>`:''}
+      ${totRegiaDaFatt>0?`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--gold);margin-bottom:8px;cursor:pointer" onclick="apriRegiaCantiere()">
+        🔧 Regia da fatturare: <strong>${totRegiaDaFatt.toFixed(2)} CHF</strong> → tocca per vedere
+      </div>`:''}
+
+      <!-- AZIONI -->
+      <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">➕ Nuova giornata</button>
+      <div class="row2" style="margin-bottom:8px">
+        <button class="btn btn-s" onclick="openModalImport()">📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}</button>
+        <button class="btn btn-s" onclick="exportCantiere()">⬇️ Esporta dati</button>
+      </div>
+      <div class="row2" style="margin-bottom:16px">
+        <button class="btn btn-s" onclick="apriRegiaCantiere()">🔧 Regia ${regia?.length?'('+regia.length+')':''}</button>
+        <button class="btn btn-s" onclick="apriSpeseCantiere()">🧾 Spese ${spese?.length?'('+spese.length+')':''}</button>
+      </div>
+
+      ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
+
+      <!-- ORE PER OPERAIO -->
+      ${Object.values(byOp).length?`
+      <div class="sec">Ore per operaio — totale cantiere</div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
+        <table class="rtable"><thead><tr><th>Operaio</th><th>Ore totali</th><th>CHF est.</th></tr></thead>
+        <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore})=>
+          `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td><td style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${(ore*tariffa).toFixed(0)}</td></tr>`
+        ).join('')}</tbody></table>
+      </div>`:''}
+
+      <!-- CRONOLOGIA CANTIERE — tutto insieme per data -->
+      <div class="sec">Cronologia cantiere — tutte le attività</div>
+      ${giornatePerData.slice(0,15).map(({data,operai,totOre:tO})=>{
+        // Spese di quella data
+        const speseGiorno=(spese||[]).filter(s=>s.data===data);
+        // Regia di quella data
+        const regiaGiorno=(regia||[]).filter(r=>r.data===data);
+        // Materiali di quella data
+        const matGiorno=(materialiList||[]).filter(m=>m.data===data);
+
+        return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px">
+          <!-- Header data -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:14px;font-weight:800;color:var(--gold)">${fmtDate(data)}</div>
+            <div style="font-family:'DM Mono';font-size:14px;color:var(--text)">${tO.toFixed(2)}h</div>
           </div>
-          <div class="mono" style="font-size:18px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
-        </div>
-      </div>`).join('')}
-  `;
+          <!-- Operai del giorno -->
+          ${operai.map(g=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openCantLog('${g.id}')">
+              <div>
+                <span style="font-size:13px;font-weight:600">👷 ${g.operai?.nome||''} ${g.operai?.cognome||''}</span>
+                ${g.meteo?`<span style="font-size:12px;margin-left:8px">${g.meteo.split(' ')[0]}</span>`:''}
+              </div>
+              <div style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h ›</div>
+            </div>`).join('')}
+          <!-- Spese del giorno -->
+          ${speseGiorno.map(s=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openModalSpesa('${s.id}')">
+              <div>
+                <span style="font-size:13px">${tipoDocIcon[s.tipo_doc]||'📋'} ${s.descrizione||s.tipo_spesa}</span>
+                ${s.stato_pag==='Da pagare'?`<span style="font-size:10px;color:var(--red);font-weight:700;margin-left:6px">DA PAGARE</span>`:''}
+              </div>
+              <div style="font-family:'DM Mono';font-size:12px;color:${s.stato_pag==='Pagato'?'var(--t2)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div>
+            </div>`).join('')}
+          <!-- Regia del giorno -->
+          ${regiaGiorno.map(r=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openModalRegia('${r.id}')">
+              <div>
+                <span style="font-size:13px">${tipoRegiaIcon[r.tipo]||'🔧'} ${r.descrizione.substring(0,40)}</span>
+                ${!r.fatturato?`<span style="font-size:10px;color:var(--gold);font-weight:700;margin-left:6px">REGIA</span>`:`<span style="font-size:10px;color:var(--green);font-weight:700;margin-left:6px">FATTURATO</span>`}
+              </div>
+              <div style="font-family:'DM Mono';font-size:12px;color:var(--gold)">${(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2)} CHF</div>
+            </div>`).join('')}
+          <!-- Materiali del giorno -->
+          ${matGiorno.map(m=>`
+            <div style="padding:5px 0;border-top:1px solid var(--border)">
+              <span style="font-size:12px;color:var(--t2)">📦 ${m.descrizione}</span>
+            </div>`).join('')}
+        </div>`;
+      }).join('')}
+      ${giornatePerData.length>15?`<div style="text-align:center;font-size:13px;color:var(--t3);padding:10px">... e altre ${giornatePerData.length-15} giornate — esporta Excel per vedere tutto</div>`:''}
+      ${!giornatePerData.length?`<div class="empty"><div class="empty-i">📋</div><p>Nessuna attività registrata.<br>Tocca ➕ per iniziare.</p></div>`:''}
+    `;
   }catch(err){
     el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore caricamento:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">🔄 Riprova</button></div>`;
   }
