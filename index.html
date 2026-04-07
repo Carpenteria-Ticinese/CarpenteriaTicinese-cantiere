@@ -464,6 +464,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
   <!-- ══ LAVORAZIONI CANTIERE ══ -->
   <div class="scr" id="scr-lavori">
+    <div style="margin-bottom:12px">
+      <input type="text" class="fi" id="lav-search" placeholder="🔍 Cerca lavorazione..." oninput="renderLavoriCantiere()" style="font-size:14px">
+    </div>
     <div id="lav-content"></div>
     <div class="bsp"></div>
   </div>
@@ -1129,8 +1132,11 @@ async function renderLavoriCantiere(){
     byLav[key].totQty+=(parseFloat(v.quantita||0)||0);
   });
 
-  // Ordina per categoria poi nome
-  const lavs=Object.values(byLav).sort((a,b)=>a.cat.localeCompare(b.cat)||a.nome.localeCompare(b.nome));
+  // Ordina per categoria poi nome, con filtro ricerca
+  const searchTxt=(document.getElementById('lav-search')?.value||'').toLowerCase();
+  const lavs=Object.values(byLav)
+    .filter(d=>!searchTxt||d.nome.toLowerCase().includes(searchTxt)||d.cat.toLowerCase().includes(searchTxt))
+    .sort((a,b)=>a.cat.localeCompare(b.cat)||a.nome.localeCompare(b.nome));
 
   // Cerca il caposquadra per giornata
   // (per ogni giorno, il caposquadra è chi ha ruolo Caposquadra o il primo registrato)
@@ -2241,6 +2247,17 @@ function openModalSpesa(id){
       if(s.metodo_pag)document.getElementById('sp-metodo').value=s.metodo_pag;
       document.getElementById('sp-note').value=s.note||'';
       document.getElementById('del-sp-w').innerHTML=`<button class="btn btn-d" onclick="deleteSpesa('${id}')">🗑️ Elimina</button>`;
+      // Mostra foto esistente se presente
+      if(s.foto_path){
+        sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,3600).then(({data:u})=>{
+          if(u?.signedUrl){
+            const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(s.foto_path);
+            document.getElementById('sp-foto-prv').innerHTML=isImg
+              ?`<img src="${u.signedUrl}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:220px;object-fit:contain;cursor:pointer" onclick="window.open('${u.signedUrl}','_blank')">`
+              :`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-top:8px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">📄</span><a href="${u.signedUrl}" target="_blank" style="color:var(--blue);font-size:13px">Apri documento allegato</a></div>`;
+          }
+        });
+      }
     });
   }
   openModal('mod-spesa');
