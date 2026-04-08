@@ -498,6 +498,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
+  <!-- ══ FOTO CANTIERE ══ -->
+  <div class="scr" id="scr-foto">
+    <div id="foto-cant-content"></div>
+    <div class="bsp"></div>
+  </div>
+
   <!-- NAVBAR BOTTOM — dentro #app così segue display:none/block -->
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')">
@@ -1102,9 +1108,12 @@ async function renderCantiere(){
         <button class="btn btn-s" onclick="apriRegiaCantiere()">🔧 Regia ${regia?.length?'('+regia.length+')':''}</button>
         <button class="btn btn-s" onclick="apriSpeseCantiere()">🧾 Spese ${spese?.length?'('+spese.length+')':''}</button>
       </div>
-      <div class="row2" style="margin-bottom:16px">
+      <div class="row2" style="margin-bottom:8px">
         <button class="btn btn-s" onclick="apriLavoriCantiere()">📐 Lavorazioni</button>
         <button class="btn btn-s" onclick="apriAnagraficaCantiere()">👥 Figure cantiere</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <button class="btn btn-s" onclick="apriFotoCantiere()">📷 Foto cantiere</button>
       </div>
 
       ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
@@ -1185,6 +1194,72 @@ function apriLavoriCantiere(){
   document.getElementById('top-title').textContent='Lavorazioni — '+curCant.nome;
   setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Lavorazioni'}]);
   renderLavoriCantiere();
+}
+
+function apriFotoCantiere(){
+  if(!curCant)return;
+  showScr('foto');
+  document.getElementById('top-title').textContent='Foto — '+curCant.nome;
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Foto'}]);
+  renderFotoCantiere();
+}
+
+async function renderFotoCantiere(){
+  const el=document.getElementById('foto-cant-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    const {data:foto,error}=await sb.from('foto')
+      .select('*, operai(nome,cognome)')
+      .eq('cantiere_id',curCant.id)
+      .order('data',{ascending:false})
+      .order('created_at',{ascending:false});
+    if(error)throw error;
+    if(!foto||!foto.length){
+      el.innerHTML='<div class="empty"><div class="empty-i">📷</div><p>Nessuna foto caricata per questo cantiere.<br>Aggiungile dalla modifica giornata ✏️</p></div>';
+      return;
+    }
+    // Raggruppa per data
+    const byData={};
+    foto.forEach(f=>{
+      if(!byData[f.data])byData[f.data]=[];
+      byData[f.data].push(f);
+    });
+    let html='';
+    for(const [data,items] of Object.entries(byData)){
+      html+=`<div class="sec">${fmtDate(data)} <span style="color:var(--t2);font-weight:400;font-size:12px">(${items.length} foto)</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px" id="foto-grid-${data.replace(/-/g,'')}">
+          <div style="grid-column:span 3;font-size:11px;color:var(--t2)">⏳ Caricamento...</div>
+        </div>`;
+    }
+    el.innerHTML=html;
+    // Carica URL firmate per ogni gruppo
+    for(const [data,items] of Object.entries(byData)){
+      const grid=document.getElementById(`foto-grid-${data.replace(/-/g,'')}`);
+      if(!grid)continue;
+      grid.innerHTML='';
+      for(const f of items){
+        try{
+          const {data:u,error:ue}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,7200);
+          const chi=f.operai?`${f.operai.nome} ${f.operai.cognome}`:'—';
+          if(ue||!u?.signedUrl){
+            grid.innerHTML+=`<div style="background:var(--s2);border-radius:var(--rsm);aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--red)">⚠️</div>`;
+          }else{
+            grid.innerHTML+=`<div style="position:relative">
+              <img src="${u.signedUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm);cursor:pointer;display:block"
+                onclick="window.open('${u.signedUrl}','_blank')"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div style="display:none;background:var(--s2);border-radius:var(--rsm);aspect-ratio:1;align-items:center;justify-content:center;font-size:11px;color:var(--red)">⚠️</div>
+              <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${chi}</div>
+            </div>`;
+          }
+        }catch(e){
+          grid.innerHTML+=`<div style="background:var(--s2);border-radius:var(--rsm);aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--red)">⚠️</div>`;
+        }
+      }
+    }
+  }catch(e){
+    el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;
+  }
 }
 
 function apriAnagraficaCantiere(){
