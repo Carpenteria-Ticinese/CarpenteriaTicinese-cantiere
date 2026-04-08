@@ -808,6 +808,16 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     </div>
     <div class="fg"><label class="fl">Note</label><textarea class="ft" id="mg-note" style="min-height:60px"></textarea></div>
     <div class="fg"><label class="fl">Materiali ricevuti</label><input type="text" class="fi" id="mg-mat" placeholder="es. BSH 200ml, Flumroc 50 lastre..."></div>
+    <div class="fg">
+      <label class="fl">📷 Foto giornata</label>
+      <div id="mg-foto-esistenti" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px"></div>
+      <div class="foto-drop" onclick="document.getElementById('mg-foto-inp').click()" style="padding:12px">
+        <div style="font-size:22px">📷</div>
+        <p style="font-size:12px;color:var(--t2);margin-top:4px">Scatta o scegli dalla galleria</p>
+      </div>
+      <input type="file" id="mg-foto-inp" accept="image/*,video/*" multiple style="display:none" onchange="aggiungiMgFoto(event)">
+      <div id="mg-foto-nuove" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px"></div>
+    </div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-modifica-g')">Annulla</button>
@@ -1420,12 +1430,18 @@ async function deleteFigura(id){
 // MODIFICA GIORNATA ESISTENTE
 // ════════════════════════════════════════════════════════
 let modificaGid=null;
+let mgFotoFiles=[]; // nuove foto da caricare
 
 async function apriModificaGiornata(gid){
   modificaGid=gid;
+  mgFotoFiles=[];
+  document.getElementById('mg-foto-nuove').innerHTML='';
+  document.getElementById('mg-foto-esistenti').innerHTML='<div style="font-size:11px;color:var(--t2);grid-column:span 3">⏳ Caricamento...</div>';
+
   const {data:g}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').eq('id',gid).single();
   if(!g)return;
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
+  const {data:fotoEsist}=await sb.from('foto').select('*, operai(nome,cognome)').eq('giornata_id',gid);
 
   document.getElementById('modifica-g-info').innerHTML=
     `<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${g.cantieri?.nome||''}`;
@@ -1444,6 +1460,45 @@ async function apriModificaGiornata(gid){
 
   calcOreModifica();
   openModal('mod-modifica-g');
+
+  // Carica foto esistenti
+  const grid=document.getElementById('mg-foto-esistenti');
+  if(!(fotoEsist||[]).length){
+    grid.innerHTML='<div style="font-size:11px;color:var(--t2);grid-column:span 3">Nessuna foto caricata</div>';
+  }else{
+    grid.innerHTML='';
+    for(const f of fotoEsist){
+      try{
+        const {data:u}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,7200);
+        const chi=f.operai?`${f.operai.nome} ${f.operai.cognome}`:'—';
+        if(u?.signedUrl){
+          grid.innerHTML+=`<div style="position:relative">
+            <img src="${u.signedUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm);cursor:pointer" onclick="window.open('${u.signedUrl}','_blank')">
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">${chi}</div>
+          </div>`;
+        }
+      }catch(e){}
+    }
+  }
+}
+
+function aggiungiMgFoto(e){
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  mgFotoFiles=[...mgFotoFiles,...files];
+  const grid=document.getElementById('mg-foto-nuove');
+  files.forEach(f=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const div=document.createElement('div');
+      div.style.cssText='position:relative';
+      div.innerHTML=`<img src="${ev.target.result}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm)">
+        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">🆕 ${f.name.substring(0,15)}</div>`;
+      grid.appendChild(div);
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value='';
 }
 
 function calcOreModifica(){
@@ -1484,6 +1539,31 @@ async function salvaModificaGiornata(){
     if(mat){
       await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);
       await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});
+    }
+
+    // Upload nuove foto
+    if(mgFotoFiles.length){
+      const cant=CANTIERI.find(c=>c.id===g.cantiere_id);
+      const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
+      for(const file of mgFotoFiles){
+        try{
+          const ext=file.name.split('.').pop().toLowerCase();
+          const path=`${cn}/${g.data}/${Date.now()}_${Math.random().toString(36).slice(2,6)}.${ext}`;
+          const {error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
+          if(!ue){
+            await sb.from('foto').insert({
+              cantiere_id:g.cantiere_id,
+              giornata_id:modificaGid,
+              data:g.data,
+              storage_path:path,
+              nome_file:file.name,
+              operaio_id:PROF?.id||null,
+              created_by:USER.id
+            });
+          }
+        }catch(fe){console.warn('Errore upload foto:',fe);}
+      }
+      mgFotoFiles=[];
     }
 
     closeModal('mod-modifica-g');
