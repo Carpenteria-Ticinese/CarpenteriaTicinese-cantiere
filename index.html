@@ -2192,7 +2192,7 @@ async function renderSituazione(){
   elSp.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const {data:spese,error:errSp}=await sb.from('spese')
-      .select('*, cantieri(nome)')
+      .select('*, cantieri(nome), operai(nome,cognome)')
       .eq('stato_pag','Da pagare')
       .order('data',{ascending:false});
     if(errSp)throw errSp;
@@ -2223,7 +2223,7 @@ async function renderSituazione(){
           html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)">
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600">${tipoIcon[s.tipo_doc]||'📄'} ${s.descrizione}</div>
-              <div style="font-size:11px;color:var(--t2)">${fmtDate(s.data)} · ${s.tipo_spesa||''}${s.note?` · ${s.note}`:''}</div>
+              <div style="font-size:11px;color:var(--t2)">${fmtDate(s.data)} · ${s.tipo_spesa||''}${s.operai?` · ${s.operai.nome} ${s.operai.cognome}`:''}${s.note?` · ${s.note}`:''}</div>
             </div>
             <div style="text-align:right;flex-shrink:0;margin-left:10px">
               <div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${s.importo?parseFloat(s.importo).toFixed(2)+' '+(s.valuta||'CHF'):'—'}</div>
