@@ -667,7 +667,21 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
-<!-- MODAL: NUOVA REGIA -->
+<!-- MODAL: VISUALIZZA REGIA (solo lettura) -->
+<div class="ov" id="mod-regia-view">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="rgv-titolo">Dettaglio regia</div>
+    <div id="rgv-content"></div>
+    <hr style="margin:14px 0">
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-regia-view')">Chiudi</button>
+      <button class="btn btn-g" id="rgv-btn-modifica">✏️ Modifica</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUOVA/MODIFICA REGIA -->
 <div class="ov" id="mod-regia">
   <div class="mod">
     <div class="mod-h"></div>
@@ -1125,7 +1139,7 @@ async function renderCantiere(){
             </div>`).join('')}
           <!-- Spese del giorno -->
           ${speseGiorno.map(s=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openModalSpesa('${s.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
               <div>
                 <span style="font-size:13px">${tipoDocIcon[s.tipo_doc]||'📋'} ${s.descrizione||s.tipo_spesa}</span>
                 ${s.stato_pag==='Da pagare'?`<span style="font-size:10px;color:var(--red);font-weight:700;margin-left:6px">DA PAGARE</span>`:''}
@@ -1134,7 +1148,7 @@ async function renderCantiere(){
             </div>`).join('')}
           <!-- Regia del giorno -->
           ${regiaGiorno.map(r=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="openModalRegia('${r.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--border);cursor:pointer" onclick="visualizzaRegia('${r.id}')">
               <div>
                 <span style="font-size:13px">${tipoRegiaIcon[r.tipo]||'🔧'} ${r.descrizione.substring(0,40)}</span>
                 ${!r.fatturato?`<span style="font-size:10px;color:var(--gold);font-weight:700;margin-left:6px">REGIA</span>`:`<span style="font-size:10px;color:var(--green);font-weight:700;margin-left:6px">FATTURATO</span>`}
@@ -2513,6 +2527,38 @@ async function visualizzaSpesa(id){
   }
 }
 
+async function visualizzaRegia(id){
+  const {data:r,error}=await sb.from('regia').select('*, cantieri(nome), operai(nome,cognome)').eq('id',id).single();
+  if(error||!r){showToast('Errore nel caricamento','e');return;}
+  const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
+  const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));
+  const costoR=(parseFloat(r.quantita||0)*parseFloat(r.costo_unitario||0));
+  const margine=totR-costoR;
+  document.getElementById('rgv-titolo').textContent=`${tipoIcon[r.tipo]||'🔧'} ${r.descrizione}`;
+  document.getElementById('rgv-content').innerHTML=`
+    <div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${r.cantieri?.nome||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(r.data)}</div></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo</div><div>${r.tipo||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Operaio</div><div>${r.operai?r.operai.nome+' '+r.operai.cognome:'—'}</div></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Quantità</div><div style="font-family:'DM Mono'">${parseFloat(r.quantita||0).toFixed(2)} ${r.um}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Stato</div><div style="font-weight:700;color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'✓ Fatturato':'⏳ Da fatturare'}</div></div>
+      </div>
+      <div class="row2">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Prezzo cliente</div><div style="font-family:'DM Mono';font-size:20px;color:var(--gold);font-weight:700">${totR.toFixed(2)} CHF</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Costo CT</div><div style="font-family:'DM Mono';font-size:14px;color:var(--t2)">${costoR.toFixed(2)} CHF</div><div style="font-size:10px;color:${margine>=0?'var(--green)':'var(--red)'}">margine: ${margine.toFixed(2)} CHF</div></div>
+      </div>
+    </div>
+    ${r.note?`<div style="font-size:13px;color:var(--t2)">📝 ${r.note}</div>`:''}`;
+  document.getElementById('rgv-btn-modifica').onclick=()=>{closeModal('mod-regia-view');openModalRegia(id);};
+  openModal('mod-regia-view');
+}
+
 function openModalSpesa(id){
   editSpId=id; spFotoFile=null;
   document.getElementById('sp-foto-prv').innerHTML='';
@@ -2654,7 +2700,7 @@ async function renderRegia(){
   const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
   el.innerHTML=data.map(r=>{
     const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));
-    return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalRegia('${r.id}')">
+    return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaRegia('${r.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0">
           <span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span>
