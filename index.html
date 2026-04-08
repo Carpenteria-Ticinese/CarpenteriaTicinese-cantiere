@@ -599,6 +599,21 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div class="toast" id="toast"></div>
 
 <!-- MODAL: NUOVA SPESA -->
+<!-- MODAL: VISUALIZZA SPESA (solo lettura) -->
+<div class="ov" id="mod-spesa-view">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="spv-titolo">Dettaglio spesa</div>
+    <div id="spv-content"></div>
+    <hr style="margin:14px 0">
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-spesa-view')">Chiudi</button>
+      <button class="btn btn-g" id="spv-btn-modifica" onclick="">✏️ Modifica</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUOVA/MODIFICA SPESA -->
 <div class="ov" id="mod-spesa">
   <div class="mod">
     <div class="mod-h"></div>
@@ -2399,7 +2414,7 @@ async function renderSpese(){
   el.innerHTML=data.map(s=>{
     const icon=tipoDocIcon[s.tipo_doc]||'📋';
     const isPag=s.stato_pag==='Pagato';
-    return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalSpesa('${s.id}')">
+    return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <div style="display:flex;gap:10px;align-items:center">
           <span style="font-size:24px">${icon}</span>
@@ -2418,6 +2433,62 @@ async function renderSpese(){
       ${s.note?`<div style="font-size:12px;color:var(--t2);margin-top:4px">📝 ${s.note}</div>`:''}
     </div>`;
   }).join('');
+}
+
+async function visualizzaSpesa(id){
+  const {data:s,error}=await sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)').eq('id',id).single();
+  if(error||!s){showToast('Errore nel caricamento','e');return;}
+  const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
+  const icon=tipoDocIcon[s.tipo_doc]||'📋';
+  const isPag=s.stato_pag==='Pagato';
+  let fotoHtml='<div style="color:var(--t2);font-size:13px;margin-top:8px">📷 Nessuna foto allegata</div>';
+  if(s.foto_path){
+    fotoHtml='<div style="margin-top:8px"><div class="spin" style="margin:0 auto"></div></div>';
+  }
+  document.getElementById('spv-titolo').textContent=`${icon} ${s.descrizione||s.tipo_spesa}`;
+  document.getElementById('spv-content').innerHTML=`
+    <div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${s.cantieri?.nome||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(s.data)}</div></div>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo documento</div><div>${s.tipo_doc||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo spesa</div><div>${s.tipo_spesa||'—'}</div></div>
+      </div>
+      ${s.operai?`<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Operaio</div><div>${s.operai.nome} ${s.operai.cognome}</div></div>`:''}
+      <div class="row2">
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Importo</div><div style="font-family:'DM Mono';font-size:22px;color:${isPag?'var(--green)':'var(--red)'};font-weight:700">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Stato</div><div style="font-weight:700;color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}${s.metodo_pag?' · '+s.metodo_pag:''}</div></div>
+      </div>
+    </div>
+    ${s.note?`<div style="font-size:13px;color:var(--t2);margin-bottom:12px">📝 ${s.note}</div>`:''}
+    <div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Foto / Documento</div>
+    <div id="spv-foto">${fotoHtml}</div>`;
+  // Imposta bottone modifica
+  document.getElementById('spv-btn-modifica').onclick=()=>{closeModal('mod-spesa-view');openModalSpesa(id);};
+  openModal('mod-spesa-view');
+  // Carica foto in modo robusto
+  if(s.foto_path){
+    try{
+      const {data:urlData,error:urlErr}=await sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,7200);
+      const fotoEl=document.getElementById('spv-foto');
+      if(!fotoEl)return;
+      if(urlErr||!urlData?.signedUrl){
+        fotoEl.innerHTML='<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--red)">⚠️ Foto presente ma non accessibile. Prova a riaprire tra qualche secondo.</div>';
+        return;
+      }
+      const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(s.foto_path);
+      if(isImg){
+        fotoEl.innerHTML=`<img src="${urlData.signedUrl}" style="width:100%;border-radius:var(--rsm);max-height:300px;object-fit:contain;cursor:pointer;margin-top:4px" onclick="window.open('${urlData.signedUrl}','_blank')" onerror="this.parentElement.innerHTML='<div style=\\'color:var(--red);font-size:13px\\'>⚠️ Impossibile caricare l\\'immagine. Tocca per aprire.</div><a href=\\'${urlData.signedUrl}\\' target=\\'_blank\\' style=\\'color:var(--blue);font-size:13px\\'>Apri foto</a>'">`;
+      }else{
+        fotoEl.innerHTML=`<div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:4px"><span style="font-size:28px">📄</span><a href="${urlData.signedUrl}" target="_blank" style="color:var(--blue);font-size:14px;font-weight:600">Apri documento allegato</a></div>`;
+      }
+    }catch(e){
+      const fotoEl=document.getElementById('spv-foto');
+      if(fotoEl)fotoEl.innerHTML=`<div style="font-size:13px;color:var(--red)">⚠️ Errore caricamento foto: ${e.message}</div>`;
+    }
+  }
 }
 
 function openModalSpesa(id){
@@ -2455,13 +2526,15 @@ function openModalSpesa(id){
       document.getElementById('del-sp-w').innerHTML=`<button class="btn btn-d" onclick="deleteSpesa('${id}')">🗑️ Elimina</button>`;
       // Mostra foto esistente se presente
       if(s.foto_path){
-        sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,3600).then(({data:u})=>{
-          if(u?.signedUrl){
-            const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(s.foto_path);
-            document.getElementById('sp-foto-prv').innerHTML=isImg
-              ?`<img src="${u.signedUrl}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:220px;object-fit:contain;cursor:pointer" onclick="window.open('${u.signedUrl}','_blank')">`
-              :`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-top:8px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">📄</span><a href="${u.signedUrl}" target="_blank" style="color:var(--blue);font-size:13px">Apri documento allegato</a></div>`;
-          }
+        document.getElementById('sp-foto-prv').innerHTML='<div style="font-size:12px;color:var(--t2);padding:8px 0">⏳ Caricamento foto...</div>';
+        sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,7200).then(({data:u,error:ue})=>{
+          const el=document.getElementById('sp-foto-prv');
+          if(!el)return;
+          if(ue||!u?.signedUrl){el.innerHTML='<div style="font-size:12px;color:var(--red)">⚠️ Foto presente ma non caricabile</div>';return;}
+          const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(s.foto_path);
+          el.innerHTML=isImg
+            ?`<img src="${u.signedUrl}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:220px;object-fit:contain;cursor:pointer" onclick="window.open('${u.signedUrl}','_blank')" onerror="this.outerHTML='<a href=\'${u.signedUrl}\' target=\'_blank\' style=\'color:var(--blue);font-size:13px\'>Apri foto (errore anteprima)</a>'">`
+            :`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-top:8px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">📄</span><a href="${u.signedUrl}" target="_blank" style="color:var(--blue);font-size:13px">Apri documento allegato</a></div>`;
         });
       }
     });
