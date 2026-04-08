@@ -1209,7 +1209,7 @@ async function renderFotoCantiere(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const {data:foto,error}=await sb.from('foto')
-      .select('*, operai(nome,cognome)')
+      .select('*')
       .eq('cantiere_id',curCant.id)
       .order('data',{ascending:false})
       .order('created_at',{ascending:false});
