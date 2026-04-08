@@ -1527,6 +1527,7 @@ async function openCantLog(gid){
   const {data:g}=await sb.from('giornate').select('*, operai(*), voci_lavoro(*, lavorazioni(nome,um))').eq('id',gid).single();
   if(!g)return;
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
+  const {data:foto}=await sb.from('foto').select('*, operai(nome,cognome)').eq('giornata_id',gid).order('created_at',{ascending:true});
   const vociHtml=(g.voci_lavoro||[]).map(v=>`<tr><td>${v.lavorazioni?.nome||v.lavorazione_nome||'—'}</td><td class="mono">${parseFloat(v.ore||0).toFixed(2)}h</td><td style="color:var(--t2);font-size:12px">${v.quantita?v.quantita+' '+(v.um||''):'—'}</td></tr>`).join('');
   document.getElementById('mod-cant-log-content').innerHTML=`
     <div class="mod-t">${g.operai?.nome||''} ${g.operai?.cognome||''}</div>
@@ -1537,9 +1538,36 @@ async function openCantLog(gid){
     </div>
     ${vociHtml?`<div class="sec">Lavori svolti</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>Lavorazione</th><th>Ore</th><th>Quantità</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
     ${(mats||[]).length?`<div class="sec">Materiali ricevuti</div><div style="font-size:13px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
-    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6">${g.note}</div>`:''}
+    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px">${g.note}</div>`:''}
+    <div class="sec">📷 Foto (${(foto||[]).length})</div>
+    <div id="cantlog-foto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
+      ${!(foto||[]).length?'<div style="font-size:13px;color:var(--t2);grid-column:span 2">Nessuna foto caricata</div>':'<div style="grid-column:span 2;font-size:12px;color:var(--t2)">⏳ Caricamento foto...</div>'}
+    </div>
   `;
   openModal('mod-cant-log');
+  // Carica URL firmate per ogni foto
+  if((foto||[]).length){
+    const grid=document.getElementById('cantlog-foto-grid');
+    if(!grid)return;
+    grid.innerHTML='';
+    for(const f of foto){
+      try{
+        const {data:u,error:ue}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,7200);
+        const chi=f.operai?`${f.operai.nome} ${f.operai.cognome}`:'—';
+        if(ue||!u?.signedUrl){
+          grid.innerHTML+=`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:12px;color:var(--red)">⚠️ Foto non accessibile<div style="color:var(--t2);margin-top:4px">👤 ${chi}</div></div>`;
+        }else{
+          grid.innerHTML+=`<div style="position:relative">
+            <img src="${u.signedUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm);cursor:pointer;display:block" onclick="window.open('${u.signedUrl}','_blank')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div style="display:none;background:var(--s2);border-radius:var(--rsm);aspect-ratio:1;align-items:center;justify-content:center;font-size:12px;color:var(--red)">⚠️ Errore</div>
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:4px 6px;border-radius:0 0 var(--rsm) var(--rsm)">👤 ${chi}</div>
+          </div>`;
+        }
+      }catch(e){
+        grid.innerHTML+=`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:12px;color:var(--red)">⚠️ Errore</div>`;
+      }
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════
