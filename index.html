@@ -510,7 +510,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="nb-icon">🧾</div><div class="nb-label">Spese</div>
     </div>
     <div class="nb" id="nb-situazione" onclick="navTo('situazione')">
-      <div class="nb-icon">🔔</div><div class="nb-label">Situazione</div>
+      <div class="nb-icon" style="position:relative">🔔<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;display:none;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
+      <div class="nb-label">Situazione</div>
     </div>
     <div class="nb" id="nb-report" onclick="navTo('report')">
       <div class="nb-icon">📊</div><div class="nb-label">Report</div>
@@ -880,6 +881,7 @@ async function afterLogin(){
     document.getElementById('rep-mese').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     renderHome();
     setBread([{label:'Cantieri'}]);
+    aggiornaBadgeSituazione(); // pallino rosso navbar
   }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
 }
 
@@ -2183,6 +2185,24 @@ function saveImpostazioni(){
 // ════════════════════════════════════════════════════════
 // NAVBAR
 // ════════════════════════════════════════════════════════
+async function aggiornaBadgeSituazione(){
+  try{
+    const [{data:spese},{data:regia}]=await Promise.all([
+      sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),
+      sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false)
+    ]);
+    const tot=(spese?.length||0)+(regia?.length||0);
+    const badge=document.getElementById('sit-badge');
+    if(!badge)return;
+    if(tot>0){
+      badge.textContent=tot>99?'99+':tot;
+      badge.style.display='inline-flex';
+    }else{
+      badge.style.display='none';
+    }
+  }catch(e){}
+}
+
 // ════════════════════════════════════════════════════════
 // SITUAZIONE — dashboard spese + regia
 // ════════════════════════════════════════════════════════
@@ -2307,6 +2327,7 @@ async function segnaSpesaPagata(id){
     await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id);
     showToast('Spesa segnata come pagata ✓');
     renderSituazione();
+    aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
@@ -2318,6 +2339,7 @@ async function toggleFatturato(id, statoAttuale, btn){
     await sb.from('regia').update({fatturato:nuovoStato}).eq('id',id);
     showToast(nuovoStato?'Segnato come fatturato ✓':'Riportato a da fatturare');
     renderSituazione();
+    aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
