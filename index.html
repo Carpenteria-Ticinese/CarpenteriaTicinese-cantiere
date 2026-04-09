@@ -294,11 +294,18 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
         <div class="fg"><label class="fl">Note operaio</label><textarea class="ft" id="g2-note" placeholder="Avanzamento, problemi, imprevisti..." style="min-height:60px"></textarea></div>
         <div class="fg">
           <label class="fl">Foto</label>
-          <div class="foto-drop" onclick="document.getElementById('foto-inp').click()">
-            <div style="font-size:26px">📷</div>
-            <p style="font-size:12px;color:var(--t2);margin-top:4px">Tocca per scattare o scegliere</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
+            <div class="foto-drop" onclick="document.getElementById('foto-inp-cam').click()" style="padding:14px">
+              <div style="font-size:24px">📷</div>
+              <p style="font-size:11px;color:var(--t2);margin-top:4px">Fotocamera</p>
+            </div>
+            <div class="foto-drop" onclick="document.getElementById('foto-inp').click()" style="padding:14px">
+              <div style="font-size:24px">🖼️</div>
+              <p style="font-size:11px;color:var(--t2);margin-top:4px">Galleria</p>
+            </div>
           </div>
-          <input type="file" id="foto-inp" accept="image/*" multiple capture="environment" style="display:none" onchange="addFoto(event)">
+          <input type="file" id="foto-inp" accept="image/*" multiple style="display:none" onchange="addFoto(event)">
+          <input type="file" id="foto-inp-cam" accept="image/*" multiple capture="environment" style="display:none" onchange="addFoto(event)">
           <div class="foto-grid" id="foto-prv"></div>
         </div>
         <button class="btn btn-g" onclick="salvaOperaio()" id="btn-salva-op">💾 Salva operaio</button>
@@ -547,11 +554,18 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <select class="fs" id="sp-metodo"><option>Carta aziendale</option><option>Carta privata operaio</option><option>Contanti</option></select>
     </div>
     <div class="fg"><label class="fl">Foto scontrino / bolla / fattura</label>
-      <div class="foto-drop" onclick="document.getElementById('sp-foto-inp').click()">
-        <div style="font-size:26px">📷</div>
-        <p style="font-size:12px;color:var(--t2);margin-top:4px">Tocca per fotografare o scegliere</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
+        <div class="foto-drop" onclick="document.getElementById('sp-foto-inp-cam').click()" style="padding:14px">
+          <div style="font-size:24px">📷</div>
+          <p style="font-size:11px;color:var(--t2);margin-top:4px">Fotocamera</p>
+        </div>
+        <div class="foto-drop" onclick="document.getElementById('sp-foto-inp').click()" style="padding:14px">
+          <div style="font-size:24px">🖼️</div>
+          <p style="font-size:11px;color:var(--t2);margin-top:4px">Galleria / PDF</p>
+        </div>
       </div>
-      <input type="file" id="sp-foto-inp" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="addFotoSpesa(event)">
+      <input type="file" id="sp-foto-inp" accept="image/*,application/pdf" style="display:none" onchange="addFotoSpesa(event)">
+      <input type="file" id="sp-foto-inp-cam" accept="image/*" capture="environment" style="display:none" onchange="addFotoSpesa(event)">
       <div id="sp-foto-prv" style="margin-top:8px"></div>
     </div>
     <div class="fg"><label class="fl">Note</label><textarea class="ft" id="sp-note" style="min-height:50px" placeholder="Note aggiuntive..."></textarea></div>
@@ -1730,6 +1744,8 @@ async function saveOp(){
 async function deleteOp(id){if(!confirm('Rimuovere?'))return;await sb.from('operai').update({attivo:false}).eq('id',id);await loadOperai();closeModal('mod-op');renderAdmin();}
 
 // ── FOTO ──
+function apriFotoCamera(){document.getElementById('foto-inp-cam').click();}
+function apriFotoGalleria(){document.getElementById('foto-inp').click();}
 function addFoto(e){Array.from(e.target.files).forEach(f=>{fFiles.push(f);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(f);});e.target.value='';}
 function renderFoto(){document.getElementById('foto-prv').innerHTML=fB64.map((b,i)=>`<div class="fthumb"><img src="${b}"><button class="fdel" onclick="delFoto(${i})">×</button></div>`).join('');}
 function delFoto(i){fFiles.splice(i,1);fB64.splice(i,1);renderFoto();}
