@@ -170,6 +170,13 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .next-op-banner p{font-size:12px;color:var(--t2)}
 .next-op-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 /* NUOVO: badge sicurezza */
+.capo-hidden{display:none !important}
+.is-capo .capo-hidden-block{display:none !important}
+/* Caposquadra: nascondi contabilità, spese economiche, regia, admin */
+.is-capo #nb-contabilita{display:none !important}
+.is-capo #nb-situazione{display:none !important}
+.is-capo #nb-report{display:none !important}
+.is-capo .admin-only{display:none !important}
 .security-badge{background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:14px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
 .cont-kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
 .cont-kpi3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
@@ -740,6 +747,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <input type="file" id="mg-foto-inp" accept="image/*,video/*" multiple style="display:none" onchange="aggiungiMgFoto(event)">
       <div id="mg-foto-nuove" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px"></div>
     </div>
+    <!-- VOCI LAVORO EDITABILI -->
+    <div class="fg">
+      <label class="fl">📐 Voci lavoro</label>
+      <div id="mg-voci-list"></div>
+      <button class="btn btn-s" style="margin-top:8px;font-size:12px" onclick="mgAggiungiVoce()">➕ Aggiungi lavoro</button>
+    </div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-modifica-g')">Annulla</button>
@@ -1096,6 +1109,10 @@ async function afterLogin(){
       document.getElementById('app').classList.add('is-tit');
       const nbAdmin=document.getElementById('nb-admin');
       if(nbAdmin)nbAdmin.style.display='flex';
+    }
+    // Caposquadra: nascondi sezioni economiche
+    if(ruolo==='caposquadra'){
+      document.getElementById('app').classList.add('is-capo');
     }
     document.getElementById('loading').style.display='none';
     document.getElementById('login').classList.remove('on');
@@ -1642,6 +1659,7 @@ async function apriModificaGiornata(gid){
   if(!g)return;
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
   const {data:fotoEsist}=await sb.from('foto').select('*').eq('giornata_id',gid);
+  const {data:vociEsist}=await sb.from('voci_lavoro').select('*, lavorazioni(nome,um)').eq('giornata_id',gid);
   document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${g.cantieri?.nome||''}`;
   document.getElementById('mg-ini').value=g.ora_inizio||'07:00';
   document.getElementById('mg-fine').value=g.ora_fine||'17:00';
@@ -1650,6 +1668,8 @@ async function apriModificaGiornata(gid){
   document.getElementById('mg-mat').value=(mats||[])[0]?.descrizione||'';
   document.querySelectorAll('.meteo-b[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===g.meteo));
   calcOreModifica();
+  // Popola voci lavoro editabili
+  mgRenderVoci(vociEsist||[]);
   openModal('mod-modifica-g');
   const grid=document.getElementById('mg-foto-esistenti');
   if(!(fotoEsist||[]).length){grid.innerHTML='<div style="font-size:11px;color:var(--t2);grid-column:span 3">Nessuna foto caricata</div>';}
@@ -1678,6 +1698,103 @@ function calcOreModifica(){
   document.getElementById('mg-ore').textContent=Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60).toFixed(2);
 }
 function setMeteoMod(el){document.querySelectorAll('#mod-modifica-g .meteo-b').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+// ── VOCI LAVORO IN MODIFICA GIORNATA ──
+let mgVociEliminate=[]; // ID voci da eliminare
+
+function mgRenderVoci(voci){
+  mgVociEliminate=[];
+  const el=document.getElementById('mg-voci-list');
+  if(!el)return;
+  if(!voci.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--t3);padding:6px 0">Nessuna voce registrata</div>';
+    return;
+  }
+  // Costruisce opzioni lavorazioni
+  const cats={};
+  LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
+  const opts='<option value="">— Lavorazione —</option>'+
+    Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+
+    '<option value="__nuova__">✏️ Voce libera...</option>';
+  el.innerHTML=voci.map((v,i)=>{
+    const lavNome=v.lavorazioni?.nome||v.lavorazione_nome||'Voce libera';
+    return `<div class="voce-row" id="mgv-${i}" data-vid="${v.id||''}">
+      <div class="voce-top">
+        <select class="voce-sel" onchange="mgOnChangeVoce(this,${i})">${opts}</select>
+        <button class="voce-del" onclick="mgEliminaVoce(${i},'${v.id||''}')">✕</button>
+      </div>
+      <div class="nuova-voce-wrap" style="display:none;margin-bottom:8px">
+        <input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px" value="${!v.lavorazione_id?lavNome:''}">
+      </div>
+      <div class="voce-nums">
+        <div><span class="vlbl">Ore</span><input type="number" class="vnum voce-ore-inp" value="${parseFloat(v.ore||0).toFixed(2)}" min="0" max="16" step="0.25"></div>
+        <div><span class="vlbl">Quantità</span><div style="display:flex;gap:4px">
+          <input type="number" class="vnum qty voce-qty-inp" placeholder="—" value="${v.quantita||''}" min="0" step="0.01" style="flex:1">
+          <input type="text" class="vnum voce-um-inp" placeholder="um" value="${v.um||v.lavorazioni?.um||'h'}" style="width:44px;font-size:11px">
+        </div></div>
+      </div>
+    </div>`;
+  }).join('');
+  // Imposta valore select
+  voci.forEach((v,i)=>{
+    const row=document.getElementById('mgv-'+i);if(!row)return;
+    const sel=row.querySelector('.voce-sel');
+    if(v.lavorazione_id&&sel){
+      sel.value=v.lavorazione_id;
+    } else if(!v.lavorazione_id&&sel){
+      sel.value='__nuova__';
+      const wrap=row.querySelector('.nuova-voce-wrap');
+      if(wrap)wrap.style.display='block';
+    }
+  });
+}
+
+function mgOnChangeVoce(sel,i){
+  const row=document.getElementById('mgv-'+i);if(!row)return;
+  const wrap=row.querySelector('.nuova-voce-wrap');
+  const isNuova=sel.value==='__nuova__';
+  if(wrap)wrap.style.display=isNuova?'block':'none';
+  if(!isNuova){
+    const lav=LAVS.find(l=>l.id===sel.value);
+    if(lav){const um=row.querySelector('.voce-um-inp');if(um)um.value=lav.um||'h';}
+  }
+}
+
+function mgEliminaVoce(i,vid){
+  if(vid)mgVociEliminate.push(vid);
+  const row=document.getElementById('mgv-'+i);
+  if(row)row.remove();
+}
+
+function mgAggiungiVoce(){
+  const el=document.getElementById('mg-voci-list');if(!el)return;
+  // Voce vuota temporanea
+  const tmpVoce={id:'',lavorazione_id:null,lavorazione_nome:'',ore:0,quantita:null,um:'h',lavorazioni:null};
+  const vociAttuali=[...el.querySelectorAll('.voce-row')].length;
+  const cats={};
+  LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
+  const opts='<option value="">— Lavorazione —</option>'+
+    Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+
+    '<option value="__nuova__">✏️ Voce libera...</option>';
+  const idx=vociAttuali;
+  const div=document.createElement('div');
+  div.className='voce-row';div.id='mgv-'+idx;div.dataset.vid='';
+  div.innerHTML=`<div class="voce-top">
+    <select class="voce-sel" onchange="mgOnChangeVoce(this,${idx})">${opts}</select>
+    <button class="voce-del" onclick="mgEliminaVoce(${idx},'')">✕</button>
+  </div>
+  <div class="nuova-voce-wrap" style="display:none;margin-bottom:8px">
+    <input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px">
+  </div>
+  <div class="voce-nums">
+    <div><span class="vlbl">Ore</span><input type="number" class="vnum voce-ore-inp" placeholder="0.00" min="0" max="16" step="0.25"></div>
+    <div><span class="vlbl">Quantità</span><div style="display:flex;gap:4px">
+      <input type="number" class="vnum qty voce-qty-inp" placeholder="—" min="0" step="0.01" style="flex:1">
+      <input type="text" class="vnum voce-um-inp" placeholder="h" style="width:44px;font-size:11px">
+    </div></div>
+  </div>`;
+  el.appendChild(div);
+}
+
 async function salvaModificaGiornata(){
   if(!modificaGid)return;
   const btn=document.getElementById('btn-salva-modifica');btn.textContent='⏳...';btn.disabled=true;
@@ -1690,6 +1807,38 @@ async function salvaModificaGiornata(){
     const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null}).eq('id',modificaGid).select().single();
     if(error)throw error;
     if(mat){await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});}
+    // Salva modifiche alle voci lavoro
+    // 1. Elimina voci marcate per eliminazione
+    for(const vid of mgVociEliminate){
+      if(vid)await sb.from('voci_lavoro').delete().eq('id',vid);
+    }
+    mgVociEliminate=[];
+    // 2. Aggiorna/inserisci voci presenti nel modal
+    const mgRighe=[...document.querySelectorAll('#mg-voci-list .voce-row')];
+    for(const row of mgRighe){
+      const vid=row.dataset.vid||'';
+      const sel=row.querySelector('.voce-sel');
+      const oreVal=parseFloat(row.querySelector('.voce-ore-inp')?.value||0)||0;
+      if(!oreVal)continue; // salta voci con 0 ore
+      const qty=parseFloat(row.querySelector('.voce-qty-inp')?.value||0)||null;
+      const um=row.querySelector('.voce-um-inp')?.value?.trim()||null;
+      const isNuova=sel?.value==='__nuova__'||!sel?.value;
+      const nomeLav=isNuova?row.querySelector('.nuova-voce-nome')?.value?.trim()||null:null;
+      const lav=LAVS.find(l=>l.id===sel?.value);
+      const payload={
+        giornata_id:modificaGid,
+        lavorazione_id:isNuova?null:(sel?.value||null),
+        lavorazione_nome:isNuova?nomeLav:(lav?.nome||null),
+        ore:oreVal,
+        quantita:qty,
+        um:um||lav?.um||'h',
+      };
+      if(vid){
+        await sb.from('voci_lavoro').update(payload).eq('id',vid);
+      }else{
+        await sb.from('voci_lavoro').insert(payload);
+      }
+    }
     if(mgFotoFiles.length){
       const cant=CANTIERI.find(c=>c.id===g.cantiere_id);
       const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
@@ -2085,6 +2234,12 @@ async function aggiornaBadgeSituazione(){
   }catch(e){}
 }
 function navTo(dest){
+  // Caposquadra: blocca accesso a sezioni economiche
+  const ruolo=PROF?.ruolo||'caposquadra';
+  if(ruolo==='caposquadra'&&['contabilita','situazione','report','admin'].includes(dest)){
+    showToast('Sezione non accessibile','e');
+    return;
+  }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
   const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
@@ -2387,6 +2542,107 @@ async function exportRegia(){
 // ── ASSENZE ──
 let editAssId=null;
 async function renderAssenze(){
+  const el=document.getElementById('assenze-list');
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const opF=document.getElementById('ass-operaio').value;
+  const meseF=document.getElementById('ass-mese').value;
+  let q=sb.from('assenze').select('*, operai(nome,cognome), cantieri(nome)').order('data',{ascending:false});
+  if(opF)q=q.eq('operaio_id',opF);
+  if(meseF){const [y,m]=meseF.split('-');q=q.gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`);}
+  const {data,error}=await q.limit(200);
+  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
+  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>Nessuna assenza registrata.</p></div>';return;}
+
+  const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
+  const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
+  const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+
+  // ── STATISTICHE AGGREGATE ──
+  const byOp={};
+  data.forEach(a=>{
+    const key=a.operaio_id;
+    const opNome=(a.operai?.nome||'')+(a.operai?.cognome?' '+a.operai.cognome:'');
+    if(!byOp[key])byOp[key]={nome:opNome,totGiorni:0,malattia:0,ferie:0,altro:0,lista:[]};
+    const gg=parseFloat(a.giorni)||1;
+    byOp[key].totGiorni+=gg;
+    byOp[key].lista.push(a);
+    if(a.motivo==='Malattia')byOp[key].malattia+=gg;
+    else if(a.motivo==='Ferie')byOp[key].ferie+=gg;
+    else byOp[key].altro+=gg;
+  });
+
+  const totGiorni=data.reduce((s,a)=>s+(parseFloat(a.giorni)||1),0);
+  const costTot=totGiorni*8*tariffa; // stima 8h/giorno
+  const malattiaGG=data.filter(a=>a.motivo==='Malattia').reduce((s,a)=>s+(parseFloat(a.giorni)||1),0);
+
+  // Pattern giorno settimana
+  const perGiorno={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+  data.forEach(a=>{const dow=new Date(a.data+'T12:00').getDay();perGiorno[dow]=(perGiorno[dow]||0)+(parseFloat(a.giorni)||1);});
+  const giorniNome=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const sospetti=((perGiorno[1]||0)+(perGiorno[5]||0))>totGiorni*0.4;
+
+  // Classifica operai per assenze
+  const rank=Object.values(byOp).sort((a,b)=>b.totGiorni-a.totGiorni);
+
+  let html=`
+    <!-- STATS RAPIDE -->
+    <div class="cont-kpi" style="margin-bottom:14px">
+      <div class="kpi-box"><div class="kpi-val kpi-orange">${totGiorni.toFixed(1)}</div><div class="kpi-lbl">Giorni assenza</div></div>
+      <div class="kpi-box"><div class="kpi-val kpi-red">${malattiaGG.toFixed(1)}</div><div class="kpi-lbl">di cui malattia</div></div>
+      <div class="kpi-box"><div class="kpi-val kpi-red" style="font-size:16px">CHF ${(costTot).toFixed(0)}</div><div class="kpi-lbl">Costo stimato</div></div>
+      <div class="kpi-box"><div class="kpi-val" style="color:${sospetti?'var(--red)':'var(--green)'};">${sospetti?'⚠️ Sì':'✓ No'}</div><div class="kpi-lbl">Lun/Ven sospetti</div></div>
+    </div>`;
+
+  // Pattern giorno settimana
+  const maxGio=Math.max(...Object.values(perGiorno),1);
+  html+=`<div class="sec">Pattern giorno settimana</div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;align-items:flex-end;height:60px">
+      ${[1,2,3,4,5,6,0].map(d=>{
+        const v=perGiorno[d]||0;
+        const h=Math.round((v/maxGio)*50)||2;
+        const susp=(d===1||d===5)&&v>0;
+        return `<div style="flex:1;text-align:center">
+          <div style="background:${susp?'var(--red)':'var(--blue)'};height:${h}px;border-radius:3px 3px 0 0;margin-bottom:3px;min-height:2px"></div>
+          <div style="font-size:10px;color:${susp?'var(--red)':'var(--t2)'};font-weight:${susp?'700':'400'}">${giorniNome[d]}</div>
+          <div style="font-size:9px;color:var(--t3)">${v>0?v.toFixed(0):'—'}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Classifica operai
+  if(rank.length>1){
+    html+=`<div class="sec">Classifica assenze per operaio</div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px">
+        <table class="rtable"><thead><tr><th>#</th><th>Operaio</th><th>Tot gg</th><th>Malattia</th><th>Costo CHF</th></tr></thead><tbody>
+        ${rank.map((op,i)=>`<tr>
+          <td style="color:${i===0?'var(--red)':'var(--t2)'};font-weight:${i===0?'700':'400'}">${i+1}</td>
+          <td style="font-weight:600">${op.nome}</td>
+          <td class="mono">${op.totGiorni.toFixed(1)}</td>
+          <td style="color:var(--red)">${op.malattia.toFixed(1)}</td>
+          <td style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${(op.totGiorni*8*tariffa).toFixed(0)}</td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>`;
+  }
+
+  // Lista dettagliata
+  html+=`<div class="sec">Dettaglio assenze</div>`;
+  html+=data.map(a=>`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')">
+      <span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
+        <div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>
+        ${a.cantieri?.nome?`<div style="font-size:11px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}
+        ${a.note?`<div style="font-size:12px;color:var(--t2)">📝 ${a.note}</div>`:''}
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span>
+    </div>`).join('');
+
+  el.innerHTML=html;
+}
+// ── VECCHIA renderAssenze sostituita ──
+async function renderAssenzeOLD(){
   const el=document.getElementById('assenze-list');
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const opF=document.getElementById('ass-operaio').value,meseF=document.getElementById('ass-mese').value;
