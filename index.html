@@ -960,12 +960,13 @@ async function renderContabilita(cantId){
       </div>
     `;
   }catch(e){
-    el.innerHTML=\`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: \${e.message}</p></div>\`;
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: \${e.message}</p></div>`;
   }
 }
 
+function navToCant(id){enterCantiere(id).then(function(){apriContabilita();});}
+
 async function renderContabilitaGlobale(){
-  // Vista globale tutti i cantieri — dalla navbar
   const el=document.getElementById('cont-content');
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
@@ -977,46 +978,46 @@ async function renderContabilitaGlobale(){
     ]);
     const cantAttivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo.</p></div>';return;}
-
-    // Aggrega per cantiere
     const byCant={};
     cantAttivi.forEach(c=>byCant[c.id]={nome:c.nome,ore:0,spese:0,ricavi:0,da:0});
     (giornate||[]).forEach(g=>{if(byCant[g.cantiere_id])byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);});
     (spese||[]).forEach(s=>{if(byCant[s.cantiere_id]){byCant[s.cantiere_id].spese+=(parseFloat(s.importo)||0);if(s.stato_pag==='Da pagare')byCant[s.cantiere_id].da+=(parseFloat(s.importo)||0);}});
     (regia||[]).forEach(r=>{if(byCant[r.cantiere_id]&&r.fatturato)byCant[r.cantiere_id].ricavi+=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));});
-
     const riepilogo=Object.values(byCant).map(c=>({...c,costo:c.ore*tariffa+c.spese,margine:c.ricavi-(c.ore*tariffa+c.spese)}));
     const totCosto=riepilogo.reduce((s,c)=>s+c.costo,0);
     const totRicavi=riepilogo.reduce((s,c)=>s+c.ricavi,0);
     const totMargine=totRicavi-totCosto;
-
-    el.innerHTML=\`
-      <div class="sec">Tutti i cantieri attivi — sintesi finanziaria</div>
-      <div class="cont-kpi" style="margin-bottom:16px">
-        <div class="kpi-box"><div class="kpi-val kpi-red">\${totCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Costi totali</div></div>
-        <div class="kpi-box"><div class="kpi-val \${totMargine>=0?'kpi-green':'kpi-red'}">\${totMargine>=0?'+':''}\${totMargine.toFixed(0)}</div><div class="kpi-lbl">CHF Margine globale</div></div>
-      </div>
-      \${riepilogo.map(c=>{
-        const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
-        const col=c.margine>=0?'var(--green)':'var(--red)';
-        const cantId=CANTIERI.find(x=>x.nome===c.nome)?.id||'';
-        return \`<div class="sett-row" onclick="enterCantiere('\${cantId}').then(()=>apriContabilita())">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:700">\${c.nome}</div>
-              <div style="font-size:11px;color:var(--t2)">\${c.ore.toFixed(1)}h · spese CHF \${c.spese.toFixed(0)}\${c.da>0?\` · <span style="color:var(--red)">CHF \${c.da.toFixed(0)} da pagare</span>':''}
-              </div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;margin-left:10px">
-              <div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:\${col}">\${c.margine>=0?'+':''}\${c.margine.toFixed(0)}</div>
-              \${m!==null?\`<div style="font-size:10px;color:\${col}">\${m.toFixed(1)}%</div>\`:'<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>'}
-            </div>
-          </div>
-          <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:\${c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100}%;background:\${c.margine>=0?'var(--green)':'var(--red)'}"></div></div>
-        </div>\`;
-      }).join('')}
-    \`;
-  }catch(e){el.innerHTML=\`<div class="empty">Errore: \${e.message}</div>\`;}
+    const margCls=totMargine>=0?'kpi-green':'kpi-red';
+    const margPre=totMargine>=0?'+':'';
+    let html='<div class="sec">Tutti i cantieri attivi — sintesi finanziaria</div>';
+    html+='<div class="cont-kpi" style="margin-bottom:16px">';
+    html+='<div class="kpi-box"><div class="kpi-val kpi-red">'+totCosto.toFixed(0)+'</div><div class="kpi-lbl">CHF Costi totali</div></div>';
+    html+='<div class="kpi-box"><div class="kpi-val '+margCls+'">'+margPre+totMargine.toFixed(0)+'</div><div class="kpi-lbl">CHF Margine globale</div></div>';
+    html+='</div>';
+    riepilogo.forEach(function(c){
+      const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
+      const col=c.margine>=0?'var(--green)':'var(--red)';
+      const cantId=CANTIERI.find(function(x){return x.nome===c.nome;})||{};
+      const cId=cantId.id||'';
+      const pct=c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100;
+      const mStr=c.margine>=0?'+':'';
+      html+='<div class="sett-row" style="cursor:pointer" onclick="navToCant(\''+cId+'\')">'; 
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:14px;font-weight:700">'+c.nome+'</div>';
+      html+='<div style="font-size:11px;color:var(--t2)">'+c.ore.toFixed(1)+'h · spese CHF '+c.spese.toFixed(0);
+      if(c.da>0)html+=' · <span style="color:var(--red)">CHF '+c.da.toFixed(0)+' da pagare</span>';
+      html+='</div></div>';
+      html+='<div style="text-align:right;flex-shrink:0;margin-left:10px">';
+      html+='<div style="font-family:DM Mono,monospace;font-size:16px;font-weight:600;color:'+col+'">'+mStr+c.margine.toFixed(0)+'</div>';
+      if(m!==null)html+='<div style="font-size:10px;color:'+col+'">'+m.toFixed(1)+'%</div>';
+      else html+='<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>';
+      html+='</div></div>';
+      html+='<div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>';
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<div class="empty">Errore: '+e.message+'</div>';}
 }
 
 async function esportaReportContabilita(cantId){
@@ -1060,22 +1061,22 @@ async function esportaReportContabilita(cantId){
 
     // Foglio 2: Giornate
     const rGio=[['Data','Operaio','Ore']];
-    (giornate||[]).forEach(g=>rGio.push([g.data,\`\${g.operai?.nome||''} \${g.operai?.cognome||''}\`,parseFloat(g.ore_totali||0).toFixed(2)]));
+    (giornate||[]).forEach(g=>rGio.push([g.data,`\${g.operai?.nome||''} \${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
     rGio.push(['','TOTALE',totOre.toFixed(2)],['','Costo (CHF)','CHF '+costoMano.toFixed(2)]);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rGio),'Manodopera');
 
     // Foglio 3: Spese
     const rSp=[['Data','Operaio','Tipo spesa','Documento','Descrizione','Importo CHF','Valuta','Stato','Metodo pagamento']];
-    (spese||[]).forEach(s=>rSp.push([s.data,\`\${s.operai?.nome||''} \${s.operai?.cognome||''}\`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
+    (spese||[]).forEach(s=>rSp.push([s.data,`\${s.operai?.nome||''} \${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
     rSp.push(['','','','','TOTALE',totSpese.toFixed(2),'CHF','','']);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rSp),'Spese');
 
     // Foglio 4: Regia
     const rReg=[['Data','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Costo/um CHF','Totale CHF','Fatturato']];
-    (regia||[]).forEach(r=>rReg.push([r.data,\`\${r.operai?.nome||''} \${r.operai?.cognome||''}\`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
+    (regia||[]).forEach(r=>rReg.push([r.data,`\${r.operai?.nome||''} \${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rReg),'Regia');
 
-    XLSX.writeFile(wb,\`CT_Contabilita_\${cn}_\${oggi}.xlsx\`);
+    XLSX.writeFile(wb,`CT_Contabilita_\${cn}_\${oggi}.xlsx`);
     showToast('Report Excel scaricato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
