@@ -1017,7 +1017,7 @@ async function renderContabilita(cantId){
       </div>
     `;
   }catch(e){
-    el.innerHTML=\`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: \${e.message}</p></div>\`;
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: ${e.message}</p></div>`;
   }
 }
 
@@ -1047,33 +1047,33 @@ async function renderContabilitaGlobale(){
     const totRicavi=riepilogo.reduce((s,c)=>s+c.ricavi,0);
     const totMargine=totRicavi-totCosto;
 
-    el.innerHTML=\`
+    el.innerHTML=`
       <div class="sec">Tutti i cantieri attivi — sintesi finanziaria</div>
       <div class="cont-kpi" style="margin-bottom:16px">
-        <div class="kpi-box"><div class="kpi-val kpi-red">\${totCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Costi totali</div></div>
-        <div class="kpi-box"><div class="kpi-val \${totMargine>=0?'kpi-green':'kpi-red'}">\${totMargine>=0?'+':''}\${totMargine.toFixed(0)}</div><div class="kpi-lbl">CHF Margine globale</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-red">${totCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Costi totali</div></div>
+        <div class="kpi-box"><div class="kpi-val ${totMargine>=0?'kpi-green':'kpi-red'}">${totMargine>=0?'+':''}${totMargine.toFixed(0)}</div><div class="kpi-lbl">CHF Margine globale</div></div>
       </div>
-      \${riepilogo.map(c=>{
+      ${riepilogo.map(c=>{
         const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
         const col=c.margine>=0?'var(--green)':'var(--red)';
         const cantId=CANTIERI.find(x=>x.nome===c.nome)?.id||'';
-        return \`<div class="sett-row" onclick="enterCantiere('\${cantId}').then(()=>apriContabilita())">
+        return `<div class="sett-row" onclick="enterCantiere('${cantId}').then(()=>apriContabilita())">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:700">\${c.nome}</div>
-              <div style="font-size:11px;color:var(--t2)">\${c.ore.toFixed(1)}h · spese CHF \${c.spese.toFixed(0)}\${c.da>0?\` · <span style="color:var(--red)">CHF \${c.da.toFixed(0)} da pagare</span>':''}
+              <div style="font-size:14px;font-weight:700">${c.nome}</div>
+              <div style="font-size:11px;color:var(--t2)">${c.ore.toFixed(1)}h · spese CHF ${c.spese.toFixed(0)}${c.da>0?` · <span style="color:var(--red)">CHF ${c.da.toFixed(0)} da pagare</span>':''}
               </div>
             </div>
             <div style="text-align:right;flex-shrink:0;margin-left:10px">
-              <div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:\${col}">\${c.margine>=0?'+':''}\${c.margine.toFixed(0)}</div>
-              \${m!==null?\`<div style="font-size:10px;color:\${col}">\${m.toFixed(1)}%</div>\`:'<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>'}
+              <div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:${col}">${c.margine>=0?'+':''}${c.margine.toFixed(0)}</div>
+              ${m!==null?`<div style="font-size:10px;color:${col}">${m.toFixed(1)}%</div>`:'<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>'}
             </div>
           </div>
-          <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:\${c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100}%;background:\${c.margine>=0?'var(--green)':'var(--red)'}"></div></div>
-        </div>\`;
+          <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100}%;background:${c.margine>=0?'var(--green)':'var(--red)'}"></div></div>
+        </div>`;
       }).join('')}
-    \`;
-  }catch(e){el.innerHTML=\`<div class="empty">Errore: \${e.message}</div>\`;}
+    `;
+  }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
 
 async function esportaReportContabilita(cantId){
@@ -1117,22 +1117,22 @@ async function esportaReportContabilita(cantId){
 
     // Foglio 2: Giornate
     const rGio=[['Data','Operaio','Ore']];
-    (giornate||[]).forEach(g=>rGio.push([g.data,\`\${g.operai?.nome||''} \${g.operai?.cognome||''}\`,parseFloat(g.ore_totali||0).toFixed(2)]));
+    (giornate||[]).forEach(g=>rGio.push([g.data,`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
     rGio.push(['','TOTALE',totOre.toFixed(2)],['','Costo (CHF)','CHF '+costoMano.toFixed(2)]);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rGio),'Manodopera');
 
     // Foglio 3: Spese
     const rSp=[['Data','Operaio','Tipo spesa','Documento','Descrizione','Importo CHF','Valuta','Stato','Metodo pagamento']];
-    (spese||[]).forEach(s=>rSp.push([s.data,\`\${s.operai?.nome||''} \${s.operai?.cognome||''}\`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
+    (spese||[]).forEach(s=>rSp.push([s.data,`${s.operai?.nome||''} ${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
     rSp.push(['','','','','TOTALE',totSpese.toFixed(2),'CHF','','']);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rSp),'Spese');
 
     // Foglio 4: Regia
     const rReg=[['Data','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Costo/um CHF','Totale CHF','Fatturato']];
-    (regia||[]).forEach(r=>rReg.push([r.data,\`\${r.operai?.nome||''} \${r.operai?.cognome||''}\`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
+    (regia||[]).forEach(r=>rReg.push([r.data,`${r.operai?.nome||''} ${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rReg),'Regia');
 
-    XLSX.writeFile(wb,\`CT_Contabilita_\${cn}_\${oggi}.xlsx\`);
+    XLSX.writeFile(wb,`CT_Contabilita_${cn}_${oggi}.xlsx`);
     showToast('Report Excel scaricato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -2225,7 +2225,7 @@ async function renderAdmin(){
   const existingImp=document.getElementById('adm-impostazioni');
   if(!existingImp){
     const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
-    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div><div class="fg" style="margin-top:12px"><label class="fl">Default tiri gru</label><div style="display:flex;gap:10px;align-items:center"><select class="fs" id="imp-gru-default" style="max-width:280px"><option value="paghiamo">CT paga (ditta esterna fa i tiri)</option><option value="incassiamo">CT incassa (facciamo tiri per altri)</option></select><button class="btn btn-g btn-sm" onclick="aggiornaDefaultGru()">Salva</button></div></div></div>\`;
+    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div><div class="fg" style="margin-top:12px"><label class="fl">Default tiri gru</label><div style="display:flex;gap:10px;align-items:center"><select class="fs" id="imp-gru-default" style="max-width:280px"><option value="paghiamo">CT paga (ditta esterna fa i tiri)</option><option value="incassiamo">CT incassa (facciamo tiri per altri)</option></select><button class="btn btn-g btn-sm" onclick="aggiornaDefaultGru()">Salva</button></div></div></div>`;
     document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest?.('.sec')||document.getElementById('scr-admin').lastChild);
   }else document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
   if(PROF?.ruolo==='titolare'){
