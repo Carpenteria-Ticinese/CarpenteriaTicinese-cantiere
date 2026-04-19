@@ -203,8 +203,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div id="login">
   <div class="lbox">
     <div class="llogo">
-      <img src="logo.jpg" alt="Carpenteria Ticinese" style="width:200px;height:auto;background:#fff;border-radius:8px;padding:8px;margin-bottom:10px" onerror="this.style.display='none'">
-      <h1 style="font-size:15px;font-weight:500;color:var(--t2);margin-top:2px">Gestione Cantieri</h1>
+      <b>Carpenteria Ticinese Sàgl</b>
+      <h1>Gestione Cantieri</h1>
     </div>
     <div class="lerr" id="lerr"></div>
     <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="l-email" autocomplete="email" placeholder="nome@carpenteriaticinese.ch"></div>
@@ -215,10 +215,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <div id="app">
   <div class="top">
-    <div class="top-brand" style="flex-direction:row;align-items:center;gap:8px">
-      <img src="logo.jpg" alt="CT" style="height:30px;width:auto;background:#fff;border-radius:4px;padding:2px 6px" onerror="this.style.display='none'">
-      <span id="top-title" style="font-size:13px;color:var(--t2);font-weight:600">Cantieri</span>
-    </div>
+    <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
       <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span>
@@ -457,25 +454,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
-  <!-- TIRI GRU -->
-  <div class="scr" id="scr-gru">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">🏗️ Tiri Gru</div>
-      <button class="btn-icon btn-sm" onclick="openModalGru(null)">➕ Aggiungi</button>
-    </div>
-    <div class="row2" style="margin-bottom:8px">
-      <select class="fs" id="gru-cantiere" onchange="renderGru()"><option value="">Tutti i cantieri</option></select>
-      <select class="fs" id="gru-tipo-fil" onchange="renderGru()">
-        <option value="">Tutti i tipi</option>
-        <option value="paghiamo">CT paga (ditta esterna fa tiri)</option>
-        <option value="incassiamo">CT incassa (facciamo tiri per altri)</option>
-      </select>
-    </div>
-    <div id="gru-totali" style="margin-bottom:12px"></div>
-    <div id="gru-list"></div>
-    <div class="bsp"></div>
-  </div>
-
   <!-- NAVBAR -->
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')"><div class="nb-icon">🏠</div><div class="nb-label">Cantieri</div></div>
@@ -488,45 +466,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label">Report</div></div>
     <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label">Contabilità</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
-    <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
   </div>
 </div>
 
 <!-- MODALI -->
-<div class="ov" id="mod-gru">
-  <div class="mod">
-    <div class="mod-h"></div>
-    <div class="mod-t" id="mod-gru-t">Nuovo tiro gru</div>
-    <div class="fg"><label class="fl">Tipo operazione</label>
-      <select class="fs" id="gru-tipo-op">
-        <option value="paghiamo">CT paga — ditta esterna fa i tiri</option>
-        <option value="incassiamo">CT incassa — facciamo tiri per altra ditta</option>
-      </select>
-    </div>
-    <div class="row2">
-      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="gru-data"></div>
-      <div class="fg"><label class="fl">Cantiere CT</label><select class="fs" id="gru-cant-sel"><option value="">Nessuno</option></select></div>
-    </div>
-    <div class="fg"><label class="fl">Ditta esterna</label><input type="text" class="fi" id="gru-ditta" placeholder="Nome azienda"></div>
-    <div class="row2">
-      <div class="fg"><label class="fl">Numero tiri</label><input type="number" class="fi" id="gru-ntiri" placeholder="0" min="1" step="1" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Importo (CHF)</label><input type="number" class="fi" id="gru-importo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
-    </div>
-    <div class="fg"><label class="fl">Bollettino firmato (foto/PDF)</label>
-      <input type="file" class="fi" id="gru-foto" accept="image/*,application/pdf" style="padding:8px;font-size:13px" onchange="previewGruFoto(event)">
-    </div>
-    <div id="gru-foto-preview" style="margin-top:6px"></div>
-    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="gru-note" style="min-height:50px" placeholder="Numero bollettino, note fattura..."></textarea></div>
-    <hr>
-    <div class="row2">
-      <button class="btn btn-s" onclick="closeModal('mod-gru')">Annulla</button>
-      <button class="btn btn-g" onclick="salvaGru()" id="btn-salva-gru">💾 Salva</button>
-    </div>
-    <div id="del-gru-w" style="margin-top:10px"></div>
-  </div>
-</div>
-
-
 <div class="ov" id="mod-cant-log">
   <div class="mod">
     <div class="mod-h"></div>
@@ -1017,12 +960,13 @@ async function renderContabilita(cantId){
       </div>
     `;
   }catch(e){
-    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: ${e.message}</p></div>`;
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: \${e.message}</p></div>`;
   }
 }
 
+function navToCant(id){enterCantiere(id).then(function(){apriContabilita();});}
+
 async function renderContabilitaGlobale(){
-  // Vista globale tutti i cantieri — dalla navbar
   const el=document.getElementById('cont-content');
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
@@ -1034,46 +978,46 @@ async function renderContabilitaGlobale(){
     ]);
     const cantAttivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo.</p></div>';return;}
-
-    // Aggrega per cantiere
     const byCant={};
     cantAttivi.forEach(c=>byCant[c.id]={nome:c.nome,ore:0,spese:0,ricavi:0,da:0});
     (giornate||[]).forEach(g=>{if(byCant[g.cantiere_id])byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);});
     (spese||[]).forEach(s=>{if(byCant[s.cantiere_id]){byCant[s.cantiere_id].spese+=(parseFloat(s.importo)||0);if(s.stato_pag==='Da pagare')byCant[s.cantiere_id].da+=(parseFloat(s.importo)||0);}});
     (regia||[]).forEach(r=>{if(byCant[r.cantiere_id]&&r.fatturato)byCant[r.cantiere_id].ricavi+=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));});
-
     const riepilogo=Object.values(byCant).map(c=>({...c,costo:c.ore*tariffa+c.spese,margine:c.ricavi-(c.ore*tariffa+c.spese)}));
     const totCosto=riepilogo.reduce((s,c)=>s+c.costo,0);
     const totRicavi=riepilogo.reduce((s,c)=>s+c.ricavi,0);
     const totMargine=totRicavi-totCosto;
-
-    el.innerHTML=`
-      <div class="sec">Tutti i cantieri attivi — sintesi finanziaria</div>
-      <div class="cont-kpi" style="margin-bottom:16px">
-        <div class="kpi-box"><div class="kpi-val kpi-red">${totCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Costi totali</div></div>
-        <div class="kpi-box"><div class="kpi-val ${totMargine>=0?'kpi-green':'kpi-red'}">${totMargine>=0?'+':''}${totMargine.toFixed(0)}</div><div class="kpi-lbl">CHF Margine globale</div></div>
-      </div>
-      ${riepilogo.map(c=>{
-        const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
-        const col=c.margine>=0?'var(--green)':'var(--red)';
-        const cantId=CANTIERI.find(x=>x.nome===c.nome)?.id||'';
-        return `<div class="sett-row" onclick="enterCantiere('${cantId}').then(()=>apriContabilita())">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:700">${c.nome}</div>
-              <div style="font-size:11px;color:var(--t2)">${c.ore.toFixed(1)}h · spese CHF ${c.spese.toFixed(0)}${c.da>0?` · <span style="color:var(--red)">CHF ${c.da.toFixed(0)} da pagare</span>':''}
-              </div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;margin-left:10px">
-              <div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:${col}">${c.margine>=0?'+':''}${c.margine.toFixed(0)}</div>
-              ${m!==null?`<div style="font-size:10px;color:${col}">${m.toFixed(1)}%</div>`:'<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>'}
-            </div>
-          </div>
-          <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100}%;background:${c.margine>=0?'var(--green)':'var(--red)'}"></div></div>
-        </div>`;
-      }).join('')}
-    `;
-  }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
+    const margCls=totMargine>=0?'kpi-green':'kpi-red';
+    const margPre=totMargine>=0?'+':'';
+    let html='<div class="sec">Tutti i cantieri attivi — sintesi finanziaria</div>';
+    html+='<div class="cont-kpi" style="margin-bottom:16px">';
+    html+='<div class="kpi-box"><div class="kpi-val kpi-red">'+totCosto.toFixed(0)+'</div><div class="kpi-lbl">CHF Costi totali</div></div>';
+    html+='<div class="kpi-box"><div class="kpi-val '+margCls+'">'+margPre+totMargine.toFixed(0)+'</div><div class="kpi-lbl">CHF Margine globale</div></div>';
+    html+='</div>';
+    riepilogo.forEach(function(c){
+      const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
+      const col=c.margine>=0?'var(--green)':'var(--red)';
+      const cantId=CANTIERI.find(function(x){return x.nome===c.nome;})||{};
+      const cId=cantId.id||'';
+      const pct=c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100;
+      const mStr=c.margine>=0?'+':'';
+      html+='<div class="sett-row" style="cursor:pointer" onclick="navToCant(\''+cId+'\')">'; 
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:14px;font-weight:700">'+c.nome+'</div>';
+      html+='<div style="font-size:11px;color:var(--t2)">'+c.ore.toFixed(1)+'h · spese CHF '+c.spese.toFixed(0);
+      if(c.da>0)html+=' · <span style="color:var(--red)">CHF '+c.da.toFixed(0)+' da pagare</span>';
+      html+='</div></div>';
+      html+='<div style="text-align:right;flex-shrink:0;margin-left:10px">';
+      html+='<div style="font-family:DM Mono,monospace;font-size:16px;font-weight:600;color:'+col+'">'+mStr+c.margine.toFixed(0)+'</div>';
+      if(m!==null)html+='<div style="font-size:10px;color:'+col+'">'+m.toFixed(1)+'%</div>';
+      else html+='<div style="font-size:10px;color:var(--t3)">nessun ricavo</div>';
+      html+='</div></div>';
+      html+='<div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>';
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<div class="empty">Errore: '+e.message+'</div>';}
 }
 
 async function esportaReportContabilita(cantId){
@@ -1117,22 +1061,22 @@ async function esportaReportContabilita(cantId){
 
     // Foglio 2: Giornate
     const rGio=[['Data','Operaio','Ore']];
-    (giornate||[]).forEach(g=>rGio.push([g.data,`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
+    (giornate||[]).forEach(g=>rGio.push([g.data,`\${g.operai?.nome||''} \${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
     rGio.push(['','TOTALE',totOre.toFixed(2)],['','Costo (CHF)','CHF '+costoMano.toFixed(2)]);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rGio),'Manodopera');
 
     // Foglio 3: Spese
     const rSp=[['Data','Operaio','Tipo spesa','Documento','Descrizione','Importo CHF','Valuta','Stato','Metodo pagamento']];
-    (spese||[]).forEach(s=>rSp.push([s.data,`${s.operai?.nome||''} ${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
+    (spese||[]).forEach(s=>rSp.push([s.data,`\${s.operai?.nome||''} \${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
     rSp.push(['','','','','TOTALE',totSpese.toFixed(2),'CHF','','']);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rSp),'Spese');
 
     // Foglio 4: Regia
     const rReg=[['Data','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Costo/um CHF','Totale CHF','Fatturato']];
-    (regia||[]).forEach(r=>rReg.push([r.data,`${r.operai?.nome||''} ${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
+    (regia||[]).forEach(r=>rReg.push([r.data,`\${r.operai?.nome||''} \${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rReg),'Regia');
 
-    XLSX.writeFile(wb,`CT_Contabilita_${cn}_${oggi}.xlsx`);
+    XLSX.writeFile(wb,`CT_Contabilita_\${cn}_\${oggi}.xlsx`);
     showToast('Report Excel scaricato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -2225,7 +2169,7 @@ async function renderAdmin(){
   const existingImp=document.getElementById('adm-impostazioni');
   if(!existingImp){
     const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
-    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div><div class="fg" style="margin-top:12px"><label class="fl">Default tiri gru</label><div style="display:flex;gap:10px;align-items:center"><select class="fs" id="imp-gru-default" style="max-width:280px"><option value="paghiamo">CT paga (ditta esterna fa i tiri)</option><option value="incassiamo">CT incassa (facciamo tiri per altri)</option></select><button class="btn btn-g btn-sm" onclick="aggiornaDefaultGru()">Salva</button></div></div></div>`;
+    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div></div>`;
     document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest?.('.sec')||document.getElementById('scr-admin').lastChild);
   }else document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
   if(PROF?.ruolo==='titolare'){
@@ -2307,7 +2251,6 @@ function navTo(dest){
   else if(dest==='report'){showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
   else if(dest==='admin'){showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
   else if(dest==='contabilita'){showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
-  else if(dest==='gru'){showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
 }
 
 // ── SITUAZIONE ──
@@ -2743,177 +2686,6 @@ async function salvaAssenza(){
 async function deleteAssenza(id){if(!confirm('Eliminare questa assenza?'))return;await sb.from('assenze').delete().eq('id',id);closeModal('mod-assenza');renderAssenze();showToast('Eliminata');}
 
 init();
-
-// ── TIRI GRU ──
-let gruRecords = [];
-let editGruId = null;
-
-function getDefaultGruTipo() { return localStorage.getItem('gru_default') || 'paghiamo'; }
-
-function populateGruSel() {
-  const s = document.getElementById('gru-cant-sel');
-  if (!s) return;
-  s.innerHTML = '<option value="">Nessuno</option>';
-  (CANTIERI || []).forEach(c => {
-    const o = document.createElement('option');
-    o.value = c.id; o.textContent = c.nome;
-    s.appendChild(o);
-  });
-  const sf = document.getElementById('gru-cantiere');
-  if (sf) {
-    sf.innerHTML = '<option value="">Tutti i cantieri</option>';
-    (CANTIERI || []).forEach(c => {
-      const o = document.createElement('option');
-      o.value = c.id; o.textContent = c.nome;
-      sf.appendChild(o);
-    });
-  }
-}
-
-async function renderGru() {
-  const el = document.getElementById('gru-list');
-  const elTot = document.getElementById('gru-totali');
-  if (!el) return;
-  el.innerHTML = '<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
-  try {
-    let q = sb.from('tiri_gru').select('*').order('data', { ascending: false });
-    const filtCant = document.getElementById('gru-cantiere')?.value;
-    const filtTipo = document.getElementById('gru-tipo-fil')?.value;
-    if (filtCant) q = q.eq('cantiere_id', filtCant);
-    if (filtTipo) q = q.eq('tipo', filtTipo);
-    const { data, error } = await q;
-    if (error) throw error;
-    gruRecords = data || [];
-    const totPag = gruRecords.filter(r => r.tipo === 'paghiamo').reduce((s, r) => s + (parseFloat(r.importo) || 0), 0);
-    const totInc = gruRecords.filter(r => r.tipo === 'incassiamo').reduce((s, r) => s + (parseFloat(r.importo) || 0), 0);
-    elTot.innerHTML = gruRecords.length ? `<div style="display:flex;gap:10px;flex-wrap:wrap">
-      ${totPag > 0 ? `<div class="kpi-box" style="flex:1;min-width:120px"><div class="kpi-val kpi-red">${totPag.toFixed(0)}</div><div class="kpi-lbl">CHF da pagare</div></div>` : ''}
-      ${totInc > 0 ? `<div class="kpi-box" style="flex:1;min-width:120px"><div class="kpi-val kpi-green">${totInc.toFixed(0)}</div><div class="kpi-lbl">CHF da incassare</div></div>` : ''}
-    </div>` : '';
-    if (!gruRecords.length) { el.innerHTML = '<div class="empty">Nessun tiro registrato</div>'; return; }
-    el.innerHTML = gruRecords.map(r => {
-      const cant = (CANTIERI || []).find(c => c.id === r.cantiere_id);
-      const isInc = r.tipo === 'incassiamo';
-      const colore = isInc ? 'var(--green)' : 'var(--red)';
-      const label = isInc ? 'CT incassa' : 'CT paga';
-      return `<div class="cant-card" onclick="openModalGru('${r.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:${colore}">${label}</div>
-            <div style="font-size:15px;font-weight:700;margin:2px 0">${escHtml(r.ditta || '—')}</div>
-            <div style="font-size:12px;color:var(--t2)">${r.data || ''} ${cant ? '· ' + cant.nome : ''}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:16px;font-weight:700;color:${colore}">${(parseFloat(r.importo) || 0).toFixed(2)} CHF</div>
-            <div style="font-size:12px;color:var(--t2)">${r.n_tiri || 0} tiri</div>
-          </div>
-        </div>
-        ${r.bollettino_path ? `<div style="font-size:11px;color:var(--gold);margin-top:6px">📎 Bollettino allegato</div>` : ''}
-        ${r.note ? `<div style="font-size:12px;color:var(--t2);margin-top:4px">${escHtml(r.note)}</div>` : ''}
-      </div>`;
-    }).join('');
-  } catch(e) { el.innerHTML = '<div class="empty" style="color:var(--red)">Errore: ' + escHtml(e.message) + '</div>'; }
-}
-
-function openModalGru(id) {
-  editGruId = id;
-  document.getElementById('mod-gru-t').textContent = id ? 'Modifica tiro gru' : 'Nuovo tiro gru';
-  document.getElementById('gru-data').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('gru-tipo-op').value = getDefaultGruTipo();
-  document.getElementById('gru-ditta').value = '';
-  document.getElementById('gru-ntiri').value = '';
-  document.getElementById('gru-importo').value = '';
-  document.getElementById('gru-note').value = '';
-  document.getElementById('gru-foto').value = '';
-  document.getElementById('gru-foto-preview').innerHTML = '';
-  document.getElementById('del-gru-w').innerHTML = '';
-  populateGruSel();
-  if (id) {
-    const r = gruRecords.find(x => x.id === id);
-    if (r) {
-      document.getElementById('gru-data').value = r.data || '';
-      document.getElementById('gru-tipo-op').value = r.tipo || getDefaultGruTipo();
-      document.getElementById('gru-ditta').value = r.ditta || '';
-      document.getElementById('gru-ntiri').value = r.n_tiri || '';
-      document.getElementById('gru-importo').value = r.importo || '';
-      document.getElementById('gru-note').value = r.note || '';
-      if (r.cantiere_id) document.getElementById('gru-cant-sel').value = r.cantiere_id;
-      if (r.bollettino_path) document.getElementById('gru-foto-preview').innerHTML = `<div style="font-size:12px;color:var(--gold)">📎 Bollettino già allegato</div>`;
-      document.getElementById('del-gru-w').innerHTML = `<button class="btn btn-d" onclick="eliminaGru('${id}')">🗑️ Elimina</button>`;
-    }
-  }
-  document.getElementById('mod-gru').classList.add('on');
-}
-
-function previewGruFoto(e) {
-  const file = e.target.files[0];
-  const prev = document.getElementById('gru-foto-preview');
-  if (!file) { prev.innerHTML = ''; return; }
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = function(ev) { prev.innerHTML = `<img src="${ev.target.result}" style="max-width:100%;max-height:120px;border-radius:6px;margin-top:4px">`; };
-    reader.readAsDataURL(file);
-  } else {
-    prev.innerHTML = `<div style="font-size:12px;color:var(--gold);margin-top:4px">📄 ${file.name}</div>`;
-  }
-}
-
-async function salvaGru() {
-  const btn = document.getElementById('btn-salva-gru');
-  btn.disabled = true; btn.textContent = 'Salvataggio...';
-  try {
-    const data = {
-      tipo: document.getElementById('gru-tipo-op').value,
-      data: document.getElementById('gru-data').value || null,
-      cantiere_id: document.getElementById('gru-cant-sel').value || null,
-      ditta: document.getElementById('gru-ditta').value.trim() || null,
-      n_tiri: parseInt(document.getElementById('gru-ntiri').value) || null,
-      importo: parseFloat(document.getElementById('gru-importo').value) || null,
-      note: document.getElementById('gru-note').value.trim() || null,
-    };
-    if (!data.ditta) { alert('Inserisci il nome della ditta'); btn.disabled = false; btn.textContent = '💾 Salva'; return; }
-    if (!data.n_tiri || data.n_tiri < 1) { alert('Inserisci il numero di tiri'); btn.disabled = false; btn.textContent = '💾 Salva'; return; }
-    const fotoInput = document.getElementById('gru-foto');
-    if (fotoInput.files[0]) {
-      const file = fotoInput.files[0];
-      const ext = file.name.split('.').pop();
-      const path = `gru/${Date.now()}_bollettino.${ext}`;
-      const { error: upErr } = await sb.storage.from('cantiere-spese').upload(path, file, { upsert: true });
-      if (!upErr) data.bollettino_path = path;
-    }
-    let err;
-    if (editGruId) {
-      const res = await sb.from('tiri_gru').update(data).eq('id', editGruId);
-      err = res.error;
-    } else {
-      const res = await sb.from('tiri_gru').insert(data);
-      err = res.error;
-    }
-    if (err) throw err;
-    closeModal('mod-gru');
-    renderGru();
-    showToast('Tiro gru salvato ✓');
-  } catch(e) { alert('Errore: ' + e.message); }
-  finally { btn.disabled = false; btn.textContent = '💾 Salva'; }
-}
-
-async function eliminaGru(id) {
-  if (!confirm('Eliminare questo tiro gru?')) return;
-  try {
-    const { error } = await sb.from('tiri_gru').delete().eq('id', id);
-    if (error) throw error;
-    closeModal('mod-gru');
-    renderGru();
-    showToast('Eliminato ✓');
-  } catch(e) { alert('Errore: ' + e.message); }
-}
-
-function aggiornaDefaultGru() {
-  const val = document.getElementById('imp-gru-default').value;
-  localStorage.setItem('gru_default', val);
-  showToast('Default gru salvato ✓');
-}
-
 </script>
 </body>
 </html>
