@@ -361,6 +361,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <button class="btn btn-s" onclick="openModalOp(null)" style="margin-bottom:20px">➕ Nuovo operaio</button>
     <div class="sec admin-only">Utenti</div>
     <div id="adm-utenti" class="admin-only"></div>
+    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px">✉️ Invita nuovo caposquadra</button></div>
     <div class="bsp"></div>
   </div>
 
@@ -2818,6 +2819,59 @@ async function eliminaGru(id){
   if(!confirm('Eliminare?'))return;
   try{const{error}=await sb.from('tiri_gru').delete().eq('id',id);if(error)throw error;closeModal('mod-gru');renderGru();showToast('Eliminato ✓');}catch(e){alert('Errore: '+e.message);}
 }
+
+// ── INVITO CAPOSQUADRA ──
+function openModalInvita(){
+  document.getElementById('inv-nome').value='';
+  document.getElementById('inv-cogn').value='';
+  document.getElementById('inv-email').value='';
+  document.getElementById('inv-err').style.display='none';
+  document.getElementById('btn-invita').disabled=false;
+  document.getElementById('btn-invita').textContent='✉️ Invia invito';
+  document.getElementById('mod-invita').classList.add('on');
+}
+async function invitaCaposquadra(){
+  const nome=document.getElementById('inv-nome').value.trim();
+  const cogn=document.getElementById('inv-cogn').value.trim();
+  const email=document.getElementById('inv-email').value.trim().toLowerCase();
+  const errEl=document.getElementById('inv-err');
+  errEl.style.display='none';
+  if(!nome||!cogn){errEl.textContent='Inserisci nome e cognome';errEl.style.display='block';return;}
+  if(!email||!email.includes('@')){errEl.textContent='Email non valida';errEl.style.display='block';return;}
+  const btn=document.getElementById('btn-invita');
+  btn.disabled=true;btn.textContent='⏳...';
+  try{
+    const{data,error}=await sb.auth.admin.inviteUserByEmail(email,{data:{nome,cognome:cogn,ruolo:'caposquadra'}});
+    if(error)throw error;
+    const userId=data?.user?.id;
+    if(userId)await sb.from('profili').upsert({id:userId,nome:nome+' '+cogn,ruolo:'caposquadra'},{onConflict:'id'});
+    closeModal('mod-invita');
+    showToast('Invito inviato a '+email+' ✓');
+    renderAdmin();
+  }catch(e){
+    errEl.textContent='Errore: '+e.message;
+    errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='✉️ Invia invito';
+  }
+}
 </script>
+
+<div class="ov" id="mod-invita">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">✉️ Invita caposquadra</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Inserisci l'email del nuovo caposquadra. Riceverà una mail con il link per impostare la password.</p>
+    <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="inv-nome" placeholder="es. Marco"></div>
+    <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="inv-cogn" placeholder="es. Rossi"></div>
+    <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="inv-email" placeholder="marco.rossi@email.com"></div>
+    <div id="inv-err" style="color:var(--red);font-size:13px;margin-bottom:10px;display:none"></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-invita')">Annulla</button>
+      <button class="btn btn-g" onclick="invitaCaposquadra()" id="btn-invita">✉️ Invia invito</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
