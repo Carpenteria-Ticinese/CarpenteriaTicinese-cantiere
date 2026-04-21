@@ -145,8 +145,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:700;padding:10px 22px;border-radius:20px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1}
 .bsp{height:80px}
-.navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;transition:color .2s;gap:3px}
+.navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.navbar::-webkit-scrollbar{display:none}
+.nb{flex:0 0 auto;min-width:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;transition:color .2s;gap:3px}
 .nb-icon{font-size:22px;line-height:1}
 .nb-label{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
 .nb.on .nb-label{color:var(--gold)}
@@ -361,7 +361,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <button class="btn btn-s" onclick="openModalOp(null)" style="margin-bottom:20px">➕ Nuovo operaio</button>
     <div class="sec admin-only">Utenti</div>
     <div id="adm-utenti" class="admin-only"></div>
-    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px">✉️ Invita nuovo caposquadra</button></div>
+    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px">✉️ Invita nuovo collaboratore</button></div>
     <div class="bsp"></div>
   </div>
 
@@ -506,6 +506,21 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="fg"><label class="fl">N. tiri</label><input type="number" class="fi" id="gru-ntiri" placeholder="0" min="1" style="font-family:'DM Mono',monospace"></div>
       <div class="fg"><label class="fl">Importo CHF</label><input type="number" class="fi" id="gru-importo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
     </div>
+    <div class="fg"><label class="fl">Foto bollettino / documento</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+        <div class="foto-drop" onclick="document.getElementById('gru-foto-cam').click()" style="padding:12px">
+          <div style="font-size:22px">📷</div>
+          <p style="font-size:11px;color:var(--t2);margin-top:4px">Fotocamera</p>
+        </div>
+        <div class="foto-drop" onclick="document.getElementById('gru-foto-inp').click()" style="padding:12px">
+          <div style="font-size:22px">🖼️</div>
+          <p style="font-size:11px;color:var(--t2);margin-top:4px">Galleria</p>
+        </div>
+      </div>
+      <input type="file" id="gru-foto-inp" accept="image/*,application/pdf" style="display:none" onchange="addFotoGru(event)">
+      <input type="file" id="gru-foto-cam" accept="image/*" capture="environment" style="display:none" onchange="addFotoGru(event)">
+      <div id="gru-foto-prv" style="margin-top:6px"></div>
+    </div>
     <div class="fg"><label class="fl">Note</label><textarea class="ft" id="gru-note" style="min-height:50px"></textarea></div>
     <hr>
     <div class="row2">
@@ -515,7 +530,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div id="del-gru-w" style="margin-top:10px"></div>
   </div>
 </div>
-
 
 <div class="ov" id="mod-cant-log">
   <div class="mod">
@@ -1254,8 +1268,17 @@ async function renderHome(){
   (stats||[]).forEach(g=>{if(!orePerCant[g.cantiere_id])orePerCant[g.cantiere_id]=0;orePerCant[g.cantiere_id]+=parseFloat(g.ore_totali||0);});
   const attivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
   if(!attivi.length){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo.<br>Aggiungine uno dall\'Admin ⚙️</p></div>';return;}
+  // Carica anche tiri gru per cantiere
+  const {data:gruStats}=await sb.from('tiri_gru').select('cantiere_id,tipo,importo');
+  const gruPerCant={};
+  (gruStats||[]).forEach(g=>{
+    if(!gruPerCant[g.cantiere_id])gruPerCant[g.cantiere_id]={da:0,inc:0};
+    if(g.tipo==='paghiamo')gruPerCant[g.cantiere_id].da+=(parseFloat(g.importo)||0);
+    else gruPerCant[g.cantiere_id].inc+=(parseFloat(g.importo)||0);
+  });
   list.innerHTML=attivi.map(c=>{
     const ore=orePerCant[c.id]||0;
+    const gru=gruPerCant[c.id]||null;
     const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
     return `<div class="cant-card" onclick="enterCantiere('${c.id}')">
       <span class="cant-status ${stCls}">${c.stato}</span>
@@ -1263,6 +1286,8 @@ async function renderHome(){
       <div class="cant-meta">${[c.luogo,c.committente].filter(Boolean).join(' · ')||'—'}</div>
       <div class="cant-stats">
         <span class="cant-stat gold">⏱ ${ore.toFixed(1)}h totali</span>
+        ${gru&&gru.da>0?`<span class="cant-stat" style="color:var(--red)">🏗️ ${gru.da.toFixed(0)} CHF gru</span>`:''}
+        ${gru&&gru.inc>0?`<span class="cant-stat" style="color:var(--green)">🏗️ +${gru.inc.toFixed(0)} CHF gru</span>`:''}
         <span class="cant-stat">📋 Vedi registro</span>
       </div>
     </div>`;
@@ -2738,6 +2763,13 @@ init();
 // ── TIRI GRU ──
 let gruRecords=[];
 let editGruId=null;
+let gruFotoFile=null;
+
+function openUrl(el){window.open(el.dataset.href||el.getAttribute('data-href'),'_blank');}
+function eliminaGruById(el){eliminaGru(el.dataset.id||el.getAttribute('data-id'));}
+function openGruById(el){openModalGru(el.dataset.id||el.getAttribute('data-id'));}
+function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 function populateGruSel(){
   const s=document.getElementById('gru-cant-sel');if(!s)return;
   s.innerHTML='<option value="">Nessuno</option>';
@@ -2746,6 +2778,7 @@ function populateGruSel(){
   sf.innerHTML='<option value="">Tutti i cantieri</option>';
   (CANTIERI||[]).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
 }
+
 async function renderGru(){
   const el=document.getElementById('gru-list');
   const elT=document.getElementById('gru-totali');
@@ -2763,26 +2796,55 @@ async function renderGru(){
     const tI=gruRecords.filter(r=>r.tipo==='incassiamo').reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
     elT.innerHTML='';
     if(tP>0||tI>0){
-      elT.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap">'+(tP>0?'<div class="kpi-box" style="flex:1"><div class="kpi-val kpi-red">'+tP.toFixed(0)+'</div><div class="kpi-lbl">CHF da pagare</div></div>':'')+(tI>0?'<div class="kpi-box" style="flex:1"><div class="kpi-val kpi-green">'+tI.toFixed(0)+'</div><div class="kpi-lbl">CHF da incassare</div></div>':'')+'</div>';
+      elT.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap">'
+        +(tP>0?'<div class="kpi-box" style="flex:1"><div class="kpi-val kpi-red">'+tP.toFixed(0)+'</div><div class="kpi-lbl">CHF da pagare</div></div>':'')
+        +(tI>0?'<div class="kpi-box" style="flex:1"><div class="kpi-val kpi-green">'+tI.toFixed(0)+'</div><div class="kpi-lbl">CHF da incassare</div></div>':'')
+        +'</div>';
     }
-    if(!gruRecords.length){el.innerHTML='<div class="empty">Nessun tiro registrato</div>';return;}
+    if(!gruRecords.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun tiro registrato.<br>Premi + per aggiungere.</p></div>';return;}
     el.innerHTML=gruRecords.map(r=>{
       const cant=(CANTIERI||[]).find(c=>c.id===r.cantiere_id);
       const isI=r.tipo==='incassiamo';
       const col=isI?'var(--green)':'var(--red)';
-      return '<div class="cant-card" onclick="openModalGru(\''+r.id+'\')"><div style="display:flex;justify-content:space-between"><div><div style="font-size:12px;font-weight:700;color:'+col+'">'+(isI?'CT incassa':'CT paga')+'</div><div style="font-size:15px;font-weight:700">'+escHtml(r.ditta||'—')+'</div><div style="font-size:11px;color:var(--t2)">'+(r.data||'')+' '+(cant?'· '+cant.nome:'')+'</div></div><div style="text-align:right"><div style="font-size:16px;font-weight:700;color:'+col+'">'+(parseFloat(r.importo)||0).toFixed(2)+' CHF</div><div style="font-size:11px;color:var(--t2)">'+(r.n_tiri||0)+' tiri</div></div></div>'+(r.note?'<div style="font-size:12px;color:var(--t2);margin-top:6px">'+escHtml(r.note)+'</div>':'')+'</div>';
+      '<div class="cant-card" data-id="'+r.id+'" onclick="openGruById(this)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div><div style="font-size:12px;font-weight:700;color:'+col+'">'+(isI?'🏗️ CT incassa':'🏗️ CT paga')+'</div>'
+        +'<div style="font-size:15px;font-weight:700">'+escHtml(r.ditta||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--t2)">'+(r.data||'')+' '+(cant?'· '+cant.nome:'')+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:18px;font-weight:700;color:'+col+'">'+(parseFloat(r.importo)||0).toFixed(2)+' CHF</div>'
+        +'<div style="font-size:11px;color:var(--t2)">'+(r.n_tiri||0)+' tiri</div>'
+        +(r.foto_path?'<div style="font-size:10px;color:var(--blue);margin-top:2px">📎 Doc allegato</div>':'')
+        +'</div></div>'
+        +(r.note?'<div style="font-size:12px;color:var(--t2);margin-top:6px">📝 '+escHtml(r.note)+'</div>':'')
+        +'</div>';
     }).join('');
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+escHtml(e.message)+'</div>';}
 }
+
+function addFotoGru(e){
+  gruFotoFile=e.target.files[0];if(!gruFotoFile)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const isImg=gruFotoFile.type.startsWith('image/');
+    document.getElementById('gru-foto-prv').innerHTML=isImg
+      ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
+      :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+gruFotoFile.name+'</div>';
+  };
+  r.readAsDataURL(gruFotoFile);
+  e.target.value='';
+}
+
 function openModalGru(id){
   editGruId=id;
-  document.getElementById('mod-gru-t').textContent=id?'Modifica':'Nuovo tiro gru';
+  gruFotoFile=null;
+  document.getElementById('mod-gru-t').textContent=id?'Modifica tiro gru':'Nuovo tiro gru';
   document.getElementById('gru-data').value=new Date().toISOString().slice(0,10);
   document.getElementById('gru-tipo-op').value='paghiamo';
   document.getElementById('gru-ditta').value='';
   document.getElementById('gru-ntiri').value='';
   document.getElementById('gru-importo').value='';
   document.getElementById('gru-note').value='';
+  document.getElementById('gru-foto-prv').innerHTML='';
   document.getElementById('del-gru-w').innerHTML='';
   populateGruSel();
   if(id){
@@ -2795,42 +2857,85 @@ function openModalGru(id){
       document.getElementById('gru-importo').value=r.importo||'';
       document.getElementById('gru-note').value=r.note||'';
       if(r.cantiere_id)document.getElementById('gru-cant-sel').value=r.cantiere_id;
-      document.getElementById('del-gru-w').innerHTML='<button class="btn btn-d" onclick="eliminaGru(\''+id+'\')">Elimina</button>';
+      document.getElementById('del-gru-w').innerHTML='<button class="btn btn-d" data-id="'+id+'" onclick="eliminaGruById(this)">🗑️ Elimina</button>';
+      if(r.foto_path){
+        document.getElementById('gru-foto-prv').innerHTML='<div style="font-size:12px;color:var(--t2);padding:4px 0">⏳ Caricamento...</div>';
+        sb.storage.from('cantiere-spese').createSignedUrl(r.foto_path,7200).then(({data:u})=>{
+          const el=document.getElementById('gru-foto-prv');if(!el)return;
+          if(!u?.signedUrl){el.innerHTML='<div style="font-size:12px;color:var(--red)">⚠️ Foto non caricabile</div>';return;}
+          const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(r.foto_path);
+          el.innerHTML=isImg
+            ?'<img src="'+u.signedUrl+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain;cursor:pointer" data-href="'+u.signedUrl+'" onclick="openUrl(this)">'
+            :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;margin-top:4px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">📄</span><a href="'+u.signedUrl+'" target="_blank" style="color:var(--blue);font-size:13px">Apri documento</a></div>';
+        });
+      }
     }
   }
-  document.getElementById('mod-gru').classList.add('on');
-}
-async function salvaGru(){
-  const btn=document.getElementById('btn-salva-gru');
-  btn.disabled=true;btn.textContent='...';
-  try{
-    const d={tipo:document.getElementById('gru-tipo-op').value,data:document.getElementById('gru-data').value||null,cantiere_id:document.getElementById('gru-cant-sel').value||null,ditta:document.getElementById('gru-ditta').value.trim()||null,n_tiri:parseInt(document.getElementById('gru-ntiri').value)||null,importo:parseFloat(document.getElementById('gru-importo').value)||null,note:document.getElementById('gru-note').value.trim()||null};
-    if(!d.ditta){alert('Inserisci la ditta');btn.disabled=false;btn.textContent='Salva';return;}
-    if(!d.n_tiri){alert('Inserisci il numero di tiri');btn.disabled=false;btn.textContent='Salva';return;}
-    let err;
-    if(editGruId){const res=await sb.from('tiri_gru').update(d).eq('id',editGruId);err=res.error;}
-    else{const res=await sb.from('tiri_gru').insert(d);err=res.error;}
-    if(err)throw err;
-    closeModal('mod-gru');renderGru();showToast('Salvato ✓');
-  }catch(e){alert('Errore: '+e.message);}
-  finally{btn.disabled=false;btn.textContent='Salva';}
-}
-async function eliminaGru(id){
-  if(!confirm('Eliminare?'))return;
-  try{const{error}=await sb.from('tiri_gru').delete().eq('id',id);if(error)throw error;closeModal('mod-gru');renderGru();showToast('Eliminato ✓');}catch(e){alert('Errore: '+e.message);}
+  openModal('mod-gru');
 }
 
-// ── INVITO CAPOSQUADRA ──
+async function salvaGru(){
+  const btn=document.getElementById('btn-salva-gru');
+  btn.disabled=true;btn.textContent='⏳...';
+  try{
+    const d={
+      tipo:document.getElementById('gru-tipo-op').value,
+      data:document.getElementById('gru-data').value||null,
+      cantiere_id:document.getElementById('gru-cant-sel').value||null,
+      ditta:document.getElementById('gru-ditta').value.trim()||null,
+      n_tiri:parseInt(document.getElementById('gru-ntiri').value)||null,
+      importo:parseFloat(document.getElementById('gru-importo').value)||null,
+      note:document.getElementById('gru-note').value.trim()||null
+    };
+    if(!d.ditta){showToast('Inserisci la ditta','e');btn.disabled=false;btn.textContent='Salva';return;}
+    if(!d.n_tiri){showToast('Inserisci il numero di tiri','e');btn.disabled=false;btn.textContent='Salva';return;}
+    let gruId=editGruId;
+    let err;
+    if(editGruId){
+      const res=await sb.from('tiri_gru').update(d).eq('id',editGruId);
+      err=res.error;
+    }else{
+      const res=await sb.from('tiri_gru').insert(d).select().single();
+      err=res.error;
+      if(!err)gruId=res.data.id;
+    }
+    if(err)throw err;
+    // Upload foto se presente
+    if(gruFotoFile&&gruId){
+      try{
+        const ext=gruFotoFile.name.split('.').pop().toLowerCase();
+        const path='gru/'+gruId+'_'+Date.now()+'.'+ext;
+        const{error:ue}=await sb.storage.from('cantiere-spese').upload(path,gruFotoFile,{upsert:true});
+        if(!ue)await sb.from('tiri_gru').update({foto_path:path}).eq('id',gruId);
+      }catch(fe){console.warn('Errore upload foto gru:',fe);}
+    }
+    closeModal('mod-gru');renderGru();showToast('Salvato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.disabled=false;btn.textContent='Salva';}
+}
+
+async function eliminaGru(id){
+  if(!confirm('Eliminare questo tiro gru?'))return;
+  try{
+    const{error}=await sb.from('tiri_gru').delete().eq('id',id);
+    if(error)throw error;
+    closeModal('mod-gru');renderGru();showToast('Eliminato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+// ── INVITO COLLABORATORE ──
 function openModalInvita(){
+  if(PROF?.ruolo!=='titolare'){showToast('Solo il titolare può invitare','e');return;}
   document.getElementById('inv-nome').value='';
   document.getElementById('inv-cogn').value='';
   document.getElementById('inv-email').value='';
   document.getElementById('inv-err').style.display='none';
   document.getElementById('btn-invita').disabled=false;
   document.getElementById('btn-invita').textContent='✉️ Invia invito';
-  document.getElementById('mod-invita').classList.add('on');
+  openModal('mod-invita');
 }
-async function invitaCaposquadra(){
+
+async function invitaCollaboratore(){
   const nome=document.getElementById('inv-nome').value.trim();
   const cogn=document.getElementById('inv-cogn').value.trim();
   const email=document.getElementById('inv-email').value.trim().toLowerCase();
@@ -2841,10 +2946,16 @@ async function invitaCaposquadra(){
   const btn=document.getElementById('btn-invita');
   btn.disabled=true;btn.textContent='⏳...';
   try{
-    const{data,error}=await sb.auth.admin.inviteUserByEmail(email,{data:{nome,cognome:cogn,ruolo:'caposquadra'}});
-    if(error)throw error;
-    const userId=data?.user?.id;
-    if(userId)await sb.from('profili').upsert({id:userId,nome:nome+' '+cogn,ruolo:'caposquadra'},{onConflict:'id'});
+    const{data:{session}}=await sb.auth.getSession();
+    const token=session?.access_token;
+    if(!token)throw new Error('Sessione non valida — rieffettua il login');
+    const resp=await fetch('https://wgidgbauhivdctdxfjnk.supabase.co/functions/v1/invita-collaboratore',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({action:'invite',email,nome,cognome:cogn})
+    });
+    const result=await resp.json();
+    if(!resp.ok||result.error)throw new Error(result.error||'Errore invio invito');
     closeModal('mod-invita');
     showToast('Invito inviato a '+email+' ✓');
     renderAdmin();
@@ -2856,12 +2967,11 @@ async function invitaCaposquadra(){
   }
 }
 </script>
-
 <div class="ov" id="mod-invita">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">✉️ Invita caposquadra</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Inserisci l'email del nuovo caposquadra. Riceverà una mail con il link per impostare la password.</p>
+    <div class="mod-t">✉️ Invita collaboratore</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Solo il titolare può invitare. Il collaboratore riceverà una email per impostare la password.</p>
     <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="inv-nome" placeholder="es. Marco"></div>
     <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="inv-cogn" placeholder="es. Rossi"></div>
     <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="inv-email" placeholder="marco.rossi@email.com"></div>
@@ -2869,7 +2979,7 @@ async function invitaCaposquadra(){
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-invita')">Annulla</button>
-      <button class="btn btn-g" onclick="invitaCaposquadra()" id="btn-invita">✉️ Invia invito</button>
+      <button class="btn btn-g" onclick="invitaCollaboratore()" id="btn-invita">✉️ Invia invito</button>
     </div>
   </div>
 </div>
