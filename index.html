@@ -26,6 +26,7 @@
 .tema-verde{--bg:#050f08;--s1:#081a0c;--s2:#0d2414;--s3:#122e1a;--border:#1a4024;--t3:#1a4024;}
 .tema-bordeaux{--bg:#100508;--s1:#1c0a0f;--s2:#280f15;--s3:#33141c;--border:#4a1d27;--t3:#4a1d27;}
 .tema-grigio{--bg:#111114;--s1:#1a1a1e;--s2:#222228;--s3:#2a2a32;--border:#35353f;--t3:#35353f;}
+.tema-marrone{--bg:#0d0804;--s1:#1a1008;--s2:#25180c;--s3:#301f10;--border:#472e18;--t3:#472e18;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px}
@@ -220,7 +221,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <div id="app">
   <div class="top">
-    <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:16px;line-height:1" title="Indietro">←</button>
+      <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
+    </div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
       <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span>
@@ -446,6 +450,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div style="margin-bottom:16px">
       <div class="sec">💸 Spese da pagare</div>
       <div id="sit-spese-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="sec" style="margin-top:8px">🏗️ Gru da pagare</div>
+      <div id="sit-gru-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     </div>
     <div style="margin-bottom:16px">
       <div class="sec" style="margin-top:8px">🔧 Regia da fatturare</div>
@@ -907,21 +915,25 @@ async function renderContabilita(cantId){
       {data:giornate},
       {data:spese},
       {data:regia},
+      {data:gruData},
     ] = await Promise.all([
       sb.from('giornate').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('spese').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('regia').select('*').eq('cantiere_id',cantId).order('data'),
+      sb.from('tiri_gru').select('*').eq('cantiere_id',cantId).order('data'),
     ]);
 
     // ── CALCOLI BASE ──
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
     const costoManodopera=totOre*tariffa;
     const totSpeseAll=(spese||[]).reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
+    const totGruCosto=(gruData||[]).filter(r=>r.tipo==='paghiamo').reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
+    const totGruIncasso=(gruData||[]).filter(r=>r.tipo==='incassiamo').reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
     const totSpeseDA=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totSpesePag=(spese||[]).filter(s=>s.stato_pag==='Pagato').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaFatt=(regia||[]).filter(r=>r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const totRegiaDa=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
-    const costoTotale=costoManodopera+totSpeseAll;
+    const costoTotale=costoManodopera+totSpeseAll+totGruCosto;
     const ricaviTotali=totRegiaFatt;
     const margine=ricaviTotali-costoTotale;
     const marginePerc=ricaviTotali>0?((margine/ricaviTotali)*100):0;
@@ -974,7 +986,9 @@ async function renderContabilita(cantId){
       <!-- KPI PRINCIPALI -->
       <div class="cont-kpi">
         <div class="kpi-box"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera</div></div>
-        <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese totali</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese</div></div>
+        ${totGruCosto>0?`<div class="kpi-box"><div class="kpi-val kpi-red">${totGruCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Gru (da pagare)</div></div>`:''}
+        ${totGruIncasso>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncasso.toFixed(0)}</div><div class="kpi-lbl">CHF Gru (incassata)</div></div>`:''}
         <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi (regia fatt.)</div></div>
       </div>
@@ -1328,11 +1342,12 @@ async function enterCantiere(id){
   curCant=CANTIERI.find(c=>c.id===id);
   if(!curCant)return;
   await loadLavs(id);
+  pushNav('cantiere');
   goTo('cantiere');
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,active:true}]);
   renderCantiere();
 }
-function goHome(){curCant=null;goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
+function goHome(){curCant=null;_navHistory=['home'];const btn=document.getElementById('btn-back');if(btn)btn.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
 function goToCantiere(){if(curCant)enterCantiere(curCant.id);else goHome();}
 
 async function renderCantiere(){
@@ -2345,12 +2360,35 @@ function showToast(msg,type){const t=document.getElementById('toast');t.textCont
 // ── NAVBAR ──
 async function aggiornaBadgeSituazione(){
   try{
-    const [{data:spese},{data:regia}]=await Promise.all([sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false)]);
-    const tot=(spese?.length||0)+(regia?.length||0);
+    const [{data:spese},{data:regia},{data:gru}]=await Promise.all([
+      sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),
+      sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false),
+      sb.from('tiri_gru').select('id',{count:'exact'}).eq('tipo','paghiamo')
+    ]);
+    const tot=(spese?.length||0)+(regia?.length||0)+(gru?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
 }
+// ── NAVIGAZIONE INDIETRO ──
+let _navHistory=[];
+
+function pushNav(dest){
+  if(_navHistory[_navHistory.length-1]!==dest)_navHistory.push(dest);
+  const btn=document.getElementById('btn-back');
+  if(btn)btn.style.display=_navHistory.length>1?'block':'none';
+}
+
+function goBack(){
+  if(_navHistory.length<=1){goHome();return;}
+  _navHistory.pop();
+  const prev=_navHistory[_navHistory.length-1];
+  _navHistory.pop(); // navTo lo ri-aggiunge
+  if(prev==='home')goHome();
+  else if(prev==='cantiere'&&curCant)goToCantiere();
+  else navTo(prev);
+}
+
 function navTo(dest){
   // Caposquadra: blocca accesso a sezioni economiche
   const ruolo=PROF?.ruolo||'caposquadra';
@@ -2361,15 +2399,15 @@ function navTo(dest){
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
   const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
-  if(dest==='home')goHome();
-  else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
-  else if(dest==='spese'){showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
-  else if(dest==='situazione'){showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
-  else if(dest==='report'){showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
-  else if(dest==='admin'){showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
-  else if(dest==='contabilita'){showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
-  else if(dest==='gru'){showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
-  else if(dest==='bolle'){showScr('bolle');document.getElementById('top-title').textContent='Bolle di consegna';renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
+  if(dest==='home'){goHome();return;}
+  else if(dest==='nuova'){pushNav('nuova');if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
+  else if(dest==='spese'){pushNav('spese');showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
+  else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
+  else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
+  else if(dest==='admin'){pushNav('admin');showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
+  else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
+  else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
+  else if(dest==='bolle'){pushNav('bolle');showScr('bolle');document.getElementById('top-title').textContent='Bolle di consegna';renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
 }
 
 // ── SITUAZIONE ──
@@ -2412,6 +2450,33 @@ async function renderSituazione(){
       elReg.innerHTML=html;
     }
   }catch(e){elReg.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
+
+  // ── GRU DA PAGARE ──
+  const elGru=document.getElementById('sit-gru-content');
+  if(elGru){
+    elGru.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+    try{
+      const{data:gru,error:errGru}=await sb.from('tiri_gru').select('*, cantieri(nome)').eq('tipo','paghiamo').order('data',{ascending:false});
+      if(errGru)throw errGru;
+      if(!gru||!gru.length){elGru.innerHTML='<div class="empty"><div class="empty-i">✅</div><p>Nessun tiro gru da pagare</p></div>';}
+      else{
+        const totG=gru.reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
+        let html=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale gru da pagare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totG.toFixed(2)} CHF</span></div>`;
+        gru.forEach(r=>{
+          html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="navTo('gru')">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:13px;font-weight:700">🏗️ ${r.ditta||'—'}</div>
+                <div style="font-size:11px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)} · ${r.n_tiri||0} tiri</div>
+              </div>
+              <div style="font-family:'DM Mono';font-size:16px;color:var(--red)">${parseFloat(r.importo||0).toFixed(2)} CHF</div>
+            </div>
+          </div>`;
+        });
+        elGru.innerHTML=html;
+      }
+    }catch(e){elGru.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
+  }
 }
 async function segnaSpesaPagata(id){
   if(!confirm('Segnare questa spesa come pagata?'))return;
@@ -2820,7 +2885,7 @@ let gruFotoFile=null;
 
 // ── TEMA COLORE ──
 function applicaTema(nome){
-  const temi=['scuro','blu','verde','bordeaux','grigio'];
+  const temi=['scuro','blu','verde','bordeaux','grigio','marrone'];
   const body=document.body;
   temi.forEach(t=>body.classList.remove('tema-'+t));
   if(nome!=='scuro')body.classList.add('tema-'+nome);
@@ -3333,6 +3398,11 @@ async function invitaCollaboratore(){
         <div style="font-size:24px">🪨</div>
         <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Grigio acciaio</div>
         <div style="font-size:11px;color:#857f73">Steel</div>
+      </div>
+      <div onclick="applicaTema('marrone')" style="background:#1a1008;border:2px solid #472e18;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-marrone">
+        <div style="font-size:24px">🪵</div>
+        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Legno</div>
+        <div style="font-size:11px;color:#c8a84b">Wood</div>
       </div>
     </div>
     <div id="tema-attuale" style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:10px"></div>
