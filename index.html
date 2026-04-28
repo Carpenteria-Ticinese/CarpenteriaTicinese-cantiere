@@ -263,7 +263,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="card" style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
       <div class="sec">Dati della giornata</div>
       <div class="row2">
-        <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="g1-data"></div>
+        <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="g1-data" onchange="GIO.data=this.value"></div>
         <div class="fg"><label class="fl">Cantiere</label><div id="g1-cant-nome" style="font-size:15px;font-weight:700;padding:11px 0;color:var(--gold)">—</div></div>
       </div>
       <div class="fg">
@@ -1726,7 +1726,14 @@ async function renderAnagrafica(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const {data,error}=await sb.from('cantiere_figure').select('*').eq('cantiere_id',curCant.id).order('ruolo');
   if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
-  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">👥</div><p>Nessuna figura aggiunta.</p></div>';return;}
+  if(!data?.length){
+    const ef=document.createElement('div');ef.className='empty';
+    ef.innerHTML='<div class="empty-i">👥</div><p>Nessuna figura aggiunta.</p>';
+    const efBtn=document.createElement('button');efBtn.className='btn btn-g';efBtn.style.marginTop='12px';efBtn.textContent='➕ Aggiungi prima figura';
+    efBtn.addEventListener('click',function(){openModalFigura(null);});
+    ef.appendChild(efBtn);el.innerHTML='';el.appendChild(ef);
+    return;
+  }
   const ruoloIcon={'Direttore Lavori (DL)':'🏛️','Assistente di cantiere':'👷','Geometra':'📐','Ispettore':'🔍','Committente':'🤝','Subappaltatore':'🔧','Altro':'👤'};
   el.innerHTML=data.map(f=>`
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalFigura('${f.id}')">
@@ -2016,7 +2023,14 @@ async function openCantLog(gid){
     <div class="sec">📷 Foto (${(foto||[]).length})</div>
     <div id="cantlog-foto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
       ${!(foto||[]).length?'<div style="font-size:13px;color:var(--t2);grid-column:span 2">Nessuna foto caricata</div>':'<div style="grid-column:span 2;font-size:12px;color:var(--t2)">⏳ Caricamento foto...</div>'}
-    </div>`;
+    </div>
+    <hr>
+    <div class="row2" style="margin-top:4px">
+      <button class="btn btn-s" onclick="closeModal('mod-cant-log')">Chiudi</button>
+      <button class="btn btn-g" onclick="aggiungiOperaioAData('${g.data}','${g.cantiere_id}')">➕ Aggiungi operaio a questo giorno</button>
+    </div>
+    <button class="btn" style="width:100%;margin-top:8px;background:var(--s2);color:var(--t2)" onclick="apriModificaGiornata('${gid}');closeModal('mod-cant-log')">✏️ Modifica questa giornata</button>
+    `;
   openModal('mod-cant-log');
   if((foto||[]).length){
     const grid=document.getElementById('cantlog-foto-grid');
@@ -2032,11 +2046,36 @@ async function openCantLog(gid){
   }
 }
 
+// ── AGGIUNGI OPERAIO A DATA ESISTENTE ──
+function aggiungiOperaioAData(data, cantId){
+  closeModal('mod-cant-log');
+  // Preseleziona cantiere e data, poi vai a step1
+  const cant=CANTIERI.find(c=>c.id===cantId);
+  if(cant){
+    curCant=cant;
+    GIO={cantId:cantId,data,meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
+    showScr('giornata-1');
+    document.getElementById('top-title').textContent='Aggiungi operaio';
+    setBread([{label:'Cantieri',onclick:"goHome()"},{label:cant.nome,onclick:'goToCantiere()'},{label:'Aggiungi operaio'}]);
+    document.getElementById('g1-data').value=data;
+    document.getElementById('g1-cant-nome').textContent=cant.nome;
+    document.getElementById('g1-cant-picker').style.display='none';
+    // Disabilita cambio data (è aggiunta a giornata esistente)
+    const dataInp=document.getElementById('g1-data');
+    if(dataInp){dataInp.max=data;dataInp.min=data;}
+    loadLavs(cantId);
+    showToast('Data: '+fmtDate(data)+' — aggiungi gli operai mancanti');
+  }
+}
+
 // ── NUOVA GIORNATA ──
 function startNuovaGiornata(){
   const now=new Date();
   GIO={cantId:curCant.id,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
-  document.getElementById('g1-data').value=GIO.data;
+  const g1DataEl=document.getElementById('g1-data');
+  g1DataEl.value=GIO.data;
+  g1DataEl.max=GIO.data; // non si può andare nel futuro
+  g1DataEl.removeAttribute('min');
   document.getElementById('g1-cant-nome').textContent=curCant.nome;
   document.getElementById('g1-ini').value='07:00';document.getElementById('g1-fine').value='17:00';document.getElementById('g1-pausa').value='60';
   document.getElementById('g1-mat').value='';document.getElementById('g1-visite').value='';
