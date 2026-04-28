@@ -21,12 +21,6 @@
   --green:#4caf7d;--red:#e05555;--blue:#5588e0;--orange:#e08840;
   --r:14px;--rsm:8px;
 }
-/* ── TEMI COLORE ── */
-.tema-blu{--bg:#050d1a;--s1:#0a1628;--s2:#0f1f38;--s3:#162848;--border:#1e3456;--t3:#1e3456;}
-.tema-verde{--bg:#050f08;--s1:#081a0c;--s2:#0d2414;--s3:#122e1a;--border:#1a4024;--t3:#1a4024;}
-.tema-bordeaux{--bg:#100508;--s1:#1c0a0f;--s2:#280f15;--s3:#33141c;--border:#4a1d27;--t3:#4a1d27;}
-.tema-grigio{--bg:#111114;--s1:#1a1a1e;--s2:#222228;--s3:#2a2a32;--border:#35353f;--t3:#35353f;}
-.tema-marrone{--bg:#0d0804;--s1:#1a1008;--s2:#25180c;--s3:#301f10;--border:#472e18;--t3:#472e18;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px}
@@ -197,6 +191,19 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .sett-row:active{border-color:var(--gold)}
 .prog-bar{height:8px;background:var(--s3);border-radius:4px;overflow:hidden;margin-top:8px}
 .prog-fill{height:8px;border-radius:4px;transition:width .4s}
+/* Temi colore */
+.tema-blu{--bg:#050d1a;--s1:#0a1628;--s2:#0f1f38;--s3:#162848;--border:#1e3456;--t3:#1e3456;}
+.tema-verde{--bg:#050f08;--s1:#081a0c;--s2:#0d2414;--s3:#122e1a;--border:#1a4024;--t3:#1a4024;}
+.tema-bordeaux{--bg:#100508;--s1:#1c0a0f;--s2:#280f15;--s3:#33141c;--border:#4a1d27;--t3:#4a1d27;}
+.tema-grigio{--bg:#111114;--s1:#1a1a1e;--s2:#222228;--s3:#2a2a32;--border:#35353f;--t3:#35353f;}
+.tema-marrone{--bg:#0d0804;--s1:#1a1008;--s2:#25180c;--s3:#301f10;--border:#472e18;--t3:#472e18;}
+/* Piano del giorno */
+.piano-row{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.piano-row.has-note{border-color:rgba(200,168,75,.6);background:rgba(200,168,75,.07);}
+.piano-note{background:rgba(200,168,75,.15);border:1px solid rgba(200,168,75,.4);border-radius:var(--rsm);padding:8px 12px;margin-top:8px;font-size:13px;color:var(--gold);font-weight:600;}
+.mezzo-badge{display:inline-block;background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:11px;color:var(--t2);margin-top:4px;}
+.ruolo-cs{color:var(--gold);font-weight:700;font-size:11px;text-transform:uppercase;}
+.ruolo-rc{color:var(--blue);font-weight:700;font-size:11px;text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -221,14 +228,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
 <div id="app">
   <div class="top">
-    <div style="display:flex;align-items:center;gap:8px">
-      <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:16px;line-height:1" title="Indietro">←</button>
-      <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
-    </div>
+    <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
       <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span>
-      <button class="btn-icon" onclick="openModal('mod-tema')" title="Tema colore">🎨</button>
       <button class="btn-icon" onclick="doLogout()">Esci</button>
     </div>
   </div>
@@ -257,17 +260,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 
   <!-- NUOVA GIORNATA STEP 1 -->
   <div class="scr" id="scr-giornata-1">
-    <!-- SELEZIONE CANTIERE (visibile solo se nessun cantiere selezionato) -->
-    <div id="g1-cant-picker" style="display:none;margin-bottom:16px">
-      <div style="font-size:16px;font-weight:800;margin-bottom:12px">Seleziona cantiere</div>
-      <input type="text" class="fi" id="g1-search" placeholder="🔍 Cerca per nome, luogo, committente..." oninput="filtraCantieri()" style="margin-bottom:10px">
-      <div id="g1-cant-lista"></div>
-    </div>
     <div class="card" style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
       <div class="sec">Dati della giornata</div>
       <div class="row2">
         <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="g1-data"></div>
-        <div class="fg"><label class="fl">Cantiere</label><div id="g1-cant-nome" style="font-size:15px;font-weight:700;padding:11px 0;color:var(--gold);cursor:pointer" onclick="apriCantierePicker()" title="Tocca per cambiare cantiere">—</div></div>
+        <div class="fg"><label class="fl">Cantiere</label><div id="g1-cant-nome" style="font-size:15px;font-weight:700;padding:11px 0;color:var(--gold)">—</div></div>
       </div>
       <div class="fg">
         <label class="fl">Meteo</label>
@@ -371,6 +368,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
   <div class="scr admin-only" id="scr-admin">
     <div class="sec">Cantieri</div>
     <div id="adm-cantieri"></div>
+    <div class="sec">Impostazioni azienda</div>
+    <div class="row2" style="margin-bottom:12px;align-items:flex-end">
+      <div class="fg"><label class="fl">Nome azienda</label><input type="text" class="fi" id="adm-nome-az" placeholder="es. Carpenteria Ticinese Sàgl"></div>
+      <button class="btn btn-g" style="flex-shrink:0;height:44px" onclick="salvaNomeAzienda()">💾 Salva</button>
+    </div>
+    <hr style="margin-bottom:14px">
     <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px">➕ Nuovo cantiere</button>
     <div class="sec">Operai</div>
     <div id="adm-operai"></div>
@@ -452,10 +455,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div id="sit-spese-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     </div>
     <div style="margin-bottom:16px">
-      <div class="sec" style="margin-top:8px">🏗️ Gru da pagare</div>
-      <div id="sit-gru-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
-    </div>
-    <div style="margin-bottom:16px">
       <div class="sec" style="margin-top:8px">🔧 Regia da fatturare</div>
       <div id="sit-regia-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     </div>
@@ -475,17 +474,25 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
-  <!-- BOLLE DI CONSEGNA -->
-  <div class="scr" id="scr-bolle">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">Bolle di consegna</div>
-      <button class="btn-icon btn-sm" onclick="openModalBolla(null)">➕ Aggiungi</button>
+  <!-- PIANO DEL GIORNO -->
+  <div class="scr" id="scr-piano">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="cambiaDataPiano(-1)" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;color:var(--text);font-size:16px">←</button>
+        <input type="date" id="piano-data" class="fi" style="width:150px;font-family:'DM Mono',monospace;font-size:14px" onchange="renderPiano()">
+        <button onclick="cambiaDataPiano(1)" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;color:var(--text);font-size:16px">→</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-icon btn-sm" onclick="apriSchermoPiano()" title="Proietta su schermo">📺</button>
+        <button class="btn-icon btn-sm" onclick="openModal('mod-piano-ass')">➕ Assegna</button>
+      </div>
     </div>
-    <div class="row2" style="margin-bottom:12px">
-      <select class="fs" id="bol-cantiere" onchange="renderBolle()"><option value="">Tutti i cantieri</option></select>
-      <select class="fs" id="bol-stato" onchange="renderBolle()"><option value="">Tutte</option><option value="ricevuta">Ricevuta</option><option value="mancante">Mancante</option></select>
-    </div>
-    <div id="bolle-list"></div>
+    <div id="piano-data-label" style="font-size:12px;color:var(--t2);margin-bottom:12px;text-align:center"></div>
+    <div id="piano-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
+
+    <div class="sec" style="margin-top:20px">🚗 Mezzi aziendali</div>
+    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModal('mod-mezzo')">➕ Nuovo mezzo</button>
+    <div id="mezzi-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <div class="bsp"></div>
   </div>
 
@@ -515,6 +522,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     </div>
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label">Report</div></div>
     <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label">Contabilità</div></div>
+    <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
   </div>
@@ -623,6 +631,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
     </div>
     <div class="fg"><label class="fl">Ruolo</label><select class="fs" id="o-ruolo"><option>Caposquadra</option><option>Carpentiere</option><option>Lattoniere</option><option>Apprendista</option><option>Operaio generico</option></select></div>
+    <div class="fg"><label class="fl">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+    <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op')">Annulla</button>
@@ -655,12 +665,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="sp-cant-sel"></select></div>
       <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="sp-data"></div>
     </div>
-    <div class="fg"><label class="fl">Ora (si imposta automaticamente)</label><input type="time" class="fi" id="sp-ora" style="font-family:'DM Mono',monospace;font-size:14px"></div>
-    <div class="fg"><label class="fl">Fornitore / Emittente</label><input type="text" class="fi" id="sp-fornitore" placeholder="es. Würth SA, Ristorante Bellinzona, Hotel Ticino..."></div>
     <div class="fg"><label class="fl">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
     <div class="row2">
       <div class="fg"><label class="fl">Tipo documento</label>
-        <select class="fs" id="sp-tipo-doc"><option>Scontrino</option><option>Fattura</option><option>Ricevuta</option><option>Altro</option></select>
+        <select class="fs" id="sp-tipo-doc"><option>Scontrino</option><option>Bolla di consegna</option><option>Fattura fornitore</option><option>Altro</option></select>
       </div>
       <div class="fg"><label class="fl">Tipo spesa</label>
         <select class="fs" id="sp-tipo-spesa"><option>Materiale</option><option>Gasolio</option><option>Autostrada</option><option>Pranzo</option><option>Regia</option><option>Trasporto</option><option>Altro</option></select>
@@ -882,7 +890,7 @@ const SB_KEY='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
 let USER=null,PROF=null;
-let CANTIERI=[],OPERAI=[],LAVS=[];
+let CANTIERI=[],OPERAI=[],OPERAI_TUTTI=[],LAVS=[];
 let curCant=null;
 let fFiles=[],fB64=[];
 let GIO={cantId:null,data:null,meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
@@ -915,25 +923,21 @@ async function renderContabilita(cantId){
       {data:giornate},
       {data:spese},
       {data:regia},
-      {data:gruData},
     ] = await Promise.all([
       sb.from('giornate').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('spese').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('regia').select('*').eq('cantiere_id',cantId).order('data'),
-      sb.from('tiri_gru').select('*').eq('cantiere_id',cantId).order('data'),
     ]);
 
     // ── CALCOLI BASE ──
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
     const costoManodopera=totOre*tariffa;
     const totSpeseAll=(spese||[]).reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
-    const totGruCosto=(gruData||[]).filter(r=>r.tipo==='paghiamo').reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
-    const totGruIncasso=(gruData||[]).filter(r=>r.tipo==='incassiamo').reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
     const totSpeseDA=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totSpesePag=(spese||[]).filter(s=>s.stato_pag==='Pagato').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaFatt=(regia||[]).filter(r=>r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const totRegiaDa=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
-    const costoTotale=costoManodopera+totSpeseAll+totGruCosto;
+    const costoTotale=costoManodopera+totSpeseAll;
     const ricaviTotali=totRegiaFatt;
     const margine=ricaviTotali-costoTotale;
     const marginePerc=ricaviTotali>0?((margine/ricaviTotali)*100):0;
@@ -986,9 +990,7 @@ async function renderContabilita(cantId){
       <!-- KPI PRINCIPALI -->
       <div class="cont-kpi">
         <div class="kpi-box"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera</div></div>
-        <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese</div></div>
-        ${totGruCosto>0?`<div class="kpi-box"><div class="kpi-val kpi-red">${totGruCosto.toFixed(0)}</div><div class="kpi-lbl">CHF Gru (da pagare)</div></div>`:''}
-        ${totGruIncasso>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncasso.toFixed(0)}</div><div class="kpi-lbl">CHF Gru (incassata)</div></div>`:''}
+        <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese totali</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi (regia fatt.)</div></div>
       </div>
@@ -1213,6 +1215,9 @@ async function afterLogin(){
       document.getElementById('app').classList.add('is-tit');
       const nbAdmin=document.getElementById('nb-admin');
       if(nbAdmin)nbAdmin.style.display='flex';
+      const nbPiano=document.getElementById('nb-piano');
+      if(nbPiano)nbPiano.style.display='flex';
+      caricaNomeAzienda();
     }
     // Caposquadra: nascondi sezioni economiche
     if(ruolo==='caposquadra'){
@@ -1223,7 +1228,6 @@ async function afterLogin(){
     document.getElementById('app').classList.add('on');
     const now=new Date();
     document.getElementById('rep-mese').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    caricaTema();
     renderHome();
     setBread([{label:'Cantieri'}]);
     aggiornaBadgeSituazione();
@@ -1265,7 +1269,18 @@ async function cambiaPwd(){
 
 // ── LOAD ──
 async function loadCantieri(){const {data}=await sb.from('cantieri').select('*').order('nome');CANTIERI=data||[];}
-async function loadOperai(){const {data}=await sb.from('operai').select('*').eq('attivo',true).order('cognome');OPERAI=data||[];}
+async function loadOperai(){
+  try{
+    const oggi=new Date().toISOString().split('T')[0];
+    const{data,error}=await sb.from('operai').select('*').eq('attivo',true).order('cognome');
+    if(error)throw error;
+    OPERAI_TUTTI=data||[];
+    OPERAI=OPERAI_TUTTI.filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=oggi);
+  }catch(e){
+    console.warn('Errore loadOperai:',e.message);
+    OPERAI_TUTTI=[];OPERAI=[];
+  }
+}
 async function loadLavs(cantId){
   const {data:lavC}=await sb.from('lavorazioni').select('*').eq('cantiere_id',cantId).order('categoria,nome');
   const {data:lavG}=await sb.from('lavorazioni').select('*').is('cantiere_id',null).order('categoria,nome');
@@ -1342,12 +1357,11 @@ async function enterCantiere(id){
   curCant=CANTIERI.find(c=>c.id===id);
   if(!curCant)return;
   await loadLavs(id);
-  pushNav('cantiere');
   goTo('cantiere');
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,active:true}]);
   renderCantiere();
 }
-function goHome(){curCant=null;_navHistory=['home'];const btn=document.getElementById('btn-back');if(btn)btn.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
+function goHome(){curCant=null;goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
 function goToCantiere(){if(curCant)enterCantiere(curCant.id);else goHome();}
 
 async function renderCantiere(){
@@ -2020,20 +2034,6 @@ async function openCantLog(gid){
 
 // ── NUOVA GIORNATA ──
 function startNuovaGiornata(){
-  // Se caposquadra naviga direttamente senza cantiere, mostra picker
-  if(!curCant){
-    showScr('giornata-1');
-    document.getElementById('top-title').textContent='Nuova giornata — Scegli cantiere';
-    setBread([{label:'Cantieri',onclick:"goHome()"},{label:'Nuova giornata'}]);
-    const now=new Date();
-    GIO={cantId:null,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
-    document.getElementById('g1-data').value=GIO.data;
-    document.getElementById('g1-cant-nome').textContent='— tocca per scegliere —';
-    document.querySelectorAll('.meteo-b').forEach(b=>b.classList.remove('on'));
-    calcOre1();
-    apriCantierePicker();
-    return;
-  }
   const now=new Date();
   GIO={cantId:curCant.id,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
   document.getElementById('g1-data').value=GIO.data;
@@ -2057,8 +2057,6 @@ function goStep2(){
   const data=document.getElementById('g1-data').value,ini=document.getElementById('g1-ini').value,fine=document.getElementById('g1-fine').value;
   const pausa=parseInt(document.getElementById('g1-pausa').value)||60;
   const meteoEl=document.querySelector('.meteo-b.on');
-  if(!GIO.cantId&&!curCant){showToast('Seleziona prima un cantiere','e');apriCantierePicker();return;}
-  if(!GIO.cantId)GIO.cantId=curCant?.id;
   if(!data||!ini||!fine){showToast('Inserisci data e orari','e');return;}
   GIO.data=data;GIO.ini=ini;GIO.fine=fine;GIO.pausa=pausa;GIO.meteo=meteoEl?meteoEl.dataset.m:null;
   GIO.mat=document.getElementById('g1-mat').value.trim();GIO.visite=document.getElementById('g1-visite').value.trim();
@@ -2297,7 +2295,17 @@ function openAnalisiMod(dStr){
 // ── ADMIN ──
 async function renderAdmin(){
   document.getElementById('adm-cantieri').innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
-  document.getElementById('adm-operai').innerHTML=OPERAI.map(o=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${o.nome} ${o.cognome}</div><div style="font-size:12px;color:var(--t2)">${o.ruolo}</div></div><button class="btn-icon btn-sm" onclick="openModalOp('${o.id}')">✏️</button></div>`).join('');
+  const oggi_adm=new Date().toISOString().split('T')[0];
+  document.getElementById('adm-operai').innerHTML=OPERAI_TUTTI.map(o=>{
+    const exAt=o.data_fine_rapporto&&o.data_fine_rapporto<oggi_adm;
+    return `<div style="background:var(--s1);border:1px solid ${exAt?'rgba(224,85,85,.2)':'var(--border)'};border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:${exAt?'.65':'1'}">
+      <div>
+        <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}</div>
+        <div style="font-size:12px;color:var(--t2)">${o.ruolo}${exAt?` &nbsp;<span style="color:var(--red);font-weight:700">&#128683; Fine ${o.data_fine_rapporto}</span>`:''}</div>
+      </div>
+      <button class="btn-icon btn-sm" data-action="edit-op" data-opid="${o.id}">✏️</button>
+    </div>`;
+  }).join('');
   const existingImp=document.getElementById('adm-impostazioni');
   if(!existingImp){
     const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
@@ -2306,6 +2314,8 @@ async function renderAdmin(){
   }else document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
+  // Carica nome azienda nel campo Admin
+  sb.from('impostazioni').select('valore').eq('chiave','nome_azienda').single().then(({data})=>{const el=document.getElementById('adm-nome-az');if(el&&data?.valore)el.value=data.valore;});
     document.getElementById('adm-utenti').innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${p.nome}</div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
   }
 }
@@ -2353,6 +2363,10 @@ function delFoto(i){fFiles.splice(i,1);fB64.splice(i,1);renderFoto();}
 function openModal(id){document.getElementById(id).classList.add('on');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('on');document.body.style.overflow='';}
 document.querySelectorAll('.ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
+document.getElementById('adm-operai').addEventListener('click',function(e){
+  const btn=e.target.closest('[data-action="edit-op"]');
+  if(btn)openModalOp(btn.dataset.opid);
+});
 function fmtDate(d){if(!d)return '—';return new Date(d+'T12:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short'});}
 let tT;
 function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.style.background=type==='e'?'var(--red)':'var(--green)';t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),2500);}
@@ -2360,35 +2374,12 @@ function showToast(msg,type){const t=document.getElementById('toast');t.textCont
 // ── NAVBAR ──
 async function aggiornaBadgeSituazione(){
   try{
-    const [{data:spese},{data:regia},{data:gru}]=await Promise.all([
-      sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),
-      sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false),
-      sb.from('tiri_gru').select('id',{count:'exact'}).eq('tipo','paghiamo')
-    ]);
-    const tot=(spese?.length||0)+(regia?.length||0)+(gru?.length||0);
+    const [{data:spese},{data:regia}]=await Promise.all([sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false)]);
+    const tot=(spese?.length||0)+(regia?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
 }
-// ── NAVIGAZIONE INDIETRO ──
-let _navHistory=[];
-
-function pushNav(dest){
-  if(_navHistory[_navHistory.length-1]!==dest)_navHistory.push(dest);
-  const btn=document.getElementById('btn-back');
-  if(btn)btn.style.display=_navHistory.length>1?'block':'none';
-}
-
-function goBack(){
-  if(_navHistory.length<=1){goHome();return;}
-  _navHistory.pop();
-  const prev=_navHistory[_navHistory.length-1];
-  _navHistory.pop(); // navTo lo ri-aggiunge
-  if(prev==='home')goHome();
-  else if(prev==='cantiere'&&curCant)goToCantiere();
-  else navTo(prev);
-}
-
 function navTo(dest){
   // Caposquadra: blocca accesso a sezioni economiche
   const ruolo=PROF?.ruolo||'caposquadra';
@@ -2397,17 +2388,18 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
-  if(dest==='home'){goHome();return;}
-  else if(dest==='nuova'){pushNav('nuova');if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
-  else if(dest==='spese'){pushNav('spese');showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
-  else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
-  else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
-  else if(dest==='admin'){pushNav('admin');showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
-  else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
-  else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
-  else if(dest==='bolle'){pushNav('bolle');showScr('bolle');document.getElementById('top-title').textContent='Bolle di consegna';renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
+  if(dest==='home')goHome();
+  else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
+  else if(dest==='spese'){showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
+  else if(dest==='situazione'){showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
+  else if(dest==='report'){showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
+  else if(dest==='admin'){showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
+  else if(dest==='contabilita'){showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
+  else if(dest==='gru'){showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
+  else if(dest==='piano'){showScr('piano');document.getElementById('top-title').textContent='Piano del giorno';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Piano del giorno'}]);initPiano();}
+  else if(dest==='bolle'){showScr('bolle');document.getElementById('top-title').textContent='Bolle di consegna';renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
 }
 
 // ── SITUAZIONE ──
@@ -2450,33 +2442,6 @@ async function renderSituazione(){
       elReg.innerHTML=html;
     }
   }catch(e){elReg.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
-
-  // ── GRU DA PAGARE ──
-  const elGru=document.getElementById('sit-gru-content');
-  if(elGru){
-    elGru.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
-    try{
-      const{data:gru,error:errGru}=await sb.from('tiri_gru').select('*, cantieri(nome)').eq('tipo','paghiamo').order('data',{ascending:false});
-      if(errGru)throw errGru;
-      if(!gru||!gru.length){elGru.innerHTML='<div class="empty"><div class="empty-i">✅</div><p>Nessun tiro gru da pagare</p></div>';}
-      else{
-        const totG=gru.reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
-        let html=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale gru da pagare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totG.toFixed(2)} CHF</span></div>`;
-        gru.forEach(r=>{
-          html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="navTo('gru')">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-size:13px;font-weight:700">🏗️ ${r.ditta||'—'}</div>
-                <div style="font-size:11px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)} · ${r.n_tiri||0} tiri</div>
-              </div>
-              <div style="font-family:'DM Mono';font-size:16px;color:var(--red)">${parseFloat(r.importo||0).toFixed(2)} CHF</div>
-            </div>
-          </div>`;
-        });
-        elGru.innerHTML=html;
-      }
-    }catch(e){elGru.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
-  }
 }
 async function segnaSpesaPagata(id){
   if(!confirm('Segnare questa spesa come pagata?'))return;
@@ -2527,7 +2492,7 @@ async function renderSpese(){
     const icon=tipoDocIcon[s.tipo_doc]||'📋';const isPag=s.stato_pag==='Pagato';
     return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:14px;font-weight:700">${s.descrizione||s.tipo_spesa}</div>${s.fornitore?`<div style="font-size:12px;color:var(--gold);font-weight:600">${s.fornitore}</div>`:''}<div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}${s.ora?' · '+s.ora:''}</div><div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div></div></div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:14px;font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div><div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div></div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono';font-size:18px;font-weight:600;color:${isPag?'var(--gold)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div><div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px;background:${isPag?'rgba(76,175,125,.15)':'rgba(224,85,85,.15)'};color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}</div></div>
       </div>
       ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
@@ -2547,9 +2512,8 @@ async function visualizzaSpesa(id){
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
       <div class="row2" style="margin-bottom:8px">
         <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${s.cantieri?.nome||'—'}</div></div>
-        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data e ora</div><div style="font-weight:700">${fmtDate(s.data)}${s.ora?' · '+s.ora:''}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(s.data)}</div></div>
       </div>
-      ${s.fornitore?`<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Fornitore / Emittente</div><div style="font-weight:700;color:var(--text)">${s.fornitore}</div></div>`:''}
       <div class="row2" style="margin-bottom:8px">
         <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo documento</div><div>${s.tipo_doc||'—'}</div></div>
         <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo spesa</div><div>${s.tipo_spesa||'—'}</div></div>
@@ -2604,10 +2568,7 @@ function openModalSpesa(id){
   populateSpeseSel();
   if(!id){
     document.getElementById('mod-spesa-t').textContent='Nuova spesa / documento';
-    const {date:spDate,time:spTime}=nowZurich();
-    document.getElementById('sp-data').value=spDate;
-    const spOra=document.getElementById('sp-ora');if(spOra)spOra.value=spTime;
-    const spForn=document.getElementById('sp-fornitore');if(spForn)spForn.value='';
+    document.getElementById('sp-data').value=new Date().toISOString().split('T')[0];
     document.getElementById('sp-importo').value='';document.getElementById('sp-desc').value='';document.getElementById('sp-note').value='';
     document.getElementById('sp-stato-pag').value='Da pagare';document.getElementById('sp-metodo-wrap').style.display='none';
     document.getElementById('del-sp-w').innerHTML='';
@@ -2624,8 +2585,6 @@ function openModalSpesa(id){
       document.getElementById('sp-metodo-wrap').style.display=s.stato_pag==='Pagato'?'block':'none';
       if(s.metodo_pag)document.getElementById('sp-metodo').value=s.metodo_pag;
       document.getElementById('sp-note').value=s.note||'';
-      const spOraE=document.getElementById('sp-ora');if(spOraE)spOraE.value=s.ora||'';
-      const spFornE=document.getElementById('sp-fornitore');if(spFornE)spFornE.value=s.fornitore||'';
       document.getElementById('del-sp-w').innerHTML=`<button class="btn btn-d" onclick="deleteSpesa('${id}')">🗑️ Elimina</button>`;
       if(s.foto_path){
         document.getElementById('sp-foto-prv').innerHTML='<div style="font-size:12px;color:var(--t2);padding:8px 0">⏳ Caricamento foto...</div>';
@@ -2652,8 +2611,7 @@ async function salvaSpesa(){
   const btn=document.getElementById('btn-salva-sp');btn.textContent='⏳...';btn.disabled=true;
   try{
     const statoPag=document.getElementById('sp-stato-pag').value;
-    const {time:spNowTime}=nowZurich();
-    const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,ora:document.getElementById('sp-ora')?.value||spNowTime,fornitore:document.getElementById('sp-fornitore')?.value.trim()||null,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id};
+    const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id};
     let spId=editSpId;
     if(editSpId)await sb.from('spese').update(payload).eq('id',editSpId);
     else{const {data:newSp,error}=await sb.from('spese').insert(payload).select().single();if(error)throw error;spId=newSp.id;}
@@ -2883,248 +2841,339 @@ let gruRecords=[];
 let editGruId=null;
 let gruFotoFile=null;
 
-// ── TEMA COLORE ──
-function applicaTema(nome){
-  const temi=['scuro','blu','verde','bordeaux','grigio','marrone'];
-  const body=document.body;
-  temi.forEach(t=>body.classList.remove('tema-'+t));
-  if(nome!=='scuro')body.classList.add('tema-'+nome);
-  localStorage.setItem('ct_tema',nome);
-  // Aggiorna bordi bottoni tema
-  document.querySelectorAll('[id^="tema-btn-"]').forEach(b=>{
-    const isCur=b.id==='tema-btn-'+nome;
-    b.style.borderColor=isCur?'var(--gold)':'';
-    b.style.borderWidth=isCur?'3px':'2px';
-  });
-  document.getElementById('tema-attuale').textContent='Tema attivo: '+nome.charAt(0).toUpperCase()+nome.slice(1);
-}
-function caricaTema(){
-  const t=localStorage.getItem('ct_tema')||'scuro';
-  applicaTema(t);
-}
+// ══════════════════════════════════════════════════
+// PIANO DEL GIORNO
+// ══════════════════════════════════════════════════
+let MEZZI=[];
+let editPaId=null;
+let editMzId=null;
 
-// ── RICERCA CANTIERE (Step 1 Nuova Giornata) ──
-let _cantShowAll=false; // il titolare può cambiare in Admin
-
-function apriCantierePicker(){
-  const picker=document.getElementById('g1-cant-picker');
-  if(!picker)return;
-  picker.style.display='block';
-  document.getElementById('g1-search').value='';
-  filtraCantieri();
-  document.getElementById('g1-search').focus();
-}
-
-function filtraCantieri(){
-  const q=(document.getElementById('g1-search')?.value||'').toLowerCase();
-  const ruolo=PROF?.ruolo||'caposquadra';
-  const lista=CANTIERI.filter(c=>{
-    const visibile=ruolo==='titolare'?true:(c.stato==='Attivo'||c.stato==='In pausa');
-    if(!visibile)return false;
-    if(!q)return true;
-    return (c.nome||'').toLowerCase().includes(q)||
-           (c.luogo||'').toLowerCase().includes(q)||
-           (c.committente||'').toLowerCase().includes(q);
-  });
-  const el=document.getElementById('g1-cant-lista');
-  if(!el)return;
-  if(!lista.length){
-    el.innerHTML='<div class="empty" style="padding:24px"><div class="empty-i">🔍</div><p>Nessun cantiere trovato</p></div>';
-    return;
-  }
-  el.innerHTML='';
-  lista.forEach(function(c){
-    const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
-    const div=document.createElement('div');
-    div.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s';
-    div.addEventListener('mouseover',function(){this.style.borderColor='var(--gold)';});
-    div.addEventListener('mouseout',function(){this.style.borderColor='var(--border)';});
-    div.addEventListener('click',function(){selezionaCantierePicker(c.id);});
-    const meta=[c.luogo,c.committente].filter(Boolean).join(' · ')||'—';
-    div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
-      +'<div>'
-      +'<div style="font-size:15px;font-weight:800">'+escHtml(c.nome)+'</div>'
-      +'<div style="font-size:12px;color:var(--t2)">'+escHtml(meta)+'</div>'
-      +'</div>'
-      +'<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px" class="'+stCls+'">'+c.stato+'</span>'
-      +'</div>';
-    el.appendChild(div);
-  });
-}
-
-function selezionaCantierePicker(id){
-  const cant=CANTIERI.find(c=>c.id===id);
-  if(!cant)return;
-  curCant=cant;
-  GIO.cantId=cant.id;
-  document.getElementById('g1-cant-nome').textContent=cant.nome;
-  document.getElementById('g1-cant-picker').style.display='none';
-  // Carica lavorazioni del cantiere scelto
-  loadLavs(cant.id);
-  showToast('Cantiere: '+cant.nome+' ✓');
-}
-
-// ── DATA/ORA AUTOMATICA (timezone Europe/Zurich) ──
-function nowZurich(){
-  const now=new Date();
-  // Data locale Zurigo
-  const dateStr=now.toLocaleDateString('sv-SE',{timeZone:'Europe/Zurich'}); // YYYY-MM-DD
-  const timeStr=now.toLocaleTimeString('it-IT',{timeZone:'Europe/Zurich',hour:'2-digit',minute:'2-digit',hour12:false});
-  return {date:dateStr,time:timeStr};
-}
-
-function setDataOraAuto(idData,idOra){
-  const {date,time}=nowZurich();
-  const elD=document.getElementById(idData);
-  const elT=document.getElementById(idOra);
-  if(elD&&!elD.value)elD.value=date;
-  if(elT)elT.value=time; // ora sempre aggiornata
-}
-
-// ── BOLLE DI CONSEGNA ──
-let bolleFotoFile=null;
-let editBolId=null;
-
-function openModalBolla(id){
-  editBolId=id;
-  bolleFotoFile=null;
-  document.getElementById('mod-bol-t').textContent=id?'Modifica bolla':'Nuova bolla di consegna';
-  document.getElementById('bol-foto-prv').innerHTML='';
-  document.getElementById('del-bol-w').innerHTML='';
-  // Popola cantieri e operai
-  const sc=document.getElementById('bol-cant-sel');
-  if(sc)sc.innerHTML=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa').map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
-  const so=document.getElementById('bol-op-sel');
-  if(so)so.innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
-  // Popola filtro lista
-  const sf=document.getElementById('bol-cantiere');
-  if(sf)sf.innerHTML='<option value="">Tutti i cantieri</option>'+CANTIERI.map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
-  if(!id){
-    ['bol-fornitore','bol-desc','bol-note'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
-    setDataOraAuto('bol-data','bol-ora');
-    document.getElementById('bol-stato-op').value='ricevuta';
-    if(curCant)document.getElementById('bol-cant-sel').value=curCant.id;
-  }else{
-    sb.from('bolle_consegna').select('*').eq('id',id).single().then(({data:b})=>{
-      if(!b)return;
-      document.getElementById('bol-cant-sel').value=b.cantiere_id||'';
-      document.getElementById('bol-op-sel').value=b.operaio_id||'';
-      document.getElementById('bol-data').value=b.data||'';
-      document.getElementById('bol-ora').value=b.ora||'';
-      document.getElementById('bol-fornitore').value=b.fornitore||'';
-      document.getElementById('bol-desc').value=b.descrizione||'';
-      document.getElementById('bol-stato-op').value=b.stato||'ricevuta';
-      document.getElementById('bol-note').value=b.note||'';
-      const delBolBtn=document.createElement('button');delBolBtn.className='btn btn-d';delBolBtn.textContent='🗑️ Elimina';delBolBtn.onclick=function(){eliminaBolla(id);};document.getElementById('del-bol-w').innerHTML='';document.getElementById('del-bol-w').appendChild(delBolBtn);
-      if(b.foto_path){
-        sb.storage.from('cantiere-spese').createSignedUrl(b.foto_path,7200).then(({data:u})=>{
-          const el=document.getElementById('bol-foto-prv');if(!el||!u?.signedUrl)return;
-          const isImg=/\.(jpg|jpeg|png|gif|webp)$/i.test(b.foto_path);
-          el.innerHTML=isImg
-            ?'<img src="'+u.signedUrl+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
-            :'<a href="'+u.signedUrl+'" target="_blank" style="color:var(--blue);font-size:13px">📄 Apri documento</a>';
-        });
-      }
-    });
-  }
-  openModal('mod-bolla');
-}
-
-function addFotoBolla(e){
-  bolleFotoFile=e.target.files[0];if(!bolleFotoFile)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const isImg=bolleFotoFile.type.startsWith('image/');
-    document.getElementById('bol-foto-prv').innerHTML=isImg
-      ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
-      :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+bolleFotoFile.name+'</div>';
-  };
-  r.readAsDataURL(bolleFotoFile);
-  e.target.value='';
-}
-
-async function salvaBolla(){
-  const cantId=document.getElementById('bol-cant-sel').value;
-  const data=document.getElementById('bol-data').value;
-  if(!cantId||!data){showToast('Inserisci cantiere e data','e');return;}
-  const btn=document.getElementById('btn-salva-bol');btn.textContent='⏳...';btn.disabled=true;
+async function loadMezzi(){
   try{
-    const {date:nowDate,time:nowTime}=nowZurich();
+    const{data,error}=await sb.from('mezzi').select('*, operai(nome,cognome)').eq('attivo',true).order('targa');
+    if(error)throw error;
+    MEZZI=data||[];
+  }catch(e){console.warn('loadMezzi:',e);}
+}
+
+async function initPiano(){
+  await loadMezzi();
+  const{date}=nowZurich();
+  document.getElementById('piano-data').value=date;
+  aggiornaPianoLabel();
+  renderPiano();
+  renderMezzi();
+}
+
+function aggiornaPianoLabel(){
+  const val=document.getElementById('piano-data').value;
+  if(!val)return;
+  const d=new Date(val+'T12:00');
+  const label=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const el=document.getElementById('piano-data-label');
+  if(el)el.textContent=label.charAt(0).toUpperCase()+label.slice(1);
+}
+
+function cambiaDataPiano(delta){
+  const inp=document.getElementById('piano-data');
+  if(!inp||!inp.value)return;
+  const d=new Date(inp.value+'T12:00');
+  d.setDate(d.getDate()+delta);
+  inp.value=d.toISOString().split('T')[0];
+  aggiornaPianoLabel();
+  renderPiano();
+}
+
+async function renderPiano(){
+  const el=document.getElementById('piano-list');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const data=document.getElementById('piano-data')?.value;
+  if(!data){el.innerHTML='<div class="empty">Seleziona una data</div>';return;}
+  try{
+    const{data:rows,error}=await sb.from('piano_giorno')
+      .select('*, operai(nome,cognome), cantieri(nome,luogo), mezzi(targa,tipo,descrizione)')
+      .eq('data',data).order('ordine').order('created_at');
+    if(error)throw error;
+    if(!rows||!rows.length){
+      const emDiv=document.createElement('div');emDiv.className='empty';
+    emDiv.innerHTML='<div class="empty-i">📋</div><p>Nessuna assegnazione per questo giorno.</p>';
+    const emBtn=document.createElement('button');emBtn.className='btn btn-g';emBtn.style.marginTop='12px';emBtn.textContent='➕ Aggiungi';
+    emBtn.addEventListener('click',function(){openModalPianoAss();});
+    emDiv.appendChild(emBtn);el.innerHTML='';el.appendChild(emDiv);
+      return;
+    }
+    el.innerHTML='';
+    rows.forEach(function(r){
+      const hasNote=!!(r.annotazioni&&r.annotazioni.trim());
+      const div=document.createElement('div');
+      div.className='piano-row'+(hasNote?' has-note':'');
+      div.addEventListener('click',function(){apriModificaAssegnazione(r.id);});
+      const ruoloLabel=r.ruolo_giorno==='caposquadra'?'<span class="ruolo-cs">★ Caposquadra</span>':
+                        r.ruolo_giorno==='responsabile'?'<span class="ruolo-rc">◆ Responsabile</span>':'';
+      const mezzoBadge=r.mezzi?'<div class="mezzo-badge">🚗 '+(r.mezzi.targa||'')+(r.mezzi.descrizione?' — '+r.mezzi.descrizione.substring(0,20):'')+'</div>':'';
+      const squadra=r.squadra?'<div style="font-size:11px;color:var(--t2);margin-top:2px">👥 '+r.squadra+'</div>':'';
+      div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div>'
+        +'<div style="font-size:15px;font-weight:800">'+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
+        +(ruoloLabel?'<div style="margin-top:2px">'+ruoloLabel+'</div>':'')
+        +'<div style="font-size:12px;color:var(--t2);margin-top:4px">📍 '+(r.cantieri?.nome||'—')+(r.cantieri?.luogo?' · '+r.cantieri.luogo:'')+'</div>'
+        +mezzoBadge+squadra
+        +'</div>'
+        +'<button style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px;padding:0">✏️</button>'
+        +'</div>'
+        +(hasNote?'<div class="piano-note">⚠️ '+r.annotazioni+'</div>':'');
+      el.appendChild(div);
+    });
+  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+async function renderMezzi(){
+  const el=document.getElementById('mezzi-list');
+  if(!el)return;
+  el.innerHTML='';
+  try{
+    const{data,error}=await sb.from('mezzi').select('*, operai(nome,cognome)').order('targa');
+    if(error)throw error;
+    if(!data||!data.length){el.innerHTML='<div class="empty" style="padding:16px;font-size:13px;color:var(--t2)">Nessun mezzo registrato.</div>';return;}
+    data.forEach(function(m){
+      const div=document.createElement('div');
+      div.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center'+(m.data_dismissione?';opacity:.5':'');
+      div.innerHTML='<div>'
+        +'<div style="font-size:14px;font-weight:700">🚗 '+m.targa+' <span style="font-size:12px;color:var(--t2);font-weight:400">'+m.tipo+'</span></div>'
+        +(m.descrizione?'<div style="font-size:12px;color:var(--t2)">'+m.descrizione+'</div>':'')
+        +(m.operai?'<div style="font-size:11px;color:var(--t2);margin-top:2px">Default: '+m.operai.nome+' '+m.operai.cognome+'</div>':'')
+        +(m.data_dismissione?'<div style="font-size:11px;color:var(--red);margin-top:2px">🔴 Dismesso il '+m.data_dismissione+'</div>':'')
+        +'</div>';
+      const btn=document.createElement('button');
+      btn.className='btn-icon btn-sm';btn.textContent='✏️';
+      btn.addEventListener('click',function(){apriModificaMezzo(m.id);});
+      div.appendChild(btn);
+      el.appendChild(div);
+    });
+  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+function popolaDropdownPiano(){
+  const opSel=document.getElementById('pa-operaio');
+  const cantSel=document.getElementById('pa-cantiere');
+  const mzSel=document.getElementById('pa-mezzo');
+  if(opSel)opSel.innerHTML=OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
+  if(cantSel)cantSel.innerHTML=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa').map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
+  if(mzSel)mzSel.innerHTML='<option value="">— Nessun mezzo —</option>'+MEZZI.map(m=>'<option value="'+m.id+'">'+m.targa+(m.descrizione?' — '+m.descrizione.substring(0,25):'')+'</option>').join('');
+}
+
+function openModalPianoAss(){
+  editPaId=null;
+  document.getElementById('mod-piano-t').textContent='Assegna operaio';
+  document.getElementById('del-pa-w').innerHTML='';
+  ['pa-squadra','pa-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('pa-ordine').value='0';
+  document.getElementById('pa-ruolo').value='operaio';
+  popolaDropdownPiano();
+  openModal('mod-piano-ass');
+}
+
+async function apriModificaAssegnazione(id){
+  editPaId=id;
+  document.getElementById('mod-piano-t').textContent='Modifica assegnazione';
+  popolaDropdownPiano();
+  try{
+    const{data:r,error}=await sb.from('piano_giorno').select('*').eq('id',id).single();
+    if(error)throw error;
+    document.getElementById('pa-operaio').value=r.operaio_id||'';
+    document.getElementById('pa-cantiere').value=r.cantiere_id||'';
+    document.getElementById('pa-mezzo').value=r.mezzo_id||'';
+    document.getElementById('pa-ruolo').value=r.ruolo_giorno||'operaio';
+    document.getElementById('pa-squadra').value=r.squadra||'';
+    document.getElementById('pa-note').value=r.annotazioni||'';
+    document.getElementById('pa-ordine').value=r.ordine||0;
+    const btn=document.createElement('button');btn.className='btn btn-d';btn.textContent='🗑️ Elimina';
+    btn.addEventListener('click',function(){eliminaAssegnazione(id);});
+    const w=document.getElementById('del-pa-w');w.innerHTML='';w.appendChild(btn);
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  openModal('mod-piano-ass');
+}
+
+async function salvaAssegnazione(){
+  const cantId=document.getElementById('pa-cantiere').value;
+  const opId=document.getElementById('pa-operaio').value;
+  if(!cantId||!opId){showToast('Seleziona operaio e cantiere','e');return;}
+  const btn=document.getElementById('btn-salva-pa');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const dataPiano=document.getElementById('piano-data').value;
     const payload={
+      data:dataPiano,
+      operaio_id:opId,
       cantiere_id:cantId,
-      operaio_id:document.getElementById('bol-op-sel').value||null,
-      data,
-      ora:document.getElementById('bol-ora').value||nowTime,
-      fornitore:document.getElementById('bol-fornitore').value.trim()||null,
-      descrizione:document.getElementById('bol-desc').value.trim()||null,
-      stato:document.getElementById('bol-stato-op').value,
-      note:document.getElementById('bol-note').value.trim()||null,
+      mezzo_id:document.getElementById('pa-mezzo').value||null,
+      ruolo_giorno:document.getElementById('pa-ruolo').value,
+      squadra:document.getElementById('pa-squadra').value.trim()||null,
+      annotazioni:document.getElementById('pa-note').value.trim()||null,
+      ordine:parseInt(document.getElementById('pa-ordine').value)||0,
       created_by:USER.id
     };
-    let bolId=editBolId;
-    if(editBolId){
-      const{error}=await sb.from('bolle_consegna').update(payload).eq('id',editBolId);
+    if(editPaId){
+      const{error}=await sb.from('piano_giorno').update(payload).eq('id',editPaId);
       if(error)throw error;
     }else{
-      const{data:nb,error}=await sb.from('bolle_consegna').insert(payload).select().single();
+      const{error}=await sb.from('piano_giorno').insert(payload);
       if(error)throw error;
-      bolId=nb.id;
     }
-    if(bolleFotoFile&&bolId){
-      try{
-        const ext=bolleFotoFile.name.split('.').pop().toLowerCase();
-        const path='bolle/'+bolId+'_'+Date.now()+'.'+ext;
-        const{error:ue}=await sb.storage.from('cantiere-spese').upload(path,bolleFotoFile,{upsert:true});
-        if(!ue)await sb.from('bolle_consegna').update({foto_path:path}).eq('id',bolId);
-      }catch(fe){console.warn('Errore upload foto bolla:',fe);}
-    }
-    closeModal('mod-bolla');renderBolle();showToast('Bolla salvata ✓');
+    closeModal('mod-piano-ass');renderPiano();showToast('Salvato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Salva';btn.disabled=false;}
 }
 
-async function renderBolle(){
-  const el=document.getElementById('bolle-list');if(!el)return;
-  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
-  const cantF=document.getElementById('bol-cantiere')?.value;
-  const statoF=document.getElementById('bol-stato')?.value;
+async function eliminaAssegnazione(id){
+  if(!confirm('Eliminare questa assegnazione?'))return;
   try{
-    let q=sb.from('bolle_consegna').select('*, cantieri(nome), operai(nome,cognome)').order('data',{ascending:false}).order('ora',{ascending:false});
-    if(cantF)q=q.eq('cantiere_id',cantF);
-    if(statoF)q=q.eq('stato',statoF);
-    const{data,error}=await q.limit(100);
+    const{error}=await sb.from('piano_giorno').delete().eq('id',id);
     if(error)throw error;
-    if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">📦</div><p>Nessuna bolla registrata.</p></div>';return;}
-    el.innerHTML='';
-    data.forEach(function(b){
-      const isPag=b.stato==='ricevuta';
-      const div=document.createElement('div');
-      div.style.cssText='background:var(--s1);border:1px solid '+(isPag?'var(--border)':'rgba(224,136,64,.3)')+';border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer';
-      div.addEventListener('click',function(){openModalBolla(b.id);});
-      const opNome=(b.operai?.nome||'')+' '+(b.operai?.cognome||'');
-      div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
-        +'<div>'
-        +'<div style="font-size:14px;font-weight:700">📦 '+escHtml(b.fornitore||'Fornitore non specificato')+'</div>'
-        +'<div style="font-size:11px;color:var(--t2)">'+(b.cantieri?.nome||'—')+' · '+fmtDate(b.data)+(b.ora?' · '+b.ora:'')+'</div>'
-        +'<div style="font-size:11px;color:var(--t2)">'+opNome.trim()+'</div>'
-        +'</div>'
-        +'<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:'+(isPag?'rgba(76,175,125,.15)':'rgba(224,136,64,.15)')+';color:'+(isPag?'var(--green)':'var(--orange)')+'">'+
-        (isPag?'✓ Ricevuta':'⏳ Mancante')+'</span>'
-        +'</div>'
-        +(b.descrizione?'<div style="font-size:12px;color:var(--t2);margin-top:4px">'+escHtml(b.descrizione.substring(0,80))+'</div>':'')
-        +(b.foto_path?'<div style="font-size:11px;color:var(--blue);margin-top:4px">📎 Foto allegata</div>':'');
-      el.appendChild(div);
-    });
-
-  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+    closeModal('mod-piano-ass');renderPiano();showToast('Eliminata ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
-async function eliminaBolla(id){
-  if(!confirm('Eliminare questa bolla?'))return;
+function apriSchermoPiano(){
+  const data=document.getElementById('piano-data')?.value||nowZurich().date;
+  const SB_URL_P='https://wgidgbauhivdctdxfjnk.supabase.co';
+  const SB_KEY_P='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
+  const nomeAz=document.getElementById('top-brand')?.querySelector('b')?.textContent||'CT Sàgl';
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Piano del giorno — '+data+'</title>'
+    +'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0d0d0d;color:#f0ece2;font-family:Arial,sans-serif;padding:32px}'
+    +'h1{font-size:2.2rem;color:#c8a84b;margin-bottom:6px}h2{font-size:1.1rem;color:#857f73;margin-bottom:32px;font-weight:400}'
+    +'table{width:100%;border-collapse:collapse;font-size:1.15rem}'
+    +'th{background:#1a1a1a;color:#c8a84b;padding:14px 18px;text-align:left;font-size:.85rem;letter-spacing:1.5px;text-transform:uppercase;border-bottom:2px solid #c8a84b}'
+    +'td{padding:16px 18px;border-bottom:1px solid #2a2a2a;vertical-align:top}'
+    +'.row-note{background:rgba(200,168,75,.08);border-left:4px solid #c8a84b}'
+    +'.note-cell{color:#c8a84b;font-weight:700;font-size:1rem}'
+    +'.mezzo{display:inline-block;background:#2a2a2a;border-radius:20px;padding:2px 12px;font-size:.85rem;color:#857f73;margin-top:4px}'
+    +'.ruolo-cs{color:#c8a84b;font-weight:700}.ruolo-rc{color:#5588e0;font-weight:700}'
+    +'.refresh{position:fixed;bottom:20px;right:20px;font-size:.75rem;color:#3e3a34}'
+    +'</style></head><body>'
+    +'<h1>'+nomeAz+' — Piano del giorno</h1>'
+    +'<h2 id="data-label">Caricamento...</h2>'
+    +'<table><thead><tr><th>Operaio</th><th>Cantiere</th><th>Mezzo</th><th>Ruolo</th><th>Squadra</th><th>Note</th></tr></thead>'
+    +'<tbody id="tbody"></tbody></table>'
+    +'<div class="refresh" id="refresh-info">Aggiornamento automatico ogni 60 sec</div>'
+    +'<script>'
+    +'const sb2=supabase.createClient("'+SB_URL_P+'","'+SB_KEY_P+'");'
+    +'const DATA="'+data+'";'
+    +'const d=new Date(DATA+"T12:00");'
+    +'document.getElementById("data-label").textContent=d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});'
+    +'async function carica(){'
+    +'const{data:rows}=await sb2.from("piano_giorno").select("*, operai(nome,cognome), cantieri(nome,luogo), mezzi(targa,tipo,descrizione)").eq("data",DATA).order("ordine").order("created_at");'
+    +'const tb=document.getElementById("tbody");tb.innerHTML="";'
+    +'(rows||[]).forEach(r=>{'
+    +'const hasNote=!!(r.annotazioni&&r.annotazioni.trim());'
+    +'const tr=document.createElement("tr");if(hasNote)tr.className="row-note";'
+    +'const ruolo=r.ruolo_giorno==="caposquadra"?"<span class=\"ruolo-cs\">★ Caposquadra</span>":r.ruolo_giorno==="responsabile"?"<span class=\"ruolo-rc\">◆ Responsabile</span>":"Operaio";'
+    +'const mezzo=r.mezzi?`<div class="mezzo">🚗 ${r.mezzi.targa}${r.mezzi.descrizione?" — "+r.mezzi.descrizione.substring(0,30):""}</div>`:"—";'
+    +'tr.innerHTML="<td style=\"font-size:1.2rem;font-weight:700\">"+(r.operai?.nome||"—")+" "+(r.operai?.cognome||"")+"</td>'
+    +'<td>"+(r.cantieri?.nome||"—")+(r.cantieri?.luogo?"<br><small style=\"color:#857f73\">"+r.cantieri.luogo+"</small>":"")+"</td>'
+    +'<td>"+mezzo+"</td><td>"+ruolo+"</td><td>"+(r.squadra||"—")+"</td>'
+    +'<td class=\"note-cell\">"+(hasNote?"⚠️ "+r.annotazioni:"—")+"</td>";'
+    +'tb.appendChild(tr);});'
+    +'document.getElementById("refresh-info").textContent="Ultimo aggiornamento: "+new Date().toLocaleTimeString("it-IT");'
+    +'}'
+    +'carica();setInterval(carica,60000);'
+    +'<\/script></body></html>';
+  const w=window.open('','_blank','width=1400,height=800');
+  w.document.write(html);w.document.close();
+}
+
+// ══════════════════════════════════════════════════
+// MEZZI AZIENDALI
+// ══════════════════════════════════════════════════
+function openModalMezzo(){
+  editMzId=null;
+  document.getElementById('mod-mezzo-t').textContent='Nuovo mezzo';
+  ['mz-targa','mz-desc','mz-dismissione'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('mz-tipo').value='Furgone';
+  const so=document.getElementById('mz-operaio');
+  if(so)so.innerHTML='<option value="">— Nessuno —</option>'+OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
+  document.getElementById('del-mz-w').innerHTML='';
+  openModal('mod-mezzo');
+}
+
+async function apriModificaMezzo(id){
+  editMzId=id;
+  document.getElementById('mod-mezzo-t').textContent='Modifica mezzo';
+  const so=document.getElementById('mz-operaio');
+  if(so)so.innerHTML='<option value="">— Nessuno —</option>'+OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
   try{
-    const{error}=await sb.from('bolle_consegna').delete().eq('id',id);
+    const{data:m,error}=await sb.from('mezzi').select('*').eq('id',id).single();
     if(error)throw error;
-    closeModal('mod-bolla');renderBolle();showToast('Eliminata ✓');
+    document.getElementById('mz-targa').value=m.targa||'';
+    document.getElementById('mz-tipo').value=m.tipo||'Furgone';
+    document.getElementById('mz-desc').value=m.descrizione||'';
+    document.getElementById('mz-operaio').value=m.operaio_default_id||'';
+    document.getElementById('mz-dismissione').value=m.data_dismissione||'';
+    const btn=document.createElement('button');btn.className='btn btn-d';btn.textContent='🗑️ Elimina';
+    btn.addEventListener('click',function(){eliminaMezzo(id);});
+    const w=document.getElementById('del-mz-w');w.innerHTML='';w.appendChild(btn);
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  openModal('mod-mezzo');
+}
+
+async function salvaMezzo(){
+  const targa=document.getElementById('mz-targa').value.trim().toUpperCase();
+  if(!targa){showToast('Inserisci la targa','e');return;}
+  const btn=document.getElementById('btn-salva-mz');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const payload={
+      targa,
+      tipo:document.getElementById('mz-tipo').value,
+      descrizione:document.getElementById('mz-desc').value.trim()||null,
+      operaio_default_id:document.getElementById('mz-operaio').value||null,
+      data_dismissione:document.getElementById('mz-dismissione').value||null,
+      attivo:!document.getElementById('mz-dismissione').value
+    };
+    if(editMzId){
+      const{error}=await sb.from('mezzi').update(payload).eq('id',editMzId);
+      if(error)throw error;
+    }else{
+      const{error}=await sb.from('mezzi').insert(payload);
+      if(error)throw error;
+    }
+    await loadMezzi();
+    closeModal('mod-mezzo');renderMezzi();showToast('Mezzo salvato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent='💾 Salva';btn.disabled=false;}
+}
+
+async function eliminaMezzo(id){
+  if(!confirm('Eliminare questo mezzo?'))return;
+  try{
+    const{error}=await sb.from('mezzi').delete().eq('id',id);
+    if(error)throw error;
+    await loadMezzi();closeModal('mod-mezzo');renderMezzi();showToast('Eliminato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+// ══════════════════════════════════════════════════
+// NOME AZIENDA
+// ══════════════════════════════════════════════════
+async function caricaNomeAzienda(){
+  try{
+    const{data,error}=await sb.from('impostazioni').select('valore').eq('chiave','nome_azienda').single();
+    if(!error&&data?.valore){
+      const el=document.querySelector('#top-brand b');
+      if(el)el.textContent=data.valore;
+    }
+  }catch(e){/* usa default CT Sàgl */}
+}
+
+async function salvaNomeAzienda(){
+  const nome=document.getElementById('adm-nome-az')?.value.trim();
+  if(!nome){showToast('Inserisci il nome','e');return;}
+  try{
+    const{error}=await sb.from('impostazioni').upsert({chiave:'nome_azienda',valore:nome},{onConflict:'chiave'});
+    if(error)throw error;
+    const el=document.querySelector('#top-brand b');
+    if(el)el.textContent=nome;
+    showToast('Nome azienda aggiornato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
@@ -3330,83 +3379,54 @@ async function invitaCollaboratore(){
   }
 }
 </script>
-<div class="ov" id="mod-bolla">
+<div class="ov" id="mod-piano-ass">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-bol-t">Nuova bolla di consegna</div>
-    <div class="row2">
-      <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="bol-cant-sel"></select></div>
-      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="bol-data"></div>
+    <div class="mod-t" id="mod-piano-t">Assegna operaio</div>
+    <div class="fg"><label class="fl">Operaio</label><select class="fs" id="pa-operaio"></select></div>
+    <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="pa-cantiere"></select></div>
+    <div class="fg"><label class="fl">Mezzo</label><select class="fs" id="pa-mezzo"><option value="">— Nessun mezzo —</option></select></div>
+    <div class="fg"><label class="fl">Ruolo nel giorno</label>
+      <select class="fs" id="pa-ruolo">
+        <option value="operaio">Operaio</option>
+        <option value="caposquadra">Caposquadra</option>
+        <option value="responsabile">Responsabile cantiere</option>
+      </select>
     </div>
-    <div class="fg"><label class="fl">Ora</label><input type="time" class="fi" id="bol-ora" style="font-family:'DM Mono',monospace;font-size:14px"></div>
-    <div class="fg"><label class="fl">Fornitore</label><input type="text" class="fi" id="bol-fornitore" placeholder="es. Würth SA, Flumroc AG..."></div>
-    <div class="fg"><label class="fl">Descrizione materiali</label><textarea class="ft" id="bol-desc" style="min-height:60px" placeholder="es. BSH 200ml, Flumroc 50 lastre, viti 10 scatole..."></textarea></div>
-    <div class="fg"><label class="fl">Stato</label>
-      <select class="fs" id="bol-stato-op"><option value="ricevuta">Ricevuta ✓</option><option value="mancante">Mancante / attesa</option></select>
-    </div>
-    <div class="fg"><label class="fl">Operaio che ha ricevuto</label><select class="fs" id="bol-op-sel"></select></div>
-    <div class="fg"><label class="fl">📷 Foto bolla</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-        <div class="foto-drop" onclick="document.getElementById('bol-foto-cam').click()" style="padding:12px">
-          <div style="font-size:22px">📷</div><p style="font-size:11px;color:var(--t2);margin-top:4px">Fotocamera</p>
-        </div>
-        <div class="foto-drop" onclick="document.getElementById('bol-foto-inp').click()" style="padding:12px">
-          <div style="font-size:22px">🖼️</div><p style="font-size:11px;color:var(--t2);margin-top:4px">Galleria</p>
-        </div>
-      </div>
-      <input type="file" id="bol-foto-inp" accept="image/*,application/pdf" style="display:none" onchange="addFotoBolla(event)">
-      <input type="file" id="bol-foto-cam" accept="image/*" capture="environment" style="display:none" onchange="addFotoBolla(event)">
-      <div id="bol-foto-prv" style="margin-top:6px"></div>
-    </div>
-    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="bol-note" style="min-height:40px" placeholder="Note aggiuntive..."></textarea></div>
+    <div class="fg"><label class="fl">Squadra (opzionale)</label><input type="text" class="fi" id="pa-squadra" placeholder="es. Squadra A, Squadra Tetto..."></div>
+    <div class="fg"><label class="fl">⚠️ Annotazioni (appaiono in evidenza)</label><textarea class="ft" id="pa-note" style="min-height:60px" placeholder="es. Porta il trapano Hilti, chiavi struttura al capomastro, attenzione tetto fragile..."></textarea></div>
+    <div class="fg"><label class="fl">Ordine visualizzazione</label><input type="number" class="fi" id="pa-ordine" value="0" min="0"></div>
     <hr>
     <div class="row2">
-      <button class="btn btn-s" onclick="closeModal('mod-bolla')">Annulla</button>
-      <button class="btn btn-g" onclick="salvaBolla()" id="btn-salva-bol">💾 Salva</button>
+      <button class="btn btn-s" onclick="closeModal('mod-piano-ass')">Annulla</button>
+      <button class="btn btn-g" id="btn-salva-pa" onclick="salvaAssegnazione()">💾 Salva</button>
     </div>
-    <div id="del-bol-w" style="margin-top:10px"></div>
+    <div id="del-pa-w" style="margin-top:10px"></div>
   </div>
 </div>
 
-<div class="ov" id="mod-tema">
+<div class="ov" id="mod-mezzo">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">🎨 Tema colore</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:16px">Scegli il colore preferito. Si salva solo su questo dispositivo.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div onclick="applicaTema('scuro')" style="background:#161616;border:2px solid #2e2e2e;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-scuro">
-        <div style="font-size:24px">🌑</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Scuro</div>
-        <div style="font-size:11px;color:#857f73">Default</div>
-      </div>
-      <div onclick="applicaTema('blu')" style="background:#0a1628;border:2px solid #1e3456;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-blu">
-        <div style="font-size:24px">🌊</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Blu notte</div>
-        <div style="font-size:11px;color:#5588e0">Ocean</div>
-      </div>
-      <div onclick="applicaTema('verde')" style="background:#081a0c;border:2px solid #1a4024;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-verde">
-        <div style="font-size:24px">🌲</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Verde bosco</div>
-        <div style="font-size:11px;color:#4caf7d">Forest</div>
-      </div>
-      <div onclick="applicaTema('bordeaux')" style="background:#1c0a0f;border:2px solid #4a1d27;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-bordeaux">
-        <div style="font-size:24px">🍷</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Bordeaux</div>
-        <div style="font-size:11px;color:#e05555">Wine</div>
-      </div>
-      <div onclick="applicaTema('grigio')" style="background:#1a1a1e;border:2px solid #35353f;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-grigio">
-        <div style="font-size:24px">🪨</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Grigio acciaio</div>
-        <div style="font-size:11px;color:#857f73">Steel</div>
-      </div>
-      <div onclick="applicaTema('marrone')" style="background:#1a1008;border:2px solid #472e18;border-radius:var(--r);padding:16px;cursor:pointer;text-align:center" id="tema-btn-marrone">
-        <div style="font-size:24px">🪵</div>
-        <div style="font-size:13px;font-weight:700;margin-top:6px;color:#f0ece2">Legno</div>
-        <div style="font-size:11px;color:#c8a84b">Wood</div>
+    <div class="mod-t" id="mod-mezzo-t">Nuovo mezzo</div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Targa</label><input type="text" class="fi" id="mz-targa" placeholder="es. TI 123456" style="text-transform:uppercase"></div>
+      <div class="fg"><label class="fl">Tipo</label>
+        <select class="fs" id="mz-tipo">
+          <option>Furgone</option><option>Camion</option><option>Auto</option>
+          <option>Rimorchio</option><option>Escavatore</option><option>Muletto</option><option>Altro</option>
+        </select>
       </div>
     </div>
-    <div id="tema-attuale" style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:10px"></div>
-    <button class="btn btn-s" onclick="closeModal('mod-tema')">Chiudi</button>
+    <div class="fg"><label class="fl">Descrizione / Marca modello</label><input type="text" class="fi" id="mz-desc" placeholder="es. Ford Transit bianco, Iveco 35s14..."></div>
+    <div class="fg"><label class="fl">Assegnato di default a</label><select class="fs" id="mz-operaio"><option value="">— Nessuno —</option></select></div>
+    <div class="fg"><label class="fl">Data dismissione (se venduto/dismesso)</label><input type="date" class="fi" id="mz-dismissione" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-mezzo')">Annulla</button>
+      <button class="btn btn-g" id="btn-salva-mz" onclick="salvaMezzo()">💾 Salva</button>
+    </div>
+    <div id="del-mz-w" style="margin-top:10px"></div>
   </div>
 </div>
 
