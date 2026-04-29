@@ -387,6 +387,46 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
+  <!-- PAGAMENTI RICEVUTI -->
+  <div class="scr" id="scr-pagamenti">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="sec" style="margin:0">💳 Pagamenti ricevuti</div>
+      <button class="btn-icon btn-sm" onclick="apriModalPagamento(null)">➕ Registra</button>
+    </div>
+    <!-- Filtri -->
+    <div class="row2" style="margin-bottom:12px">
+      <select class="fs" id="pag-filtro-cant"><option value="">Tutti i cantieri</option></select>
+      <select class="fs" id="pag-filtro-metodo" onchange="renderPagamenti()">
+        <option value="">Tutti i metodi</option>
+        <option value="Bonifico">Bonifico</option>
+        <option value="Contanti">Contanti</option>
+        <option value="Carta di credito">Carta di credito</option>
+        <option value="Assegno">Assegno</option>
+        <option value="Altro">Altro</option>
+      </select>
+    </div>
+    <!-- Totale -->
+    <div id="pag-totale" style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:var(--t2)">Totale filtrato</span>
+      <span style="font-family:'DM Mono';font-size:20px;color:var(--green)">CHF 0.00</span>
+    </div>
+    <div id="pag-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- PERMESSI VISIBILITÀ -->
+  <div class="scr" id="scr-permessi">
+    <div style="margin-bottom:16px">
+      <div class="sec" style="margin:0">🔐 Permessi e visibilità</div>
+      <p style="font-size:13px;color:var(--t2);margin-top:6px;line-height:1.6">Gestisci chi può vedere cosa nell'app. Modifiche ai permessi richiedono la tua password.</p>
+    </div>
+    <div id="permessi-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
+    <hr style="margin-top:20px">
+    <div class="sec">Sicurezza e accessi</div>
+    <button class="btn btn-s" style="width:100%;margin-bottom:8px" onclick="navTo('permessi')">🔐 Gestione permessi e visibilità</button>
+    <div class="bsp"></div>
+  </div>
+
   <!-- SPESE -->
   <div class="scr" id="scr-spese">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -526,6 +566,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label">Report</div></div>
     <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label">Contabilità</div></div>
     <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano</div></div>
+    <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label">Pagamenti</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
   </div>
@@ -1220,6 +1261,8 @@ async function afterLogin(){
       if(nbAdmin)nbAdmin.style.display='flex';
       const nbPiano=document.getElementById('nb-piano');
       if(nbPiano)nbPiano.style.display='flex';
+      const nbPag=document.getElementById('nb-pagamenti');
+      if(nbPag)nbPag.style.display='flex';
       caricaNomeAzienda();
     }
     // Caposquadra: nascondi sezioni economiche
@@ -2453,7 +2496,7 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle',pagamenti:'nb-pagamenti'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
@@ -2463,6 +2506,9 @@ function navTo(dest){
   else if(dest==='admin'){pushNav('admin');showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
   else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
+
+  else if(dest==='pagamenti'){pushNav('pagamenti');showScr('pagamenti');document.getElementById('top-title').textContent='Pagamenti ricevuti';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Pagamenti'}]);renderPagamenti();return;}
+  else if(dest==='permessi'){pushNav('permessi');showScr('permessi');document.getElementById('top-title').textContent='Permessi e visibilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin',onclick:"navTo('admin')"},{label:'Permessi'}]);renderPermessi();return;}
   else if(dest==='piano'){pushNav('piano');showScr('piano');document.getElementById('top-title').textContent='Piano del giorno';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Piano del giorno'}]);initPiano();}
   else if(dest==='bolle'){pushNav('bolle');showScr('bolle');document.getElementById('top-title').textContent='Bolle di consegna';renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
 }
@@ -3351,6 +3397,279 @@ function confermaSelezioneMulti(){
   showToast(_lavSelezionate.size+' lavorazioni aggiunte ✓');
 }
 
+// ══════════════════════════════════════════════════
+// PAGAMENTI RICEVUTI
+// ══════════════════════════════════════════════════
+let editPagId=null;
+let _permPendingAction=null; // azione in attesa conferma pwd
+
+function apriModalPagamento(id){
+  editPagId=id;
+  document.getElementById('mod-pag-t').textContent=id?'Modifica pagamento':'Registra pagamento';
+  document.getElementById('del-pag-w').innerHTML='';
+  // Popola cantieri
+  const sc=document.getElementById('pag-cant-sel');
+  if(sc)sc.innerHTML=CANTIERI.map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
+  // Alert ufficiale
+  const alertHide=localStorage.getItem('ct_pag_alert_off')==='1';
+  const alertEl=document.getElementById('pag-alert-uff');
+  if(alertEl)alertEl.style.display=alertHide?'none':'block';
+  if(!id){
+    const{date}=nowZurich();
+    document.getElementById('pag-data').value=date;
+    document.getElementById('pag-importo').value='';
+    document.getElementById('pag-rif').value='';
+    document.getElementById('pag-note').value='';
+    document.getElementById('pag-metodo').value='Bonifico';
+    if(curCant&&sc)sc.value=curCant.id;
+  }else{
+    sb.from('pagamenti_ricevuti').select('*').eq('id',id).single().then(({data:p})=>{
+      if(!p)return;
+      if(sc)sc.value=p.cantiere_id||'';
+      document.getElementById('pag-data').value=p.data||'';
+      document.getElementById('pag-importo').value=p.importo||'';
+      document.getElementById('pag-metodo').value=p.metodo||'Bonifico';
+      document.getElementById('pag-rif').value=p.riferimento||'';
+      document.getElementById('pag-note').value=p.note||'';
+      const btn=document.createElement('button');btn.className='btn btn-d';btn.textContent='🗑️ Elimina';
+      btn.addEventListener('click',function(){eliminaPagamento(id);});
+      document.getElementById('del-pag-w').innerHTML='';
+      document.getElementById('del-pag-w').appendChild(btn);
+    });
+  }
+  openModal('mod-pagamento');
+}
+
+let _alertCheckPending=false;
+function disabilitaAlertPag(){
+  _alertCheckPending=!_alertCheckPending;
+  const check=document.getElementById('pag-alert-check');
+  if(check){
+    check.style.background=_alertCheckPending?'var(--gold)':'transparent';
+    check.innerHTML=_alertCheckPending?'<span style="color:#000;font-size:10px;font-weight:900">✓</span>':'';
+  }
+}
+
+async function salvaPagamento(){
+  const cantId=document.getElementById('pag-cant-sel').value;
+  const importo=parseFloat(document.getElementById('pag-importo').value)||0;
+  const data=document.getElementById('pag-data').value;
+  if(!cantId||!importo||!data){showToast('Inserisci cantiere, data e importo','e');return;}
+  // Salva preferenza alert se spuntato
+  if(_alertCheckPending)localStorage.setItem('ct_pag_alert_off','1');
+  const btn=document.getElementById('btn-salva-pag');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const payload={
+      cantiere_id:cantId,
+      data,
+      importo,
+      metodo:document.getElementById('pag-metodo').value,
+      riferimento:document.getElementById('pag-rif').value.trim()||null,
+      note:document.getElementById('pag-note').value.trim()||null,
+      created_by:USER.id
+    };
+    if(editPagId){
+      const{error}=await sb.from('pagamenti_ricevuti').update(payload).eq('id',editPagId);
+      if(error)throw error;
+    }else{
+      const{error}=await sb.from('pagamenti_ricevuti').insert(payload);
+      if(error)throw error;
+    }
+    closeModal('mod-pagamento');
+    _alertCheckPending=false;
+    renderPagamenti();
+    showToast('Pagamento registrato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent='💾 Registra';btn.disabled=false;}
+}
+
+async function renderPagamenti(){
+  const el=document.getElementById('pag-list');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  // Popola filtro cantieri
+  const sf=document.getElementById('pag-filtro-cant');
+  if(sf&&sf.options.length<=1){
+    CANTIERI.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
+    sf.addEventListener('change',renderPagamenti);
+  }
+  const cantF=document.getElementById('pag-filtro-cant')?.value;
+  const metodoF=document.getElementById('pag-filtro-metodo')?.value;
+  try{
+    let q=sb.from('pagamenti_ricevuti').select('*, cantieri(nome)').order('data',{ascending:false});
+    if(cantF)q=q.eq('cantiere_id',cantF);
+    if(metodoF)q=q.eq('metodo',metodoF);
+    const{data,error}=await q.limit(200);
+    if(error)throw error;
+    const tot=(data||[]).reduce((s,p)=>s+(parseFloat(p.importo)||0),0);
+    const totEl=document.getElementById('pag-totale');
+    if(totEl)totEl.querySelector('span:last-child').textContent='CHF '+tot.toFixed(2);
+    if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">💳</div><p>Nessun pagamento registrato.</p></div>';return;}
+    el.innerHTML='';
+    data.forEach(function(p){
+      const div=document.createElement('div');
+      div.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer';
+      div.addEventListener('click',function(){apriModalPagamento(p.id);});
+      const metoIcon={'Bonifico':'🏦','Contanti':'💵','Carta di credito':'💳','Assegno':'📄','Altro':'📝'};
+      div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div>'
+        +'<div style="font-size:14px;font-weight:700">'+(metoIcon[p.metodo]||'💳')+' '+p.metodo+'</div>'
+        +'<div style="font-size:11px;color:var(--t2)">'+(p.cantieri?.nome||'—')+' · '+fmtDate(p.data)+'</div>'
+        +(p.riferimento?'<div style="font-size:12px;color:var(--t2);margin-top:2px">📋 '+p.riferimento+'</div>':'')
+        +'</div>'
+        +'<div style="font-family:var(--mono,monospace);font-size:20px;font-weight:500;color:var(--green)">CHF '+parseFloat(p.importo||0).toFixed(2)+'</div>'
+        +'</div>'
+        +(p.note?'<div style="font-size:12px;color:var(--t2);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">'+p.note+'</div>':'');
+      el.appendChild(div);
+    });
+  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+async function eliminaPagamento(id){
+  if(!confirm('Eliminare questo pagamento?'))return;
+  try{
+    const{error}=await sb.from('pagamenti_ricevuti').delete().eq('id',id);
+    if(error)throw error;
+    closeModal('mod-pagamento');renderPagamenti();showToast('Eliminato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+// ══════════════════════════════════════════════════
+// PERMESSI E VISIBILITÀ
+// ══════════════════════════════════════════════════
+
+// Struttura permessi: salvata in tabella "permessi_utenti" su Supabase
+// chiave: user_id, modulo: string, cantiere_id: null (tutti) o uuid
+
+const MODULI_APP = [
+  {id:'cantieri',        label:'Cantieri',           desc:'Lista e dettaglio cantieri',                      default:'tutti'},
+  {id:'nuova_giornata',  label:'+ Giornata',         desc:'Registrare nuove giornate lavorative',            default:'tutti'},
+  {id:'spese',           label:'Spese',              desc:'Inserire e vedere spese/scontrini/fatture',       default:'tutti'},
+  {id:'bolle',           label:'Bolle di consegna',  desc:'Bolle materiali ricevuti',                        default:'tutti'},
+  {id:'gru',             label:'Tiri Gru',           desc:'Registrare tiri gru (CT paga/incassa)',           default:'tutti'},
+  {id:'situazione',      label:'Situazione',         desc:'Spese da pagare, gru, regia in sospeso',          default:'titolare'},
+  {id:'contabilita',     label:'Contabilità',        desc:'Costi, ricavi e margine per cantiere',            default:'titolare'},
+  {id:'pagamenti',       label:'Pagamenti ricevuti', desc:'Pagamenti del cliente (dati sensibili)',           default:'titolare'},
+  {id:'report',          label:'Report',             desc:'Stipendi, analisi, export dati',                  default:'titolare'},
+  {id:'piano',           label:'Piano del giorno',   desc:'Assegnazione operai ai cantieri giornaliera',     default:'titolare'},
+  {id:'admin',           label:'Admin / Impostazioni',desc:'Gestione cantieri, operai, utenti, permessi',    default:'titolare'},
+  {id:'lavorazioni',     label:'Analisi lavorazioni',desc:'Classifica velocità operai e statistiche',        default:'titolare'},
+  {id:'assenze',         label:'Assenze',            desc:'Registrazione e statistiche assenze',             default:'titolare'},
+];
+
+async function renderPermessi(){
+  const el=document.getElementById('permessi-content');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    // Carica utenti
+    const{data:utenti,error:eu}=await sb.from('profili').select('*').order('ruolo');
+    if(eu)throw eu;
+    // Carica permessi salvati
+    const{data:perms}=await sb.from('permessi_utenti').select('*');
+    const permMap={};
+    (perms||[]).forEach(p=>{
+      if(!permMap[p.user_id])permMap[p.user_id]={};
+      permMap[p.user_id][p.modulo]=p.accesso;
+    });
+
+    el.innerHTML='';
+
+    // Legenda
+    const legenda=document.createElement('div');
+    legenda.style.cssText='background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--t2);line-height:1.8';
+    legenda.innerHTML='<strong style="color:var(--text)">Come funziona:</strong><br>'
+      +'🟢 <strong>Tutti</strong> — visibile a tutti gli utenti<br>'
+      +'🟡 <strong>Solo titolare</strong> — default per sezioni sensibili<br>'
+      +'🔴 <strong>Nessuno</strong> — disabilitato per tutti (tranne titolare)<br>'
+      +'Le modifiche richiedono la tua password per sicurezza.';
+    el.appendChild(legenda);
+
+    // Tabella permessi
+    MODULI_APP.forEach(function(mod){
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px';
+
+      // Header modulo
+      const hdr=document.createElement('div');
+      hdr.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px';
+      hdr.innerHTML='<div>'
+        +'<div style="font-size:15px;font-weight:800">'+mod.label+'</div>'
+        +'<div style="font-size:12px;color:var(--t2)">'+mod.desc+'</div>'
+        +'</div>'
+        +'<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--s3);color:var(--t2)">Default: '+(mod.default==='tutti'?'🟢 Tutti':'🟡 Titolare')+'</span>';
+      card.appendChild(hdr);
+
+      // Utenti (escludi titolare — ha sempre tutto)
+      const caposquadra=(utenti||[]).filter(u=>u.ruolo!=='titolare');
+      if(!caposquadra.length){
+        const nessuno=document.createElement('div');
+        nessuno.style.cssText='font-size:12px;color:var(--t2);font-style:italic';
+        nessuno.textContent='Nessun altro utente registrato';
+        card.appendChild(nessuno);
+      }else{
+        caposquadra.forEach(function(u){
+          const accesso=permMap[u.id]?.[mod.id]||(mod.default==='tutti'?'si':'no');
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)';
+          const nomeEl=document.createElement('div');
+          nomeEl.innerHTML='<div style="font-size:13px;font-weight:600">'+u.nome+'</div>'
+            +'<div style="font-size:11px;color:var(--t2)">'+u.ruolo+'</div>';
+          const togWrap=document.createElement('div');
+          togWrap.style.cssText='display:flex;gap:6px';
+          [{val:'si',label:'✓ Sì',col:'var(--green)'},{val:'no',label:'✗ No',col:'var(--red)'}].forEach(function(opt){
+            const btn=document.createElement('button');
+            btn.textContent=opt.label;
+            btn.style.cssText='font-size:11px;padding:4px 10px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:'+(accesso===opt.val?opt.col:'var(--s3)')+';color:'+(accesso===opt.val?'#fff':'var(--t2)');
+            btn.addEventListener('click',function(){
+              richiedePasswordPermesso(u.id,u.nome,mod.id,mod.label,opt.val,function(){renderPermessi();});
+            });
+            togWrap.appendChild(btn);
+          });
+          row.appendChild(nomeEl);
+          row.appendChild(togWrap);
+          card.appendChild(row);
+        });
+      }
+      el.appendChild(card);
+    });
+  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore,callback){
+  // Salva parametri in attesa della conferma pwd
+  _permPendingAction={userId,userName,modulo,moduloLabel,nuovoValore,callback};
+  document.getElementById('pwd-perm-inp').value='';
+  document.getElementById('pwd-perm-err').style.display='none';
+  openModal('mod-pwd-permessi');
+}
+
+async function confermaPwdPermessi(){
+  const pwd=document.getElementById('pwd-perm-inp').value;
+  if(!pwd){document.getElementById('pwd-perm-err').textContent='Inserisci la password';document.getElementById('pwd-perm-err').style.display='block';return;}
+  const btn=document.getElementById('btn-perm-conf');btn.textContent='⏳...';btn.disabled=true;
+  try{
+    // Verifica password con Supabase
+    const{error}=await sb.auth.signInWithPassword({email:USER.email,password:pwd});
+    if(error)throw new Error('Password non corretta');
+    // Salva il permesso
+    const a=_permPendingAction;
+    const{error:pe}=await sb.from('permessi_utenti').upsert(
+      {user_id:a.userId,modulo:a.modulo,accesso:a.nuovoValore,aggiornato_da:USER.id},
+      {onConflict:'user_id,modulo'}
+    );
+    if(pe)throw pe;
+    closeModal('mod-pwd-permessi');
+    showToast(a.userName+' — '+a.moduloLabel+': '+(a.nuovoValore==='si'?'✓ Accesso concesso':'✗ Accesso rimosso'));
+    if(a.callback)a.callback();
+    _permPendingAction=null;
+  }catch(e){
+    document.getElementById('pwd-perm-err').textContent=e.message;
+    document.getElementById('pwd-perm-err').style.display='block';
+  }
+  finally{btn.textContent='Conferma';btn.disabled=false;}
+}
+
 function openUrl(el){window.open(el.dataset.href||el.getAttribute('data-href'),'_blank');}
 function eliminaGruById(el){eliminaGru(el.dataset.id||el.getAttribute('data-id'));}
 function openGruById(el){openModalGru(el.dataset.id||el.getAttribute('data-id'));}
@@ -3601,6 +3920,61 @@ async function invitaCollaboratore(){
       <button class="btn btn-g" id="btn-salva-mz" onclick="salvaMezzo()">💾 Salva</button>
     </div>
     <div id="del-mz-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="ov" id="mod-pagamento">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mod-pag-t">Registra pagamento</div>
+    <!-- Alert ufficiale (nascosto se disabilitato) -->
+    <div id="pag-alert-uff" style="background:rgba(224,136,64,.15);border:2px solid var(--orange);border-radius:var(--rsm);padding:14px;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:900;color:var(--orange);text-align:center;margin-bottom:8px">⚠️ ATTENZIONE</div>
+      <div style="font-size:14px;font-weight:700;text-align:center;color:var(--text);margin-bottom:8px">Registra solo i pagamenti ufficiali</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6;text-align:center">I pagamenti registrati in questa app sono visibili. Inserisci solo ciò che è correttamente documentato.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center;cursor:pointer" onclick="disabilitaAlertPag()">
+        <div id="pag-alert-check" style="width:16px;height:16px;border-radius:3px;border:2px solid var(--border);flex-shrink:0"></div>
+        <span style="font-size:12px;color:var(--t2)">Non mostrare più questo avviso</span>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="pag-cant-sel"></select></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="pag-data" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl">Importo CHF</label><input type="number" class="fi" id="pag-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace"></div>
+    </div>
+    <div class="fg"><label class="fl">Metodo di pagamento</label>
+      <select class="fs" id="pag-metodo">
+        <option value="Bonifico">Bonifico bancario</option>
+        <option value="Contanti">Contanti</option>
+        <option value="Carta di credito">Carta di credito</option>
+        <option value="Assegno">Assegno</option>
+        <option value="Altro">Altro (specifica nelle note)</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Riferimento (fattura n., descrizione)</label><input type="text" class="fi" id="pag-rif" placeholder="es. Fattura 2024/003 — SAL 2"></div>
+    <div class="fg"><label class="fl">Note</label><textarea class="ft" id="pag-note" style="min-height:50px" placeholder="Note aggiuntive..."></textarea></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-pagamento')">Annulla</button>
+      <button class="btn btn-g" id="btn-salva-pag" onclick="salvaPagamento()">💾 Registra</button>
+    </div>
+    <div id="del-pag-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- Modal conferma password per modifica permessi -->
+<div class="ov" id="mod-pwd-permessi">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">🔐 Conferma identità</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Per modificare i permessi di visibilità inserisci la tua password.</p>
+    <div class="fg"><label class="fl">Password titolare</label><input type="password" class="fi" id="pwd-perm-inp" placeholder="••••••••" autocomplete="current-password"></div>
+    <div id="pwd-perm-err" style="color:var(--red);font-size:13px;margin-top:6px;display:none"></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-pwd-permessi')">Annulla</button>
+      <button class="btn btn-g" id="btn-perm-conf" onclick="confermaPwdPermessi()">Conferma</button>
+    </div>
   </div>
 </div>
 
