@@ -204,11 +204,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .mezzo-badge{display:inline-block;background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:11px;color:var(--t2);margin-top:4px;}
 .ruolo-cs{color:var(--gold);font-weight:700;font-size:11px;text-transform:uppercase;}
 .ruolo-rc{color:var(--blue);font-weight:700;font-size:11px;text-transform:uppercase;}
-
-/* Navbar drag */
-.nb{user-select:none;transition:opacity .2s,transform .2s;}
-.nb.dragging{opacity:.5;transform:scale(.95);}
-.nb.drag-over{border:2px dashed var(--gold);}
 </style>
 </head>
 <body>
@@ -383,8 +378,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     </div>
     <hr style="margin-bottom:14px">
     <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px">➕ Nuovo cantiere</button>
-    <div class="sec">Personale</div>
-    <button class="btn btn-s" onclick="navTo('personale')" style="margin-bottom:12px;width:100%">👷 Gestisci personale →</button>
+    <div class="sec">Operai</div>
+    <div id="adm-operai"></div>
+    <button class="btn btn-s" onclick="openModalOp(null)" style="margin-bottom:20px">➕ Nuovo operaio</button>
     <div class="sec admin-only">Utenti</div>
     <div id="adm-utenti" class="admin-only"></div>
     <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px">✉️ Invita nuovo collaboratore</button></div>
@@ -521,33 +517,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div class="bsp"></div>
   </div>
 
-  <!-- PERSONALE / COLLABORATORI -->
-  <div class="scr" id="scr-personale">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">👷 Personale</div>
-      <button class="btn-icon btn-sm" onclick="openModalOp(null)">➕ Aggiungi</button>
-    </div>
-    <!-- Filtri -->
-    <div class="row2" style="margin-bottom:12px">
-      <select class="fs" id="pers-filtro-stato" onchange="renderPersonale()">
-        <option value="attivi">Attivi</option>
-        <option value="tutti">Tutti (inclusi ex)</option>
-        <option value="ex">Solo ex-collaboratori</option>
-      </select>
-      <select class="fs" id="pers-filtro-ruolo" onchange="renderPersonale()">
-        <option value="">Tutti i ruoli</option>
-        <option value="Carpentiere">Carpentiere</option>
-        <option value="Aiuto carpentiere">Aiuto carpentiere</option>
-        <option value="Caposquadra">Caposquadra</option>
-        <option value="Lattoniere">Lattoniere</option>
-        <option value="Apprendista">Apprendista</option>
-        <option value="Operaio generico">Operaio generico</option>
-      </select>
-    </div>
-    <div id="pers-list"></div>
-    <div class="bsp"></div>
-  </div>
-
   <!-- PIANO DEL GIORNO -->
   <div class="scr" id="scr-piano">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -596,8 +565,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
     </div>
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label">Report</div></div>
     <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label">Contabilità</div></div>
-    <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano del g.</div></div>
-    <div class="nb" id="nb-personale" onclick="navTo('personale')" style="display:none"><div class="nb-icon">👷</div><div class="nb-label">Personale</div></div>
+    <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano</div></div>
     <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label">Pagamenti</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
@@ -1293,8 +1261,6 @@ async function afterLogin(){
       if(nbAdmin)nbAdmin.style.display='flex';
       const nbPiano=document.getElementById('nb-piano');
       if(nbPiano)nbPiano.style.display='flex';
-      const nbPers=document.getElementById('nb-personale');
-      if(nbPers)nbPers.style.display='flex';
       const nbPag=document.getElementById('nb-pagamenti');
       if(nbPag)nbPag.style.display='flex';
       caricaNomeAzienda();
@@ -1310,7 +1276,6 @@ async function afterLogin(){
     document.getElementById('rep-mese').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     renderHome();
     setBread([{label:'Cantieri'}]);
-    initNavbarDrag();
     aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
 }
@@ -2531,7 +2496,7 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle',pagamenti:'nb-pagamenti',personale:'nb-personale'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle',pagamenti:'nb-pagamenti'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
@@ -2542,7 +2507,6 @@ function navTo(dest){
   else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
 
-  else if(dest==='personale'){pushNav('personale');showScr('personale');document.getElementById('top-title').textContent='Personale';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Personale'}]);renderPersonale();return;}
   else if(dest==='pagamenti'){pushNav('pagamenti');showScr('pagamenti');document.getElementById('top-title').textContent='Pagamenti ricevuti';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Pagamenti'}]);renderPagamenti();return;}
   else if(dest==='permessi'){pushNav('permessi');showScr('permessi');document.getElementById('top-title').textContent='Permessi e visibilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin',onclick:"navTo('admin')"},{label:'Permessi'}]);renderPermessi();return;}
   else if(dest==='piano'){pushNav('piano');showScr('piano');document.getElementById('top-title').textContent='Piano del giorno';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Piano del giorno'}]);initPiano();}
@@ -2981,46 +2945,6 @@ async function salvaAssenza(){
 }
 async function deleteAssenza(id){if(!confirm('Eliminare questa assenza?'))return;await sb.from('assenze').delete().eq('id',id);closeModal('mod-assenza');renderAssenze();showToast('Eliminata');}
 
-// Drag & drop navbar
-function initNavbarDrag(){
-  const navbar=document.querySelector('.navbar');
-  if(!navbar)return;
-  // Carica ordine salvato
-  const saved=localStorage.getItem('ct_navbar_order');
-  if(saved){
-    try{
-      const order=JSON.parse(saved);
-      order.forEach(function(id,i){
-        const el=document.getElementById(id);
-        if(el)navbar.appendChild(el); // riordina
-      });
-    }catch(e){}
-  }
-  let dragSrc=null;
-  navbar.querySelectorAll('.nb').forEach(function(nb){
-    if(nb.id==='nb-home')return; // home non spostabile
-    nb.draggable=true;
-    nb.addEventListener('dragstart',function(){dragSrc=nb;nb.classList.add('dragging');});
-    nb.addEventListener('dragend',function(){nb.classList.remove('dragging');
-      // Salva nuovo ordine
-      const ids=Array.from(navbar.querySelectorAll('.nb')).map(n=>n.id).filter(Boolean);
-      localStorage.setItem('ct_navbar_order',JSON.stringify(ids));
-    });
-    nb.addEventListener('dragover',function(e){e.preventDefault();nb.classList.add('drag-over');});
-    nb.addEventListener('dragleave',function(){nb.classList.remove('drag-over');});
-    nb.addEventListener('drop',function(e){
-      e.preventDefault();nb.classList.remove('drag-over');
-      if(dragSrc&&dragSrc!==nb&&nb.id!=='nb-home'){
-        const allNbs=Array.from(navbar.querySelectorAll('.nb'));
-        const srcIdx=allNbs.indexOf(dragSrc);
-        const tgtIdx=allNbs.indexOf(nb);
-        if(srcIdx<tgtIdx)nb.parentNode.insertBefore(dragSrc,nb.nextSibling);
-        else nb.parentNode.insertBefore(dragSrc,nb);
-      }
-    });
-  });
-}
-
 init();
 
 // ── TIRI GRU ──
@@ -3126,17 +3050,10 @@ async function renderMezzi(){
     data.forEach(function(m){
       const div=document.createElement('div');
       div.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center'+(m.data_dismissione?';opacity:.5':'');
-      const statoMz=m.stato||'disponibile';
-      const statoIcon={'disponibile':'🟢','manutenzione':'🔧','fuori_uso':'🔴'};
-      const statoLabel={'disponibile':'Disponibile','manutenzione':'In manutenzione','fuori_uso':'Fuori uso'};
-      const statoCol={'disponibile':'var(--green)','manutenzione':'var(--orange)','fuori_uso':'var(--red)'};
       div.innerHTML='<div>'
-        +'<div style="font-size:14px;font-weight:700">🚗 '+m.targa+' <span style="font-size:12px;color:var(--t2);font-weight:400">'+m.tipo+'</span>'
-        +' <span style="font-size:11px;font-weight:700;color:'+statoCol[statoMz]+'">'+statoIcon[statoMz]+' '+statoLabel[statoMz]+'</span>'
-        +'</div>'
+        +'<div style="font-size:14px;font-weight:700">🚗 '+m.targa+' <span style="font-size:12px;color:var(--t2);font-weight:400">'+m.tipo+'</span></div>'
         +(m.descrizione?'<div style="font-size:12px;color:var(--t2)">'+m.descrizione+'</div>':'')
         +(m.operai?'<div style="font-size:11px;color:var(--t2);margin-top:2px">Default: '+m.operai.nome+' '+m.operai.cognome+'</div>':'')
-        +(m.stato_note&&m.stato!=='disponibile'?'<div style="font-size:11px;color:var(--orange);margin-top:2px">📝 '+m.stato_note+'</div>':'')
         +(m.data_dismissione?'<div style="font-size:11px;color:var(--red);margin-top:2px">🔴 Dismesso il '+m.data_dismissione+'</div>':'')
         +'</div>';
       const btn=document.createElement('button');
@@ -3152,20 +3069,9 @@ function popolaDropdownPiano(){
   const opSel=document.getElementById('pa-operaio');
   const cantSel=document.getElementById('pa-cantiere');
   const mzSel=document.getElementById('pa-mezzo');
-  if(opSel){
-    const opList=(OPERAI&&OPERAI.length?OPERAI:OPERAI_TUTTI||[]).filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=new Date().toISOString().split('T')[0]);
-    opSel.innerHTML='<option value="">— Seleziona operaio —</option>'+opList.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+(o.ruolo?' ('+o.ruolo+')':'')+'</option>').join('');
-  }
-  if(cantSel){
-    const cantList=(CANTIERI||[]).filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
-    cantSel.innerHTML='<option value="">— Seleziona cantiere —</option>'+cantList.map(c=>'<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>').join('');
-  }
-  if(mzSel){
-    const mzDisp=(MEZZI||[]).filter(m=>(!m.stato||m.stato==='disponibile')&&m.attivo!==false&&!m.data_dismissione);
-    mzSel.innerHTML='<option value="">— Nessun mezzo —</option>'
-      +mzDisp.map(m=>'<option value="'+m.id+'">'+m.targa+(m.tipo?' ('+m.tipo+')':'')+(m.descrizione?' — '+m.descrizione.substring(0,20):'')+'</option>').join('')
-      +(MEZZI||[]).filter(m=>m.stato==='manutenzione').map(m=>'<option value="'+m.id+'" disabled>🔧 '+m.targa+' (in manutenzione)</option>').join('');
-  }
+  if(opSel)opSel.innerHTML=OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
+  if(cantSel)cantSel.innerHTML=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa').map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
+  if(mzSel)mzSel.innerHTML='<option value="">— Nessun mezzo —</option>'+MEZZI.map(m=>'<option value="'+m.id+'">'+m.targa+(m.descrizione?' — '+m.descrizione.substring(0,25):'')+'</option>').join('');
 }
 
 function openModalPianoAss(){
@@ -3315,8 +3221,6 @@ async function apriModificaMezzo(id){
     document.getElementById('mz-desc').value=m.descrizione||'';
     document.getElementById('mz-operaio').value=m.operaio_default_id||'';
     document.getElementById('mz-dismissione').value=m.data_dismissione||'';
-    const msEl=document.getElementById('mz-stato');if(msEl)msEl.value=m.stato||'disponibile';
-    const mnEl=document.getElementById('mz-stato-note');if(mnEl)mnEl.value=m.stato_note||'';
     const btn=document.createElement('button');btn.className='btn btn-d';btn.textContent='🗑️ Elimina';
     btn.addEventListener('click',function(){eliminaMezzo(id);});
     const w=document.getElementById('del-mz-w');w.innerHTML='';w.appendChild(btn);
@@ -3329,16 +3233,13 @@ async function salvaMezzo(){
   if(!targa){showToast('Inserisci la targa','e');return;}
   const btn=document.getElementById('btn-salva-mz');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const mzStato=document.getElementById('mz-stato')?.value||'disponibile';
     const payload={
       targa,
       tipo:document.getElementById('mz-tipo').value,
       descrizione:document.getElementById('mz-desc').value.trim()||null,
       operaio_default_id:document.getElementById('mz-operaio').value||null,
-      stato:mzStato,
-      stato_note:document.getElementById('mz-stato-note')?.value.trim()||null,
       data_dismissione:document.getElementById('mz-dismissione').value||null,
-      attivo:mzStato!=='fuori_uso'&&!document.getElementById('mz-dismissione').value
+      attivo:!document.getElementById('mz-dismissione').value
     };
     if(editMzId){
       const{error}=await sb.from('mezzi').update(payload).eq('id',editMzId);
@@ -3634,188 +3535,113 @@ async function eliminaPagamento(id){
 }
 
 // ══════════════════════════════════════════════════
-// PERMESSI E VISIBILITÀ — sistema a ruoli + eccezioni
+// PERMESSI E VISIBILITÀ
 // ══════════════════════════════════════════════════
 
-// Permessi base per ruolo (cosa vede OGNI ruolo di default)
-const PERMESSI_RUOLO = {
-  titolare: ['cantieri','nuova_giornata','spese','bolle','gru','situazione','contabilita',
-             'pagamenti','report','piano','admin','personale','lavorazioni','assenze'],
-  caposquadra: ['cantieri','nuova_giornata','spese','bolle','gru'],
-  responsabile: ['cantieri','nuova_giornata','spese','bolle','gru','situazione','contabilita','lavorazioni'],
-  operaio: ['cantieri','nuova_giornata','spese','bolle'],
-};
+// Struttura permessi: salvata in tabella "permessi_utenti" su Supabase
+// chiave: user_id, modulo: string, cantiere_id: null (tutti) o uuid
 
 const MODULI_APP = [
-  {id:'cantieri',        label:'Cantieri',            desc:'Lista e dettaglio cantieri',                     gruppoDefault:['tutti']},
-  {id:'nuova_giornata',  label:'+ Giornata',          desc:'Registrare nuove giornate lavorative',           gruppoDefault:['tutti']},
-  {id:'spese',           label:'Spese',               desc:'Inserire e vedere spese/scontrini/fatture',      gruppoDefault:['tutti']},
-  {id:'bolle',           label:'Bolle di consegna',   desc:'Bolle materiali ricevuti',                       gruppoDefault:['tutti']},
-  {id:'gru',             label:'Tiri Gru',            desc:'Registrare tiri gru',                            gruppoDefault:['tutti']},
-  {id:'situazione',      label:'Situazione',          desc:'Spese da pagare, gru, regia in sospeso',         gruppoDefault:['titolare','responsabile']},
-  {id:'contabilita',     label:'Contabilità',         desc:'Costi, ricavi e margine per cantiere',           gruppoDefault:['titolare','responsabile']},
-  {id:'pagamenti',       label:'Pagamenti ricevuti',  desc:'Pagamenti del cliente — dati sensibili',         gruppoDefault:['titolare']},
-  {id:'report',          label:'Report',              desc:'Stipendi, analisi, export dati',                 gruppoDefault:['titolare']},
-  {id:'piano',           label:'Piano del g.',        desc:'Assegnazione operai ai cantieri',                gruppoDefault:['titolare']},
-  {id:'personale',       label:'Personale',           desc:'Gestione collaboratori e ruoli',                 gruppoDefault:['titolare']},
-  {id:'lavorazioni',     label:'Analisi lavorazioni', desc:'Classifica velocità operai e statistiche',       gruppoDefault:['titolare','responsabile']},
-  {id:'assenze',         label:'Assenze',             desc:'Registrazione e statistiche assenze',            gruppoDefault:['titolare']},
-  {id:'admin',           label:'Admin / Impostazioni',desc:'Cantieri, impostazioni, permessi',               gruppoDefault:['titolare']},
+  {id:'cantieri',        label:'Cantieri',           desc:'Lista e dettaglio cantieri',                      default:'tutti'},
+  {id:'nuova_giornata',  label:'+ Giornata',         desc:'Registrare nuove giornate lavorative',            default:'tutti'},
+  {id:'spese',           label:'Spese',              desc:'Inserire e vedere spese/scontrini/fatture',       default:'tutti'},
+  {id:'bolle',           label:'Bolle di consegna',  desc:'Bolle materiali ricevuti',                        default:'tutti'},
+  {id:'gru',             label:'Tiri Gru',           desc:'Registrare tiri gru (CT paga/incassa)',           default:'tutti'},
+  {id:'situazione',      label:'Situazione',         desc:'Spese da pagare, gru, regia in sospeso',          default:'titolare'},
+  {id:'contabilita',     label:'Contabilità',        desc:'Costi, ricavi e margine per cantiere',            default:'titolare'},
+  {id:'pagamenti',       label:'Pagamenti ricevuti', desc:'Pagamenti del cliente (dati sensibili)',           default:'titolare'},
+  {id:'report',          label:'Report',             desc:'Stipendi, analisi, export dati',                  default:'titolare'},
+  {id:'piano',           label:'Piano del giorno',   desc:'Assegnazione operai ai cantieri giornaliera',     default:'titolare'},
+  {id:'admin',           label:'Admin / Impostazioni',desc:'Gestione cantieri, operai, utenti, permessi',    default:'titolare'},
+  {id:'lavorazioni',     label:'Analisi lavorazioni',desc:'Classifica velocità operai e statistiche',        default:'titolare'},
+  {id:'assenze',         label:'Assenze',            desc:'Registrazione e statistiche assenze',             default:'titolare'},
 ];
-
-// Controlla se utente ha accesso a modulo (considera ruolo + eccezioni)
-function utenteHaAccesso(utente, moduloId, eccezioni){
-  if(!utente)return false;
-  if(utente.ruolo==='titolare')return true;
-  const ruolo=utente.ruolo||'operaio';
-  const baseRuolo=(PERMESSI_RUOLO[ruolo]||PERMESSI_RUOLO.operaio).includes(moduloId);
-  // Eccezione individuale sovrascrive ruolo
-  const eccKey=utente.id+'|'+moduloId;
-  if(eccezioni&&eccezioni[eccKey]!==undefined)return eccezioni[eccKey]==='si';
-  return baseRuolo;
-}
 
 async function renderPermessi(){
   const el=document.getElementById('permessi-content');
   if(!el)return;
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
+    // Carica utenti
     const{data:utenti,error:eu}=await sb.from('profili').select('*').order('ruolo');
     if(eu)throw eu;
+    // Carica permessi salvati
     const{data:perms}=await sb.from('permessi_utenti').select('*');
-    // Mappa eccezioni: "user_id|modulo" → accesso
-    const eccMap={};
-    (perms||[]).forEach(p=>{eccMap[p.user_id+'|'+p.modulo]=p.accesso;});
+    const permMap={};
+    (perms||[]).forEach(p=>{
+      if(!permMap[p.user_id])permMap[p.user_id]={};
+      permMap[p.user_id][p.modulo]=p.accesso;
+    });
 
     el.innerHTML='';
 
-    // ── SEZIONE 1: Ruoli e permessi base ──
-    const hdrRuoli=document.createElement('div');
-    hdrRuoli.innerHTML='<div class="sec">Permessi base per ruolo</div>'
-      +'<p style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.6">Questi sono i permessi predefiniti assegnati automaticamente a ogni ruolo. Le eccezioni individuali li sovrascrivono.</p>';
-    el.appendChild(hdrRuoli);
-
-    // Tabella ruoli
-    const ruoliDaMostrare=['caposquadra','responsabile','operaio'];
-    const ruoliLabel={caposquadra:'Caposquadra',responsabile:'Responsabile cantiere',operaio:'Operaio'};
-    const ruoliColor={caposquadra:'var(--gold)',responsabile:'var(--blue)',operaio:'var(--t2)'};
-
-    const tbl=document.createElement('div');
-    tbl.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px';
-
-    // Header tabella
-    const hdrRow=document.createElement('div');
-    hdrRow.style.cssText='display:grid;grid-template-columns:1fr 90px 120px 80px;gap:0;background:var(--s2);padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t2)';
-    hdrRow.innerHTML='<div>Funzione</div>'
-      +ruoliDaMostrare.map(r=>'<div style="text-align:center;color:'+ruoliColor[r]+'">'+ruoliLabel[r]+'</div>').join('');
-    tbl.appendChild(hdrRow);
-
-    MODULI_APP.forEach(function(mod,i){
-      const row=document.createElement('div');
-      row.style.cssText='display:grid;grid-template-columns:1fr 90px 120px 80px;gap:0;padding:10px 14px;border-top:1px solid var(--border);align-items:center'+(i%2===0?';background:var(--s2)':'');
-      const modLabel=document.createElement('div');
-      modLabel.innerHTML='<div style="font-size:13px;font-weight:600">'+mod.label+'</div>'
-        +'<div style="font-size:11px;color:var(--t2)">'+mod.desc+'</div>';
-      row.appendChild(modLabel);
-      ruoliDaMostrare.forEach(function(ruolo){
-        const hasIt=(PERMESSI_RUOLO[ruolo]||[]).includes(mod.id);
-        const cell=document.createElement('div');
-        cell.style.cssText='text-align:center;font-size:16px';
-        cell.textContent=hasIt?'✅':'—';
-        cell.title=hasIt?ruoliLabel[ruolo]+' può vedere '+mod.label:ruoliLabel[ruolo]+' NON vede '+mod.label;
-        row.appendChild(cell);
-      });
-      tbl.appendChild(row);
-    });
-    el.appendChild(tbl);
-
-    // ── SEZIONE 2: Utenti registrati + eccezioni ──
-    const nonTitolari=(utenti||[]).filter(u=>u.ruolo!=='titolare');
-    const hdrUtenti=document.createElement('div');
-    hdrUtenti.innerHTML='<div class="sec">Eccezioni individuali</div>'
-      +'<p style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.6">Qui puoi dare o togliere accesso a singole funzioni per una persona specifica, indipendentemente dal suo ruolo. Richiede la tua password.</p>';
-    el.appendChild(hdrUtenti);
-
-    if(!nonTitolari.length){
-      const nessuno=document.createElement('div');
-      nessuno.style.cssText='background:var(--s2);border-radius:var(--rsm);padding:14px;font-size:13px;color:var(--t2);text-align:center;margin-bottom:16px';
-      nessuno.textContent='Nessun altro utente registrato. Invita collaboratori dalla sezione Personale.';
-      el.appendChild(nessuno);
-    }else{
-      nonTitolari.forEach(function(u){
-        const card=document.createElement('div');
-        card.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px';
-
-        const ruoloUtente=u.ruolo||'operaio';
-        const ruoloCol={titolare:'var(--gold)',caposquadra:'var(--gold)',responsabile:'var(--blue)',operaio:'var(--t2)'}[ruoloUtente]||'var(--t2)';
-        card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-          +'<div>'
-          +'<div style="font-size:15px;font-weight:800">'+u.nome+'</div>'
-          +'<div style="font-size:12px;color:'+ruoloCol+';font-weight:600">'+ruoliLabel[ruoloUtente]+'</div>'
-          +'</div>'
-          +'<div style="font-size:11px;color:var(--t2);text-align:right">Accede a: '+(PERMESSI_RUOLO[ruoloUtente]||PERMESSI_RUOLO.operaio).length+'/'+MODULI_APP.length+' funzioni</div>'
-          +'</div>';
-
-        // Lista moduli con stato attuale e possibilità di eccezione
-        MODULI_APP.forEach(function(mod){
-          const baseAccesso=(PERMESSI_RUOLO[ruoloUtente]||PERMESSI_RUOLO.operaio).includes(mod.id);
-          const eccKey=u.id+'|'+mod.id;
-          const hasEcc=eccMap[eccKey]!==undefined;
-          const accesoFinale=hasEcc?(eccMap[eccKey]==='si'):baseAccesso;
-
-          const row=document.createElement('div');
-          row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)';
-
-          const info=document.createElement('div');
-          info.innerHTML='<div style="font-size:13px;font-weight:'+(accesoFinale?'600':'400')+';color:'+(accesoFinale?'var(--text)':'var(--t2)')+'">'+mod.label+'</div>'
-            +(hasEcc?'<div style="font-size:10px;color:var(--orange)">⚡ Eccezione individuale</div>'
-              :'<div style="font-size:10px;color:var(--t2)">Da ruolo '+ruoliLabel[ruoloUtente]+'</div>');
-
-          const btns=document.createElement('div');
-          btns.style.cssText='display:flex;gap:4px;align-items:center';
-
-          // Bottone stato attuale
-          const stato=document.createElement('div');
-          stato.style.cssText='font-size:13px;margin-right:6px';
-          stato.textContent=accesoFinale?'✅':'🚫';
-          btns.appendChild(stato);
-
-          // Bottoni eccezione
-          [{val:'si',icon:'➕',tip:'Dai accesso'},{val:'no',icon:'➖',tip:'Togli accesso'},{val:'reset',icon:'↩️',tip:'Ripristina default ruolo'}].forEach(function(opt){
-            const btn=document.createElement('button');
-            btn.title=opt.tip;
-            btn.style.cssText='background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:4px 7px;cursor:pointer;font-size:13px;'
-              +(opt.val==='si'&&accesoFinale&&hasEcc?'border-color:var(--green);':'')
-              +(opt.val==='no'&&!accesoFinale&&hasEcc?'border-color:var(--red);':'')
-              +(opt.val==='reset'&&!hasEcc?'opacity:.4;cursor:default;':'');
-            btn.textContent=opt.icon;
-            if(!(opt.val==='reset'&&!hasEcc)){
-              btn.addEventListener('click',function(){
-                richiedePasswordPermesso(u.id,u.nome,mod.id,mod.label,opt.val,function(){renderPermessi();});
-              });
-            }
-            btns.appendChild(btn);
-          });
-
-          row.appendChild(info);
-          row.appendChild(btns);
-          card.appendChild(row);
-        });
-        el.appendChild(card);
-      });
-    }
-
     // Legenda
     const legenda=document.createElement('div');
-    legenda.style.cssText='background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-top:8px;font-size:12px;color:var(--t2);line-height:1.8';
-    legenda.innerHTML='<strong style="color:var(--text)">Guida rapida:</strong><br>'
-      +'➕ Dai accesso — aggiunge eccezione (vede questa funzione anche se il ruolo non la prevede)<br>'
-      +'➖ Togli accesso — aggiunge eccezione (NON vede questa funzione anche se il ruolo la prevede)<br>'
-      +'↩️ Ripristina — rimuove l\'eccezione e torna al default del ruolo<br>'
-      +'⚡ Arancione = eccezione attiva su questa funzione';
+    legenda.style.cssText='background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--t2);line-height:1.8';
+    legenda.innerHTML='<strong style="color:var(--text)">Come funziona:</strong><br>'
+      +'🟢 <strong>Tutti</strong> — visibile a tutti gli utenti<br>'
+      +'🟡 <strong>Solo titolare</strong> — default per sezioni sensibili<br>'
+      +'🔴 <strong>Nessuno</strong> — disabilitato per tutti (tranne titolare)<br>'
+      +'Le modifiche richiedono la tua password per sicurezza.';
     el.appendChild(legenda);
 
+    // Tabella permessi
+    MODULI_APP.forEach(function(mod){
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px';
+
+      // Header modulo
+      const hdr=document.createElement('div');
+      hdr.style.cssText='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px';
+      hdr.innerHTML='<div>'
+        +'<div style="font-size:15px;font-weight:800">'+mod.label+'</div>'
+        +'<div style="font-size:12px;color:var(--t2)">'+mod.desc+'</div>'
+        +'</div>'
+        +'<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--s3);color:var(--t2)">Default: '+(mod.default==='tutti'?'🟢 Tutti':'🟡 Titolare')+'</span>';
+      card.appendChild(hdr);
+
+      // Utenti (escludi titolare — ha sempre tutto)
+      const caposquadra=(utenti||[]).filter(u=>u.ruolo!=='titolare');
+      if(!caposquadra.length){
+        const nessuno=document.createElement('div');
+        nessuno.style.cssText='font-size:12px;color:var(--t2);font-style:italic';
+        nessuno.textContent='Nessun altro utente registrato';
+        card.appendChild(nessuno);
+      }else{
+        caposquadra.forEach(function(u){
+          const accesso=permMap[u.id]?.[mod.id]||(mod.default==='tutti'?'si':'no');
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)';
+          const nomeEl=document.createElement('div');
+          nomeEl.innerHTML='<div style="font-size:13px;font-weight:600">'+u.nome+'</div>'
+            +'<div style="font-size:11px;color:var(--t2)">'+u.ruolo+'</div>';
+          const togWrap=document.createElement('div');
+          togWrap.style.cssText='display:flex;gap:6px';
+          [{val:'si',label:'✓ Sì',col:'var(--green)'},{val:'no',label:'✗ No',col:'var(--red)'}].forEach(function(opt){
+            const btn=document.createElement('button');
+            btn.textContent=opt.label;
+            btn.style.cssText='font-size:11px;padding:4px 10px;border-radius:10px;border:none;cursor:pointer;font-weight:700;background:'+(accesso===opt.val?opt.col:'var(--s3)')+';color:'+(accesso===opt.val?'#fff':'var(--t2)');
+            btn.addEventListener('click',function(){
+              richiedePasswordPermesso(u.id,u.nome,mod.id,mod.label,opt.val,function(){renderPermessi();});
+            });
+            togWrap.appendChild(btn);
+          });
+          row.appendChild(nomeEl);
+          row.appendChild(togWrap);
+          card.appendChild(row);
+        });
+      }
+      el.appendChild(card);
+    });
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore,callback){
+  // Salva parametri in attesa della conferma pwd
+  _permPendingAction={userId,userName,modulo,moduloLabel,nuovoValore,callback};
+  document.getElementById('pwd-perm-inp').value='';
+  document.getElementById('pwd-perm-err').style.display='none';
+  openModal('mod-pwd-permessi');
 }
 
 async function confermaPwdPermessi(){
@@ -3823,34 +3649,25 @@ async function confermaPwdPermessi(){
   if(!pwd){document.getElementById('pwd-perm-err').textContent='Inserisci la password';document.getElementById('pwd-perm-err').style.display='block';return;}
   const btn=document.getElementById('btn-perm-conf');btn.textContent='⏳...';btn.disabled=true;
   try{
+    // Verifica password con Supabase
     const{error}=await sb.auth.signInWithPassword({email:USER.email,password:pwd});
     if(error)throw new Error('Password non corretta');
+    // Salva il permesso
     const a=_permPendingAction;
-    if(a.nuovoValore==='reset'){
-      // Elimina eccezione
-      await sb.from('permessi_utenti').delete().eq('user_id',a.userId).eq('modulo',a.modulo);
-    }else{
-      await sb.from('permessi_utenti').upsert(
-        {user_id:a.userId,modulo:a.modulo,accesso:a.nuovoValore,aggiornato_da:USER.id},
-        {onConflict:'user_id,modulo'}
-      );
-    }
+    const{error:pe}=await sb.from('permessi_utenti').upsert(
+      {user_id:a.userId,modulo:a.modulo,accesso:a.nuovoValore,aggiornato_da:USER.id},
+      {onConflict:'user_id,modulo'}
+    );
+    if(pe)throw pe;
     closeModal('mod-pwd-permessi');
-    const azione=a.nuovoValore==='si'?'✅ Accesso concesso':a.nuovoValore==='no'?'🚫 Accesso rimosso':'↩️ Ripristinato default';
-    showToast(a.userName+' — '+a.moduloLabel+': '+azione);
+    showToast(a.userName+' — '+a.moduloLabel+': '+(a.nuovoValore==='si'?'✓ Accesso concesso':'✗ Accesso rimosso'));
     if(a.callback)a.callback();
     _permPendingAction=null;
   }catch(e){
     document.getElementById('pwd-perm-err').textContent=e.message;
     document.getElementById('pwd-perm-err').style.display='block';
-  }finally{btn.textContent='Conferma';btn.disabled=false;}
-}
-
-function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore,callback){
-  _permPendingAction={userId,userName,modulo,moduloLabel,nuovoValore,callback};
-  document.getElementById('pwd-perm-inp').value='';
-  document.getElementById('pwd-perm-err').style.display='none';
-  openModal('mod-pwd-permessi');
+  }
+  finally{btn.textContent='Conferma';btn.disabled=false;}
 }
 
 function openUrl(el){window.open(el.dataset.href||el.getAttribute('data-href'),'_blank');}
@@ -4096,14 +3913,6 @@ async function invitaCollaboratore(){
     </div>
     <div class="fg"><label class="fl">Descrizione / Marca modello</label><input type="text" class="fi" id="mz-desc" placeholder="es. Ford Transit bianco, Iveco 35s14..."></div>
     <div class="fg"><label class="fl">Assegnato di default a</label><select class="fs" id="mz-operaio"><option value="">— Nessuno —</option></select></div>
-    <div class="fg"><label class="fl">Stato mezzo</label>
-      <select class="fs" id="mz-stato">
-        <option value="disponibile">🟢 Disponibile</option>
-        <option value="manutenzione">🔧 In manutenzione / Dal meccanico</option>
-        <option value="fuori_uso">🔴 Fuori uso</option>
-      </select>
-    </div>
-    <div class="fg"><label class="fl">Note stato (opzionale)</label><input type="text" class="fi" id="mz-stato-note" placeholder="es. Dal meccanico fino al 15/05, cambio freni..."></div>
     <div class="fg"><label class="fl">Data dismissione (se venduto/dismesso)</label><input type="date" class="fi" id="mz-dismissione" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <hr>
     <div class="row2">
