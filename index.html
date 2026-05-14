@@ -52,8 +52,8 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .bread-item:hover{color:var(--gold)}
 .bread-item.active{color:var(--text);font-weight:700}
 .bread-sep{color:var(--t3);font-size:10px}
-.scr{display:none;padding:16px;max-width:680px;margin:0 auto}
-.scr.on{display:block}
+.scr{display:none!important;padding:16px;max-width:680px;margin:0 auto}
+.scr.on{display:block!important}
 .fg{margin-bottom:13px}
 .fl{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
 .fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:15px;padding:11px 13px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
@@ -198,8 +198,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .tema-bordeaux{--bg:#100508;--s1:#1c0a0f;--s2:#280f15;--s3:#33141c;--border:#4a1d27;--t3:#4a1d27;}
 .tema-acciaio{--bg:#111114;--s1:#1a1a1e;--s2:#222228;--s3:#2a2a32;--border:#35353f;--t3:#35353f;}
 .tema-marrone{--bg:#0d0804;--s1:#1a1008;--s2:#25180c;--s3:#301f10;--border:#472e18;--t3:#472e18;}
-.tema-giallo{--bg:#1a1500;--s1:#2a2200;--s2:#352b00;--s3:#403400;--border:#665500;--t3:#665500;--gold:#e6b800;--gold2:#ffd000;}
-.tema-bianco{--bg:#f0f0eb;--s1:#ffffff;--s2:#e8e8e3;--s3:#dcdcd7;--border:#c8c8c3;--t3:#b0b0ab;--text:#1a1a1a;--t2:#555555;}
+.tema-giallo{--bg:#0e0c00;--s1:#191600;--s2:#201d00;--s3:#2a2600;--border:#3b3600;--t3:#7a6a00;--text:#fff8e1;--t2:#e6ac00;--gold:#ffc107;--gold2:#ffd740;--gdim:rgba(255,193,7,0.12);}
+.tema-bianco{--bg:#f0ede6;--s1:#ffffff;--s2:#e8e4db;--s3:#dddad3;--border:#ccc8be;--t3:#999993;--text:#1a1a1a;--t2:#666660;}
+.tema-light{--bg:#f2f2f2;--s1:#ffffff;--s2:#e8e8e8;--s3:#dcdcdc;--border:#c8c8c8;--t3:#9a9a9a;--text:#1a1a1a;--t2:#555555;}
+.tema-ambra{--bg:#0e0c00;--s1:#191600;--s2:#201d00;--s3:#2a2600;--border:#3b3600;--t3:#7a6a00;--text:#fff8e1;--t2:#e6ac00;--gold:#ffc107;--gold2:#ffd740;--gdim:rgba(255,193,7,0.12);}
 /* Piano del giorno */
 .piano-row{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
 .piano-row.has-note{border-color:rgba(200,168,75,.6);background:rgba(200,168,75,.07);}
@@ -446,7 +448,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">🏢 Dati azienda</div>
       <div class="fg"><label class="fl">Nome azienda</label><input type="text" class="fi" id="imp-nome-az" placeholder="es. Carpenteria Ticinese Sàgl"></div>
       <div class="fg"><label class="fl">UID (P.IVA svizzera)</label><input type="text" class="fi" id="imp-uid" placeholder="CHE-123.456.789" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Indirizzo</label><input type="text" class="fi" id="imp-indirizzo" placeholder="es. Via Lugano 12, 6500 Bellinzona"></div>
+      <div class="fg"><label class="fl">Via / Numero civico</label><input type="text" class="fi" id="imp-via" placeholder="es. Via Lugano 12"></div>
+      <div class="row2">
+        <div class="fg"><label class="fl">CAP</label><input type="text" class="fi" id="imp-cap" placeholder="6500" style="font-family:'DM Mono',monospace"></div>
+        <div class="fg"><label class="fl">Città</label><input type="text" class="fi" id="imp-citta" placeholder="Bellinzona"></div>
+      </div>
       <div class="fg"><label class="fl">Telefono</label><input type="tel" class="fi" id="imp-telefono" placeholder="+41 91 123 45 67"></div>
       <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="imp-email-az" placeholder="info@carpenteriaticinese.ch"></div>
       <button class="btn btn-g" onclick="salvaImpostazioniAzienda()">💾 Salva dati azienda</button>
@@ -1071,8 +1077,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="mod">
     <div class="mod-h"></div>
     <div class="mod-t">🔑 Cambia password</div>
-    <div class="fg"><label class="fl">Nuova password</label><input type="password" class="fi" id="pwd-new" placeholder="Minimo 6 caratteri" autocomplete="new-password"></div>
-    <div class="fg"><label class="fl">Conferma password</label><input type="password" class="fi" id="pwd-conf" placeholder="Ripeti la password" autocomplete="new-password"></div>
+    <div class="fg"><label class="fl">Nuova password</label>
+      <div style="position:relative"><input type="password" class="fi" id="pwd-new" placeholder="Minimo 6 caratteri" autocomplete="new-password" style="padding-right:44px">
+      <button type="button" onclick="togglePwd('pwd-new',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:16px">👁</button></div></div>
+    <div class="fg"><label class="fl">Conferma password</label>
+      <div style="position:relative"><input type="password" class="fi" id="pwd-conf" placeholder="Ripeti la password" autocomplete="new-password" style="padding-right:44px" oninput="checkPwdMatch()">
+      <button type="button" onclick="togglePwd('pwd-conf',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:16px">👁</button></div>
+      <div id="pwd-match-err" style="color:var(--red);font-size:12px;margin-top:4px;display:none">❌ Le password non corrispondono</div></div>
     <div id="pwd-err" class="lerr"></div>
     <hr>
     <div class="row2">
@@ -1712,6 +1723,21 @@ async function afterLogin(){
     aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
 }
+function togglePwd(id, btn){
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(el.type==='password'){el.type='text';btn.textContent='🙈';}
+  else{el.type='password';btn.textContent='👁';}
+}
+
+function checkPwdMatch(){
+  const n=document.getElementById('pwd-new')?.value;
+  const k=document.getElementById('pwd-conf')?.value;
+  const err=document.getElementById('pwd-match-err');
+  if(!err)return;
+  err.style.display=(k&&n&&k!==n)?'block':'none';
+}
+
 async function resetPassword(){
   const email=document.getElementById('login-email').value.trim();
   if(!email){showToast('Inserisci prima la tua email','e');return;}
@@ -2955,8 +2981,12 @@ function showToast(msg,type){const t=document.getElementById('toast');t.textCont
 // ── NAVBAR ──
 async function aggiornaBadgeSituazione(){
   try{
-    const [{data:spese},{data:regia}]=await Promise.all([sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false)]);
-    const tot=(spese?.length||0)+(regia?.length||0);
+    const [{data:spese},{data:regia},{data:assInAttesa}]=await Promise.all([
+      sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),
+      sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false),
+      sb.from('assenze').select('id',{count:'exact'}).eq('stato','in_attesa')
+    ]);
+    const tot=(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
@@ -4352,13 +4382,14 @@ function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore
 // ══════════════════════════════════════════════════
 const TEMI_CONFIG = [
   {id:'scuro',    label:'Scuro',         sub:'Default',    icon:'🌑', bg:'#161616', border:'#2e2e2e'},
-  {id:'blu',      label:'Blu notte',     sub:'Ocean',      icon:'🌊', bg:'#0a1628', border:'#1e3456'},
+  {id:'blu',      label:'Blu notte',     sub:'Ocean',      icon:'🌊', bg:'#111d2e', border:'#2a3f5a'},
   {id:'verde',    label:'Verde bosco',   sub:'Forest',     icon:'🌲', bg:'#081a0c', border:'#1a4024'},
   {id:'bordeaux', label:'Bordeaux',      sub:'Wine',       icon:'🍷', bg:'#1c0a0f', border:'#4a1d27'},
   {id:'acciaio',  label:'Grigio acciaio',sub:'Steel',      icon:'🪨', bg:'#1a1a1e', border:'#35353f'},
   {id:'marrone',  label:'Legno',         sub:'Wood',       icon:'🪵', bg:'#1a1008', border:'#472e18'},
-  {id:'giallo',   label:'Ambra',         sub:'Amber',      icon:'🌻', bg:'#2a2200', border:'#665500'},
-  {id:'bianco',   label:'Chiaro',        sub:'Light',      icon:'☀️', bg:'#ffffff', border:'#cccccc'},
+  {id:'giallo',   label:'Ambra',         sub:'Amber',      icon:'🌻', bg:'#0e0c00', border:'#3b3600'},
+  {id:'bianco',   label:'Bianco sporco', sub:'Warm',       icon:'🌤️', bg:'#f0ede6', border:'#ccc8be'},
+  {id:'light',    label:'Light',         sub:'Chiaro',     icon:'☀️', bg:'#f2f2f2', border:'#c8c8c8'},
 ];
 
 function buildTemaModal(){
@@ -4860,9 +4891,22 @@ async function renderGru(){
         +(r.foto_path?'<div style="font-size:10px;color:var(--blue);margin-top:2px">📎 Doc allegato</div>':'')
         +'</div></div>'
         +(r.note?'<div style="font-size:12px;color:var(--t2);margin-top:6px">📝 '+escHtml(r.note)+'</div>':'')
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'
+        +(r.pagato?'<span style="font-size:11px;font-weight:700;color:var(--green);background:rgba(76,175,125,.15);padding:3px 10px;border-radius:10px">✅ '+( isI?'Incassato':'Pagato')+'</span>':'<span style="font-size:11px;color:var(--t2)">⏳ In attesa</span>')
+        +'<button onclick="event.stopPropagation();segnaGruPagato(\"'+r.id+'\",'+(!r.pagato)+')" style="font-size:11px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">'
+        +(r.pagato?'↩️ Riapri':'✅ Segna '+(isI?'incassato':'pagato'))+'</button>'
+        +'</div>'
         +'</div>';
     }).join('');
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+escHtml(e.message)+'</div>';}
+}
+
+async function segnaGruPagato(id, pagato){
+  try{
+    await sb.from('tiri_gru').update({pagato}).eq('id',id);
+    renderGru();
+    showToast(pagato?'Segnato come pagato ✓':'Riaperto');
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
 function addFotoGru(e){
