@@ -62,8 +62,8 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .scr{display:none!important;padding:16px;max-width:680px;margin:0 auto}
 .scr.on{display:block!important}
 .fg{margin-bottom:13px}
-.fl{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
-.fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:15px;padding:11px 13px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.fl{display:block;font-size:max(10px,calc(var(--fs-xs)));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:var(--fs-base);padding:11px 13px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
 .fi:focus,.fs:focus,.ft:focus{border-color:var(--gold)}
 .fi[type=time],.fi[type=date],.fi[type=number]{font-family:'DM Mono',monospace;font-size:14px}
 .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%23857f73'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
@@ -392,7 +392,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button class="btn btn-s btn-sm" onclick="exportCSV()">⬇️ Esporta CSV</button>
-      <button class="btn btn-s btn-sm" onclick="exportExcel()">⬇️ Esporta Excel</button>
+      <button class="btn btn-s btn-sm" onclick="exportExcel()">⬇️ Excel</button>
+      <button class="btn-icon btn-sm" onclick="exportReportPDF()">📄 PDF</button>
     </div>
     <div id="report-content"></div>
     <div class="bsp"></div>
@@ -1245,7 +1246,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg"><label class="fl">Cantiere</label><select class="fs" id="pag-cant-sel"></select></div>
     <div class="row2">
       <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="pag-data" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Importo CHF</label><input type="number" class="fi" id="pag-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl">Importo</label>
+        <div class="row2">
+          <input type="number" class="fi" id="pag-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace">
+          <select class="fs" id="pag-valuta"><option value="CHF">CHF</option><option value="EUR">EUR</option></select>
+        </div></div>
     </div>
     <div class="fg"><label class="fl">Metodo di pagamento</label>
       <select class="fs" id="pag-metodo">
@@ -1452,6 +1457,7 @@ async function renderContabilita(cantId){
       sb.from('giornate').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('spese').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('regia').select('*').eq('cantiere_id',cantId).order('data'),
+      sb.from('tiri_gru').select('*').eq('cantiere_id',cantId).order('data'),
     ]);
 
     // ── CALCOLI BASE ──
@@ -2821,6 +2827,23 @@ async function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`CT_Stipendi_${mese}.csv`;a.click();
   showToast('CSV scaricato ✓');
 }
+async function exportReportPDF(){
+  const content=document.getElementById('report-content');
+  if(!content||!content.innerHTML.trim()){showToast('Nessun dato da esportare','e');return;}
+  const tipo=document.getElementById('rep-tipo')?.value||'Report';
+  const mese=document.getElementById('rep-mese')?.value||'';
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>'+tipo+' '+mese+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;margin:20px;font-size:12px;color:#1a1a1a}'
+    +'table{width:100%;border-collapse:collapse}th{background:#1a1a1a;color:#fff;padding:6px 10px;text-align:left}'
+    +'td{padding:5px 10px;border-bottom:1px solid #eee}'
+    +'h2,h3{color:#1a1a1a}@media print{body{margin:0}}</style></head>'
+    +'<body><h2>'+tipo.toUpperCase()+' — '+mese+'</h2>'
+    +content.innerHTML+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
 async function exportExcel(){
   const mese=document.getElementById('rep-mese').value;if(!mese){showToast('Seleziona un mese','e');return;}
   const [y,m]=mese.split('-');
@@ -3078,7 +3101,11 @@ function navTo(dest){
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
   else if(dest==='spese'){pushNav('spese');showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
   else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
-  else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent='Report';renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
+  else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent='Report';
+    // Inizializza mese corrente se non già impostato
+    const _rm=document.getElementById('rep-mese');
+    if(_rm&&!_rm.value){const _n=new Date();_rm.value=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');}
+    renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
   else if(dest==='admin'){pushNav('admin');showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
   else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
@@ -4257,6 +4284,7 @@ function utenteHaAccesso(utente, moduloId, eccezioni){
 async function renderPermessi(){
   const el=document.getElementById('permessi-content');
   if(!el)return;
+  const _scrollY=window.scrollY; // salva posizione scroll
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const{data:utenti,error:eu}=await sb.from('profili').select('*').order('ruolo');
@@ -4352,8 +4380,8 @@ async function renderPermessi(){
 
           const info=document.createElement('div');
           info.innerHTML='<div style="font-size:13px;font-weight:'+(accesoFinale?'600':'400')+';color:'+(accesoFinale?'var(--text)':'var(--t2)')+'">'+mod.label+'</div>'
-            +(hasEcc?'<div style="font-size:10px;color:var(--orange)">⚡ Eccezione individuale</div>'
-              :'<div style="font-size:10px;color:var(--t2)">Da ruolo '+ruoliLabel[ruoloUtente]+'</div>');
+            +(hasEcc?'<div style="font-size:12px;color:var(--orange);font-weight:600">⚡ Eccezione individuale</div>'
+              :'<div style="font-size:12px;color:var(--text);opacity:0.6">Da ruolo: '+ruoliLabel[ruoloUtente]+'</div>');
 
           const btns=document.createElement('div');
           btns.style.cssText='display:flex;gap:4px;align-items:center';
@@ -4408,7 +4436,7 @@ async function renderPermessi(){
       +'↩️ Ripristina — rimuove l\'eccezione e torna al default del ruolo<br>'
       +'⚡ Arancione = eccezione attiva su questa funzione';
     el.appendChild(legenda);
-
+    requestAnimationFrame(()=>window.scrollTo(0,_scrollY));
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
 }
 
@@ -5060,7 +5088,8 @@ function apriDettaglioGru(id){
     +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
     +'<span style="color:var(--t2)">Rimanente</span>'
     +'<span style="font-weight:700;color:'+col+'">CHF '+resto.toFixed(2)+'</span></div>':'')
-    +(r.note?'<div style="margin-top:6px;font-size:12px;color:var(--t2)">📝 '+escHtml(r.note)+'</div>':'')
+    +(r.note?'<div style="margin-top:6px;font-size:var(--fs-sm);color:var(--t2)">📝 '+escHtml(r.note)+'</div>':'')
+    +(r.created_at?'<div style="margin-top:6px;font-size:var(--fs-xs);color:var(--t3)">Inserito: '+new Date(r.created_at).toLocaleString('it-CH')+'</div>':'')
     +'</div>';
   document.getElementById('mgd-importo-pagato').value=imp.toFixed(2);
   document.getElementById('mgd-importo-pagato').dataset.gruId=id;
@@ -5288,7 +5317,9 @@ async function caricaImpostazioniSchermata(){
     // Dati azienda
     if(map.nome_azienda)document.getElementById('imp-nome-az').value=map.nome_azienda;
     if(map.uid_azienda)document.getElementById('imp-uid').value=map.uid_azienda;
-    if(map.indirizzo_azienda)document.getElementById('imp-indirizzo').value=map.indirizzo_azienda;
+    if(map.via_azienda)document.getElementById('imp-via')&&(document.getElementById('imp-via').value=map.via_azienda);
+    if(map.cap_azienda)document.getElementById('imp-cap')&&(document.getElementById('imp-cap').value=map.cap_azienda);
+    if(map.citta_azienda)document.getElementById('imp-citta')&&(document.getElementById('imp-citta').value=map.citta_azienda);
     if(map.telefono_azienda)document.getElementById('imp-telefono').value=map.telefono_azienda;
     if(map.email_azienda)document.getElementById('imp-email-az').value=map.email_azienda;
     // Tariffa
@@ -5309,11 +5340,13 @@ async function caricaImpostazioniSchermata(){
 async function salvaImpostazioniAzienda(){
   try{
     const rows=[
-      {chiave:'nome_azienda',valore:document.getElementById('imp-nome-az').value.trim()},
-      {chiave:'uid_azienda',valore:document.getElementById('imp-uid').value.trim()},
-      {chiave:'indirizzo_azienda',valore:document.getElementById('imp-indirizzo').value.trim()},
-      {chiave:'telefono_azienda',valore:document.getElementById('imp-telefono').value.trim()},
-      {chiave:'email_azienda',valore:document.getElementById('imp-email-az').value.trim()},
+      {chiave:'nome_azienda',valore:document.getElementById('imp-nome-az')?.value.trim()||''},
+      {chiave:'uid_azienda',valore:document.getElementById('imp-uid')?.value.trim()||''},
+      {chiave:'via_azienda',valore:document.getElementById('imp-via')?.value.trim()||''},
+      {chiave:'cap_azienda',valore:document.getElementById('imp-cap')?.value.trim()||''},
+      {chiave:'citta_azienda',valore:document.getElementById('imp-citta')?.value.trim()||''},
+      {chiave:'telefono_azienda',valore:document.getElementById('imp-telefono')?.value.trim()||''},
+      {chiave:'email_azienda',valore:document.getElementById('imp-email-az')?.value.trim()||''},
     ].filter(r=>r.valore);
     for(const r of rows){
       await sb.from('impostazioni').upsert(r,{onConflict:'chiave'});
