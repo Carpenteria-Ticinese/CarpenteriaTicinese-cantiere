@@ -21,9 +21,16 @@
   --text:#f0ece2;--t2:#857f73;--t3:#3e3a34;
   --green:#4caf7d;--red:#e05555;--blue:#5588e0;--orange:#e08840;
   --r:14px;--rsm:8px;
+  --fs-base:15px;--fs-sm:12px;--fs-xs:10px;--fs-lg:18px;--fs-xl:22px;
 }
+/* Font size levels */
+body.fs-1{--fs-base:13px;--fs-sm:11px;--fs-xs:9px;--fs-lg:16px;--fs-xl:19px;}
+body.fs-2{--fs-base:15px;--fs-sm:12px;--fs-xs:10px;--fs-lg:18px;--fs-xl:22px;}
+body.fs-3{--fs-base:17px;--fs-sm:14px;--fs-xs:12px;--fs-lg:20px;--fs-xl:25px;}
+body.fs-4{--fs-base:20px;--fs-sm:16px;--fs-xs:13px;--fs-lg:24px;--fs-xl:29px;}
+body.fs-5{--fs-base:23px;--fs-sm:18px;--fs-xs:15px;--fs-lg:28px;--fs-xl:33px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:var(--fs-base)}
 #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px}
 .spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -63,7 +70,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .ft{min-height:70px;resize:vertical;line-height:1.5}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:var(--rsm);font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s;width:100%}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:var(--rsm);font-family:'Bricolage Grotesque',sans-serif;font-size:var(--fs-lg);font-weight:700;cursor:pointer;border:none;transition:all .15s;width:100%}
 .btn-g{background:var(--gold);color:#1a1000}
 .btn-g:active{background:var(--gold2);transform:scale(.98)}
 .btn-s{background:var(--s2);color:var(--text);border:1px solid var(--border)}
@@ -75,10 +82,10 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .cant-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold);opacity:0;transition:opacity .2s}
 .cant-card:hover::before,.cant-card:active::before{opacity:1}
 .cant-card:active{border-color:var(--gold)}
-.cant-nome{font-size:18px;font-weight:800;margin-bottom:4px}
-.cant-meta{font-size:12px;color:var(--t2);margin-bottom:10px}
+.cant-nome{font-size:var(--fs-lg);font-weight:800;margin-bottom:4px}
+.cant-meta{font-size:var(--fs-sm);color:var(--t2);margin-bottom:10px}
 .cant-stats{display:flex;gap:10px}
-.cant-stat{font-size:11px;font-weight:600;padding:4px 10px;background:var(--s2);border-radius:4px;color:var(--t2)}
+.cant-stat{font-size:var(--fs-xs);font-weight:600;padding:4px 10px;background:var(--s2);border-radius:4px;color:var(--t2)}
 .cant-stat.gold{color:var(--gold);background:var(--gdim)}
 .cant-status{position:absolute;top:14px;right:14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:10px}
 .st-attivo{background:rgba(76,175,125,.15);color:var(--green)}
@@ -94,7 +101,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .voce-row{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:8px}
 .voce-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .voce-sel{flex:1;background:var(--s3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:13px;padding:8px 28px 8px 10px;outline:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%23857f73'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.voce-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;padding:2px 6px;flex-shrink:0}
+.voce-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:var(--fs-lg);padding:2px 6px;flex-shrink:0}
 .voce-del:hover{color:var(--red)}
 .voce-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .vlbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:3px}
@@ -103,8 +110,8 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .vnum:focus{border-color:var(--gold)}
 .op-giornata{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
 .op-g-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.op-g-nome{font-size:16px;font-weight:800}
-.op-g-ore{font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);font-weight:500}
+.op-g-nome{font-size:var(--fs-lg);font-weight:800}
+.op-g-ore{font-size:var(--fs-lg);font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);font-weight:500}
 .rtable{width:100%;border-collapse:collapse;font-size:13px}
 .rtable th{background:var(--s2);padding:9px 10px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);font-weight:700;border-bottom:1px solid var(--border)}
 .rtable td{padding:9px 10px;border-bottom:1px solid var(--border)}
@@ -120,7 +127,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .or-pos{font-family:'DM Mono',monospace;font-size:18px;width:28px;flex-shrink:0;text-align:center}
 .p1{color:var(--gold)}.p2{color:var(--t2)}.p3{color:var(--orange)}
 .or-nome{flex:1;min-width:0}
-.or-nome strong{display:block;font-size:14px;font-weight:700}
+.or-nome strong{display:block;font-size:var(--fs-lg);font-weight:700}
 .or-nome small{font-size:10px;color:var(--t3)}
 .or-bar{width:80px;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;flex-shrink:0}
 .or-fill{height:6px;border-radius:3px}
@@ -199,8 +206,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .tema-acciaio{--bg:#111114;--s1:#1a1a1e;--s2:#222228;--s3:#2a2a32;--border:#35353f;--t3:#35353f;}
 .tema-marrone{--bg:#0d0804;--s1:#1a1008;--s2:#25180c;--s3:#301f10;--border:#472e18;--t3:#472e18;}
 .tema-giallo{--bg:#0e0c00;--s1:#191600;--s2:#201d00;--s3:#2a2600;--border:#3b3600;--t3:#7a6a00;--text:#fff8e1;--t2:#e6ac00;--gold:#ffc107;--gold2:#ffd740;--gdim:rgba(255,193,7,0.12);}
-.tema-bianco{--bg:#f0ede6;--s1:#ffffff;--s2:#e8e4db;--s3:#dddad3;--border:#ccc8be;--t3:#999993;--text:#1a1a1a;--t2:#666660;}
-.tema-light{--bg:#f2f2f2;--s1:#ffffff;--s2:#e8e8e8;--s3:#dcdcdc;--border:#c8c8c8;--t3:#9a9a9a;--text:#1a1a1a;--t2:#555555;}
+.tema-bianco{--bg:#f0ede6;--s1:#ffffff;--s2:#e8e4db;--s3:#dddad3;--border:#ccc8be;--t3:#999993;--text:#1a1a1a;--t2:#444440;--gold:#b8940a;--gold2:#d4a800;--gdim:rgba(184,148,10,0.12);}
+.tema-light{--bg:#f2f2f2;--s1:#ffffff;--s2:#e8e8e8;--s3:#dcdcdc;--border:#c8c8c8;--t3:#9a9a9a;--text:#1a1a1a;--t2:#444444;--gold:#b8940a;--gold2:#d4a800;--gdim:rgba(184,148,10,0.12);}
 .tema-ambra{--bg:#0e0c00;--s1:#191600;--s2:#201d00;--s3:#2a2600;--border:#3b3600;--t3:#7a6a00;--text:#fff8e1;--t2:#e6ac00;--gold:#ffc107;--gold2:#ffd740;--gdim:rgba(255,193,7,0.12);}
 /* Piano del giorno */
 .piano-row{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
@@ -456,6 +463,19 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl">Telefono</label><input type="tel" class="fi" id="imp-telefono" placeholder="+41 91 123 45 67"></div>
       <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="imp-email-az" placeholder="info@carpenteriaticinese.ch"></div>
       <button class="btn btn-g" onclick="salvaImpostazioniAzienda()">💾 Salva dati azienda</button>
+    </div>
+
+    <!-- Dimensione testo -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">🔤 Dimensione testo</div>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Scegli la dimensione che preferisci. Salvata per questo dispositivo.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="setFontSize(1)" id="fs-btn-1" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block">Piccolo</span></button>
+        <button onclick="setFontSize(2)" id="fs-btn-2" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block">Normale</span></button>
+        <button onclick="setFontSize(3)" id="fs-btn-3" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:16px">A<span style="font-size:9px;display:block">Grande</span></button>
+        <button onclick="setFontSize(4)" id="fs-btn-4" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:19px">A<span style="font-size:9px;display:block">XL</span></button>
+        <button onclick="setFontSize(5)" id="fs-btn-5" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:22px">A<span style="font-size:9px;display:block">XXL</span></button>
+      </div>
     </div>
 
     <!-- Tariffe -->
@@ -1094,6 +1114,24 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 </div>
 
 
+<!-- MODAL DETTAGLIO GRU -->
+<div class="ov" id="mod-gru-dettaglio" style="display:none">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="mgd-titolo">Dettaglio tiro gru</div>
+    <div id="mgd-content"></div>
+    <div style="margin-top:16px">
+      <div class="fg"><label class="fl">Importo pagato (CHF)</label>
+        <input type="number" class="fi" id="mgd-importo-pagato" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace">
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn btn-s" onclick="closeModal('mod-gru-dettaglio')">Chiudi</button>
+        <button class="btn btn-g" onclick="salvaGruPagato()" id="mgd-btn-paga">✅ Segna pagato</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODALI AGGIUNTIVI -->
 <div class="ov" id="mod-invita">
   <div class="mod">
@@ -1191,7 +1229,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="mod-t" id="mod-pag-t">Registra pagamento</div>
     <div id="pag-alert-uff" style="background:rgba(224,136,64,.15);border:2px solid var(--orange);border-radius:var(--rsm);padding:14px;margin-bottom:14px">
       <div style="font-size:16px;font-weight:900;color:var(--orange);text-align:center;margin-bottom:8px">⚠️ ATTENZIONE</div>
-      <div style="font-size:14px;font-weight:700;text-align:center;color:var(--text);margin-bottom:8px">Registra solo i pagamenti ufficiali</div>
+      <div style="font-size:var(--fs-lg);font-weight:700;text-align:center;color:var(--text);margin-bottom:8px">Registra solo i pagamenti ufficiali</div>
       <div style="font-size:12px;color:var(--t2);line-height:1.6;text-align:center">I pagamenti registrati in questa app sono visibili. Inserisci solo ciò che è correttamente documentato.</div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center;cursor:pointer" onclick="disabilitaAlertPag()">
         <div id="pag-alert-check" style="width:16px;height:16px;border-radius:3px;border:2px solid var(--border);flex-shrink:0"></div>
@@ -1399,6 +1437,7 @@ async function renderContabilita(cantId){
       {data:giornate},
       {data:spese},
       {data:regia},
+      {data:gru},
     ] = await Promise.all([
       sb.from('giornate').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('spese').select('*').eq('cantiere_id',cantId).order('data'),
@@ -1413,7 +1452,9 @@ async function renderContabilita(cantId){
     const totSpesePag=(spese||[]).filter(s=>s.stato_pag==='Pagato').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaFatt=(regia||[]).filter(r=>r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const totRegiaDa=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
-    const costoTotale=costoManodopera+totSpeseAll;
+    const totGruPaga=(gru||[]).filter(g=>g.tipo==='paghiamo').reduce((s,g)=>s+(parseFloat(g.importo)||0),0);
+    const totGruIncassa=(gru||[]).filter(g=>g.tipo==='incassiamo').reduce((s,g)=>s+(parseFloat(g.importo)||0),0);
+    const costoTotale=costoManodopera+totSpeseAll+totGruPaga;
     const ricaviTotali=totRegiaFatt;
     const margine=ricaviTotali-costoTotale;
     const marginePerc=ricaviTotali>0?((margine/ricaviTotali)*100):0;
@@ -1467,6 +1508,8 @@ async function renderContabilita(cantId){
       <div class="cont-kpi">
         <div class="kpi-box"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese totali</div></div>
+        ${totGruPaga>0?`<div class="kpi-box"><div class="kpi-val kpi-red">${totGruPaga.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da pagare</div></div>`:''}
+        ${totGruIncassa>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncassa.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da incassare</div></div>`:''}
         <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi (regia fatt.)</div></div>
       </div>
@@ -1585,7 +1628,7 @@ async function renderContabilitaGlobale(){
       html+='<div class="sett-row" style="cursor:pointer" onclick="navToCant(\''+cId+'\')">'; 
       html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
       html+='<div style="flex:1;min-width:0">';
-      html+='<div style="font-size:14px;font-weight:700">'+c.nome+'</div>';
+      html+='<div style="font-size:var(--fs-lg);font-weight:700">'+c.nome+'</div>';
       html+='<div style="font-size:11px;color:var(--t2)">'+c.ore.toFixed(1)+'h · spese CHF '+c.spese.toFixed(0);
       if(c.da>0)html+=' · <span style="color:var(--red)">CHF '+c.da.toFixed(0)+' da pagare</span>';
       html+='</div></div>';
@@ -1670,7 +1713,8 @@ function apriContabilitaSett(cantId){
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
-  if(session){USER=session.user;await afterLogin();}
+  if(session){USER=session.user;await afterLogin();
+  initFontSize();}
   else showLogin();
 }
 function showLogin(){
@@ -2530,7 +2574,7 @@ async function openCantLog(gid){
   document.getElementById('mod-cant-log-content').innerHTML=`
     <div class="mod-t">${g.operai?.nome||''} ${g.operai?.cognome||''}</div>
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:700">${fmtDate(g.data)} ${g.meteo||''}</div>
+      <div style="font-size:var(--fs-lg);font-weight:700">${fmtDate(g.data)} ${g.meteo||''}</div>
       <div style="font-family:'DM Mono';font-size:24px;color:var(--gold);margin-top:6px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
       <div style="font-size:12px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti||60}min pausa</div>
     </div>
@@ -2837,7 +2881,7 @@ async function renderReport(){
       const cQ=d.misure.filter(m=>m.hpu!==null);const med=cQ.length?cQ.reduce((s,m)=>s+m.hpu,0)/cQ.length:null;
       const opRank=Object.entries(d.byOp||{}).filter(([,op])=>op.vals.length>0).map(([,op])=>({nome:op.nome,media:op.vals.reduce((s,v)=>s+v,0)/op.vals.length,n:op.vals.length})).sort((a,b)=>a.media-b.media);
       const dStr=encodeURIComponent(JSON.stringify({nome:d.nome,um:d.um,cat:d.cat,misure:d.misure,byOp:d.byOp,lavId:k}));
-      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openAnalisiMod('${dStr}')"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:14px;font-weight:700">${d.nome}</div><div style="font-size:11px;color:var(--t3)">${d.cat}</div></div><span style="font-family:'DM Mono';font-size:11px;color:var(--gold);background:var(--gdim);padding:3px 8px;border-radius:4px">${d.um}</span></div><div class="sg3"><div class="sb"><div class="sv">${med?med.toFixed(4):'—'}</div><div class="sl">h/${d.um}</div></div><div class="sb"><div class="sv">${d.misure.length}</div><div class="sl">mis.</div></div><div class="sb"><div class="sv">${opRank.length>0?opRank[0].nome.split(' ')[0]:'—'}</div><div class="sl">★ Migliore</div></div></div></div>`;
+      return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openAnalisiMod('${dStr}')"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:var(--fs-lg);font-weight:700">${d.nome}</div><div style="font-size:11px;color:var(--t3)">${d.cat}</div></div><span style="font-family:'DM Mono';font-size:11px;color:var(--gold);background:var(--gdim);padding:3px 8px;border-radius:4px">${d.um}</span></div><div class="sg3"><div class="sb"><div class="sv">${med?med.toFixed(4):'—'}</div><div class="sl">h/${d.um}</div></div><div class="sb"><div class="sv">${d.misure.length}</div><div class="sl">mis.</div></div><div class="sb"><div class="sv">${opRank.length>0?opRank[0].nome.split(' ')[0]:'—'}</div><div class="sl">★ Migliore</div></div></div></div>`;
     }).join('');
   }
 }
@@ -3052,7 +3096,7 @@ async function renderSituazione(){
       const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
       let html=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da pagare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totGlobale.toFixed(2)} CHF</span></div>`;
       Object.entries(byCant).forEach(([nome,gr])=>{
-        html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:14px;font-weight:700">🏗️ ${nome}</div><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${gr.tot.toFixed(2)} CHF</div></div>`;
+        html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:var(--fs-lg);font-weight:700">🏗️ ${nome}</div><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${gr.tot.toFixed(2)} CHF</div></div>`;
         gr.items.forEach(s=>{html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${tipoDocIcon[s.tipo_doc]||'📄'} ${s.descrizione}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(s.data)} · ${s.tipo_spesa||''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${s.importo?parseFloat(s.importo).toFixed(2)+' '+(s.valuta||'CHF'):'—'}</div><button style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);cursor:pointer;margin-top:3px" onclick="segnaSpesaPagata('${s.id}')">✓ Segna pagato</button></div></div>`;});
         html+='</div>';
       });
@@ -3071,7 +3115,7 @@ async function renderSituazione(){
       const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
       let html=`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da fatturare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--gold)">${totGlobale.toFixed(2)} CHF</span></div>`;
       Object.values(byCant).forEach(gr=>{
-        html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:14px;font-weight:700">🏗️ ${gr.nome}</div><div style="text-align:right">${gr.totDaFatt>0?`<div style="font-family:'DM Mono';font-size:13px;color:var(--gold)">${gr.totDaFatt.toFixed(2)} CHF da fatt.</div>`:''}${gr.totFatt>0?`<div style="font-family:'DM Mono';font-size:11px;color:var(--t2)">${gr.totFatt.toFixed(2)} CHF fatt.</div>`:''}</div></div>`;
+        html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:var(--fs-lg);font-weight:700">🏗️ ${gr.nome}</div><div style="text-align:right">${gr.totDaFatt>0?`<div style="font-family:'DM Mono';font-size:13px;color:var(--gold)">${gr.totDaFatt.toFixed(2)} CHF da fatt.</div>`:''}${gr.totFatt>0?`<div style="font-family:'DM Mono';font-size:11px;color:var(--t2)">${gr.totFatt.toFixed(2)} CHF fatt.</div>`:''}</div></div>`;
         gr.items.forEach(r=>{const statoBg=r.fatturato?'rgba(76,175,125,.12)':'rgba(200,168,75,.08)';const statoBorder=r.fatturato?'rgba(76,175,125,.25)':'rgba(200,168,75,.25)';const statoColor=r.fatturato?'var(--green)':'var(--gold)';html+=`<div style="border-top:1px solid var(--border);padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${tipoIcon[r.tipo]||'🔧'} ${r.descrizione}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${fmtDate(r.data)} · ${r.operai?.nome||''} ${r.operai?.cognome||''}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono';font-size:14px;color:var(--gold)">${r._tot.toFixed(2)} CHF</div><button onclick="toggleFatturato('${r.id}',${r.fatturato},this)" style="margin-top:4px;font-size:10px;padding:3px 9px;border-radius:10px;background:${statoBg};color:${statoColor};border:1px solid ${statoBorder};cursor:pointer;font-weight:700">${r.fatturato?'✓ Fatturato':'⏳ Da fatt.'}</button></div></div></div>`;});
         html+='</div>';
       });
@@ -3095,7 +3139,7 @@ async function renderSituazione(){
             const div=document.createElement('div');
             div.style.cssText='background:var(--s1);border:1px solid rgba(200,168,75,.4);border-radius:var(--r);padding:12px 14px;margin-bottom:8px';
             div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-              +'<div><div style="font-size:14px;font-weight:700">'+tipoIcon+' '+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
+              +'<div><div style="font-size:var(--fs-lg);font-weight:700">'+tipoIcon+' '+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
               +'<div style="font-size:12px;color:var(--t2)">'+fmtDate(r.data)+(r.giorni>1?' — '+r.giorni+' giorni':'')+(r.note?' · '+r.note:'')+'</div></div>'
               +'<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(200,168,75,.15);color:var(--gold);font-weight:700">In attesa</span>'
               +'</div><div style="display:flex;gap:8px"></div>';
@@ -3161,7 +3205,7 @@ async function renderSpese(){
     const icon=tipoDocIcon[s.tipo_doc]||'📋';const isPag=s.stato_pag==='Pagato';
     return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:14px;font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div><div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div></div></div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div><div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div></div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono';font-size:18px;font-weight:600;color:${isPag?'var(--gold)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div><div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px;background:${isPag?'rgba(76,175,125,.15)':'rgba(224,85,85,.15)'};color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}</div></div>
       </div>
       ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
@@ -3310,7 +3354,7 @@ async function renderRegia(){
   document.getElementById('reg-totali').innerHTML=`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px"><div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da fatturare</div><div style="font-family:'DM Mono';font-size:22px;color:var(--gold)">${totFatt.toFixed(2)} CHF</div></div>`;
   if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🔧</div><p>Nessun lavoro a regia.</p></div>';return;}
   const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
-  el.innerHTML=data.map(r=>{const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaRegia('${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span><div style="min-width:0"><div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.descrizione}</div><div style="font-size:11px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)}</div></div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:var(--gold)">${totR.toFixed(2)} CHF</div><div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;background:${r.fatturato?'rgba(76,175,125,.15)':'var(--gdim)'};color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'Fatturato':'Da fatturare'}</div></div></div>${r.note?`<div style="font-size:12px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${r.note}</div>`:''}</div>`;}).join('');
+  el.innerHTML=data.map(r=>{const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaRegia('${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span><div style="min-width:0"><div style="font-size:var(--fs-lg);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.descrizione}</div><div style="font-size:11px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)}</div></div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:16px;font-weight:600;color:var(--gold)">${totR.toFixed(2)} CHF</div><div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;background:${r.fatturato?'rgba(76,175,125,.15)':'var(--gdim)'};color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'Fatturato':'Da fatturare'}</div></div></div>${r.note?`<div style="font-size:12px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${r.note}</div>`:''}</div>`;}).join('');
 }
 function openModalRegia(id){
   editRegId=id;
@@ -3450,7 +3494,7 @@ async function renderAssenze(){
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')">
       <span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
+        <div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
         <div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>
         ${a.cantieri?.nome?`<div style="font-size:11px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}
         ${a.note?`<div style="font-size:12px;color:var(--t2)">📝 ${a.note}</div>`:''}
@@ -3473,7 +3517,7 @@ async function renderAssenzeOLD(){
   if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>Nessuna assenza registrata.</p></div>';return;}
   const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
   const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
-  el.innerHTML=data.map(a=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')"><span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>${a.cantieri?.nome?`<div style="font-size:11px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}</div><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span></div>`).join('');
+  el.innerHTML=data.map(a=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')"><span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1;min-width:0"><div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>${a.cantieri?.nome?`<div style="font-size:11px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}</div><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span></div>`).join('');
 }
 function openModalAssenza(id){
   editAssId=id;
@@ -3653,7 +3697,7 @@ async function renderMezzi(){
       const statoLabel={'disponibile':'Disponibile','manutenzione':'In manutenzione','fuori_uso':'Fuori uso'};
       const statoCol={'disponibile':'var(--green)','manutenzione':'var(--orange)','fuori_uso':'var(--red)'};
       div.innerHTML='<div>'
-        +'<div style="font-size:14px;font-weight:700">🚗 '+m.targa+' <span style="font-size:12px;color:var(--t2);font-weight:400">'+m.tipo+'</span>'
+        +'<div style="font-size:var(--fs-lg);font-weight:700">🚗 '+m.targa+' <span style="font-size:12px;color:var(--t2);font-weight:400">'+m.tipo+'</span>'
         +' <span style="font-size:11px;font-weight:700;color:'+statoCol[statoMz]+'">'+statoIcon[statoMz]+' '+statoLabel[statoMz]+'</span>'
         +'</div>'
         +(m.descrizione?'<div style="font-size:12px;color:var(--t2)">'+m.descrizione+'</div>':'')
@@ -4136,7 +4180,7 @@ async function renderPagamenti(){
       const metoIcon={'Bonifico':'🏦','Contanti':'💵','Carta di credito':'💳','Assegno':'📄','Altro':'📝'};
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div>'
-        +'<div style="font-size:14px;font-weight:700">'+(metoIcon[p.metodo]||'💳')+' '+p.metodo+'</div>'
+        +'<div style="font-size:var(--fs-lg);font-weight:700">'+(metoIcon[p.metodo]||'💳')+' '+p.metodo+'</div>'
         +'<div style="font-size:11px;color:var(--t2)">'+(p.cantieri?.nome||'—')+' · '+fmtDate(p.data)+'</div>'
         +(p.riferimento?'<div style="font-size:12px;color:var(--t2);margin-top:2px">📋 '+p.riferimento+'</div>':'')
         +'</div>'
@@ -4600,7 +4644,7 @@ async function renderBolle(){
       div.addEventListener('click',function(){openModalBolla(b.id);});
       const opNome=(b.operai?.nome||'')+' '+(b.operai?.cognome||'');
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
-        +'<div><div style="font-size:14px;font-weight:700">📦 '+(b.fornitore||'Fornitore non specificato')+'</div>'
+        +'<div><div style="font-size:var(--fs-lg);font-weight:700">📦 '+(b.fornitore||'Fornitore non specificato')+'</div>'
         +'<div style="font-size:11px;color:var(--t2)">'+(b.cantieri?.nome||'—')+' · '+fmtDate(b.data)+(b.ora?' · '+b.ora:'')+'</div>'
         +(opNome.trim()?'<div style="font-size:11px;color:var(--t2)">'+opNome.trim()+'</div>':'')
         +'</div>'
@@ -4777,7 +4821,7 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
       :'')
 
     // Annotazioni (evidenziate)
-    +(hasNote?'<div style="background:rgba(200,168,75,.2);border-left:4px solid var(--gold);padding:10px 12px;border-radius:0 var(--rsm) var(--rsm) 0;font-size:14px;font-weight:700;color:var(--gold);margin-top:4px">⚠️ '+a.annotazioni+'</div>':'');
+    +(hasNote?'<div style="background:rgba(200,168,75,.2);border-left:4px solid var(--gold);padding:10px 12px;border-radius:0 var(--rsm) var(--rsm) 0;font-size:var(--fs-lg);font-weight:700;color:var(--gold);margin-top:4px">⚠️ '+a.annotazioni+'</div>':'');
 
   return card;
 }
@@ -4881,7 +4925,7 @@ async function renderGru(){
       const cant=(CANTIERI||[]).find(c=>c.id===r.cantiere_id);
       const isI=r.tipo==='incassiamo';
       const col=isI?'var(--green)':'var(--red)';
-      '<div class="cant-card" data-id="'+r.id+'" onclick="openGruById(this)">'
+      '<div class="cant-card" data-id="'+r.id+'" onclick="apriDettaglioGru(\"'+r.id+'\")" style="cursor:pointer">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div><div style="font-size:12px;font-weight:700;color:'+col+'">'+(isI?'🏗️ CT incassa':'🏗️ CT paga')+'</div>'
         +'<div style="font-size:15px;font-weight:700">'+escHtml(r.ditta||'—')+'</div>'
@@ -4899,6 +4943,60 @@ async function renderGru(){
         +'</div>';
     }).join('');
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+escHtml(e.message)+'</div>';}
+}
+
+function apriDettaglioGru(id){
+  const r=gruRecords.find(x=>x.id===id);
+  if(!r)return;
+  const cant=(CANTIERI||[]).find(c=>c.id===r.cantiere_id);
+  const isI=r.tipo==='incassiamo';
+  const col=isI?'var(--green)':'var(--red)';
+  document.getElementById('mgd-titolo').textContent=(isI?'🏗️ CT incassa':'🏗️ CT paga')+' — '+( r.ditta||'—');
+  const imp=parseFloat(r.importo)||0;
+  const pagato=parseFloat(r.importo_pagato)||0;
+  const resto=imp-pagato;
+  document.getElementById('mgd-content').innerHTML=
+    '<div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:12px">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Cantiere</span><span style="font-weight:700">'+(cant?.nome||'—')+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Data</span><span>'+(r.data||'—')+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Ditta gru</span><span>'+(r.ditta||'—')+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">N. tiri</span><span>'+(r.n_tiri||0)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Importo totale</span>'
+    +'<span style="font-weight:700;color:'+col+'">CHF '+imp.toFixed(2)+'</span></div>'
+    +(pagato>0?'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Già '+(isI?'incassato':'pagato')+'</span>'
+    +'<span style="color:var(--green)">CHF '+pagato.toFixed(2)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+    +'<span style="color:var(--t2)">Rimanente</span>'
+    +'<span style="font-weight:700;color:'+col+'">CHF '+resto.toFixed(2)+'</span></div>':'')
+    +(r.note?'<div style="margin-top:6px;font-size:12px;color:var(--t2)">📝 '+escHtml(r.note)+'</div>':'')
+    +'</div>';
+  document.getElementById('mgd-importo-pagato').value=imp.toFixed(2);
+  document.getElementById('mgd-importo-pagato').dataset.gruId=id;
+  const btn=document.getElementById('mgd-btn-paga');
+  if(r.pagato){btn.textContent='↩️ Riapri';btn.onclick=()=>segnaGruPagato(id,false);}
+  else{btn.textContent='✅ Segna '+(isI?'incassato':'pagato');btn.onclick=salvaGruPagato;}
+  openModal('mod-gru-dettaglio');
+}
+
+async function salvaGruPagato(){
+  const id=document.getElementById('mgd-importo-pagato').dataset.gruId;
+  const imp=parseFloat(document.getElementById('mgd-importo-pagato').value)||0;
+  const r=gruRecords.find(x=>x.id===id);
+  if(!r)return;
+  const totale=parseFloat(r.importo)||0;
+  const pagato=imp>=totale;
+  try{
+    await sb.from('tiri_gru').update({pagato,importo_pagato:imp}).eq('id',id);
+    showToast(pagato?'✅ Segnato come pagato':'💰 Pagamento parziale salvato');
+    closeModal('mod-gru-dettaglio');
+    renderGru();
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
 async function segnaGruPagato(id, pagato){
@@ -5165,6 +5263,27 @@ async function salvaImpostazioniPasti(){
     IMPOSTAZIONI.pasto_altri=parseFloat(rows[2].valore);
     showToast('Importi pasti salvati ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
+}
+// ══════════════════════════════════════════════════
+// FONT SIZE
+// ══════════════════════════════════════════════════
+function setFontSize(level){
+  const body=document.getElementById('body')||document.body;
+  [1,2,3,4,5].forEach(n=>body.classList.remove('fs-'+n));
+  body.classList.add('fs-'+level);
+  localStorage.setItem('ct_font_size', level);
+  // Aggiorna bottoni attivi
+  [1,2,3,4,5].forEach(n=>{
+    const btn=document.getElementById('fs-btn-'+n);
+    if(btn) btn.className='btn '+(n===level?'btn-g':'btn-s')+' btn-sm';
+    if(btn) btn.style.setProperty('flex','1');
+    if(btn) btn.style.setProperty('min-width','60px');
+  });
+}
+
+function initFontSize(){
+  const saved=parseInt(localStorage.getItem('ct_font_size'))||2;
+  setFontSize(saved);
 }
 </script>
 </body>
