@@ -839,19 +839,25 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="o-nome"></div>
       <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
     </div>
-    <div class="fg"><label class="fl">Ruolo</label><select class="fs" id="o-ruolo">
-      <option>Caposquadra</option>
-      <option>Responsabile cantiere</option>
-      <option>Carpentiere</option>
-      <option>Aiuto carpentiere</option>
-      <option>Lattoniere</option>
-      <option>Pittore</option>
-      <option>Muratore</option>
-      <option>Manovale</option>
-      <option>Apprendista</option>
-      <option>Operaio generico</option>
-      <option>Ditta esterna</option>
-    </select></div>
+    <div class="fg"><label class="fl">Ruolo <span style="font-weight:400;font-size:10px;color:var(--t2)">(seleziona o scrivi liberamente)</span></label>
+      <input class="fi" id="o-ruolo" list="ruoli-list" placeholder="es. Carpentiere, Elettricista..." autocomplete="off">
+      <datalist id="ruoli-list">
+        <option value="Caposquadra">
+        <option value="Responsabile cantiere">
+        <option value="Carpentiere">
+        <option value="Aiuto carpentiere">
+        <option value="Lattoniere">
+        <option value="Muratore">
+        <option value="Pittore">
+        <option value="Gruista">
+        <option value="Elettricista">
+        <option value="Idraulico">
+        <option value="Manovale">
+        <option value="Apprendista">
+        <option value="Operaio generico">
+        <option value="Tecnico di cantiere">
+        <option value="Ditta esterna">
+      </datalist></div>
     <div class="fg"><label class="fl">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
     <div class="fg"><label class="fl">Telefono</label><input type="tel" class="fi" id="o-telefono" placeholder="es. +41 79 123 45 67"></div>
     <div class="fg"><label class="fl">Note</label><input type="text" class="fi" id="o-note" placeholder="es. Patente gru, specializzazioni..."></div>
@@ -1355,7 +1361,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="mod-h"></div>
     <div class="mod-t">🔐 Conferma identità</div>
     <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Per modificare i permessi inserisci la tua password.</p>
-    <div class="fg"><label class="fl">Password titolare</label><input type="password" class="fi" id="pwd-perm-inp" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="fg"><label class="fl">Password titolare</label>
+      <div style="position:relative">
+        <input type="password" class="fi" id="pwd-perm-inp" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
+        <button type="button" onclick="togglePwd('pwd-perm-inp',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:16px">👁</button>
+      </div></div>
     <div id="pwd-perm-err" style="color:var(--red);font-size:13px;margin-top:6px;display:none"></div>
     <hr>
     <div class="row2">
@@ -4069,6 +4079,7 @@ function confermaSelezioneMulti(){
 // ══════════════════════════════════════════════════
 let editPagId=null;
 let _permPendingAction=null; // azione in attesa conferma pwd
+let _permSessionUnlocked=false; // sessione sbloccata — no ripetere pwd
 
 function apriModalPagamento(id){
   editPagId=id;
@@ -4257,9 +4268,14 @@ async function renderPermessi(){
 
     el.innerHTML='';
 
+    // Mostra/nascondi bottone blocca sessione
+    const btnBlocca=document.getElementById('btn-blocca-perm');
+    if(btnBlocca)btnBlocca.style.display=_permSessionUnlocked?'block':'none';
+
     // ── SEZIONE 1: Ruoli e permessi base ──
     const hdrRuoli=document.createElement('div');
-    hdrRuoli.innerHTML='<div class="sec">Permessi base per ruolo</div>'
+    hdrRuoli.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div class="sec" style="margin:0">Permessi base per ruolo</div>'
+      +'<button id="btn-blocca-perm" onclick="bloccaSessionePermessi()" style="display:none;font-size:11px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:4px 10px;cursor:pointer;color:var(--t2)">🔒 Blocca sessione</button></div>'
       +'<p style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.6">Questi sono i permessi predefiniti assegnati automaticamente a ogni ruolo. Le eccezioni individuali li sovrascrivono.</p>';
     el.appendChild(hdrRuoli);
 
@@ -4349,6 +4365,16 @@ async function renderPermessi(){
           btns.appendChild(stato);
 
           // Bottoni eccezione
+          // Bottone "Applica a tutti del ruolo"
+          const btnTutti=document.createElement('button');
+          btnTutti.title='Applica a tutti i '+ruoliLabel[ruoloUtente];
+          btnTutti.style.cssText='background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:4px 7px;cursor:pointer;font-size:11px;color:var(--t2);white-space:nowrap;margin-right:4px';
+          btnTutti.textContent='👥 Tutti';
+          btnTutti.addEventListener('click',function(){
+            applicaATuttiRuolo(ruoloUtente,(utenti||[]),mod.id,mod.label,accesoFinale?'no':'si',function(){renderPermessi();});
+          });
+          btns.appendChild(btnTutti);
+
           [{val:'si',icon:'➕',tip:'Dai accesso'},{val:'no',icon:'➖',tip:'Togli accesso'},{val:'reset',icon:'↩️',tip:'Ripristina default ruolo'}].forEach(function(opt){
             const btn=document.createElement('button');
             btn.title=opt.tip;
@@ -4386,6 +4412,71 @@ async function renderPermessi(){
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
 }
 
+async function applicaATuttiRuolo(ruolo, tuttiUtenti, modulo, moduloLabel, nuovoValore, callback){
+  const utentiRuolo=(tuttiUtenti||[]).filter(u=>u.ruolo===ruolo&&u.ruolo!=='titolare');
+  if(!utentiRuolo.length){showToast('Nessun utente con ruolo '+ruolo);return;}
+  const azione=nuovoValore==='si'?'Dai accesso':'Togli accesso';
+  if(!confirm(azione+' a '+moduloLabel+' per tutti i '+ruolo+' ('+utentiRuolo.length+' persone)?'))return;
+  if(!_permSessionUnlocked){
+    // Richiede sblocco sessione prima
+    _permPendingAction={
+      userId:'tutti_'+ruolo,userName:'Tutti i '+ruolo,
+      modulo,moduloLabel,nuovoValore,
+      callback:async function(){await _doApplicaATutti(ruolo,tuttiUtenti,modulo,moduloLabel,nuovoValore,callback);}
+    };
+    document.getElementById('pwd-perm-inp').value='';
+    document.getElementById('pwd-perm-err').style.display='none';
+    openModal('mod-pwd-permessi');
+    return;
+  }
+  await _doApplicaATutti(ruolo,tuttiUtenti,modulo,moduloLabel,nuovoValore,callback);
+}
+
+async function _doApplicaATutti(ruolo,tuttiUtenti,modulo,moduloLabel,nuovoValore,callback){
+  const utentiRuolo=(tuttiUtenti||[]).filter(u=>u.ruolo===ruolo&&u.ruolo!=='titolare');
+  let ok=0;
+  for(const u of utentiRuolo){
+    try{
+      if(nuovoValore==='reset'){
+        await sb.from('permessi_utenti').delete().eq('user_id',u.id).eq('modulo',modulo);
+      }else{
+        await sb.from('permessi_utenti').upsert(
+          {user_id:u.id,modulo,accesso:nuovoValore,aggiornato_da:USER.id},
+          {onConflict:'user_id,modulo'}
+        );
+      }
+      ok++;
+    }catch(e){}
+  }
+  const azione=nuovoValore==='si'?'✅ Accesso concesso':'🚫 Accesso rimosso';
+  showToast(azione+' per '+ok+' '+ruolo+' — '+moduloLabel);
+  if(callback)callback();
+}
+
+function bloccaSessionePermessi(){
+  _permSessionUnlocked=false;
+  const btn=document.getElementById('btn-blocca-perm');
+  if(btn)btn.style.display='none';
+  showToast('🔒 Sessione permessi bloccata');
+}
+
+async function eseguiAzionePermesso(){
+  const a=_permPendingAction;
+  if(!a)return;
+  if(a.nuovoValore==='reset'){
+    await sb.from('permessi_utenti').delete().eq('user_id',a.userId).eq('modulo',a.modulo);
+  }else{
+    await sb.from('permessi_utenti').upsert(
+      {user_id:a.userId,modulo:a.modulo,accesso:a.nuovoValore,aggiornato_da:USER.id},
+      {onConflict:'user_id,modulo'}
+    );
+  }
+  const azione=a.nuovoValore==='si'?'✅ Accesso concesso':a.nuovoValore==='no'?'🚫 Accesso rimosso':'↩️ Ripristinato default';
+  showToast(a.userName+' — '+a.moduloLabel+': '+azione);
+  if(a.callback)a.callback();
+  _permPendingAction=null;
+}
+
 async function confermaPwdPermessi(){
   const pwd=document.getElementById('pwd-perm-inp').value;
   if(!pwd){document.getElementById('pwd-perm-err').textContent='Inserisci la password';document.getElementById('pwd-perm-err').style.display='block';return;}
@@ -4393,28 +4484,23 @@ async function confermaPwdPermessi(){
   try{
     const{error}=await sb.auth.signInWithPassword({email:USER.email,password:pwd});
     if(error)throw new Error('Password non corretta');
-    const a=_permPendingAction;
-    if(a.nuovoValore==='reset'){
-      // Elimina eccezione
-      await sb.from('permessi_utenti').delete().eq('user_id',a.userId).eq('modulo',a.modulo);
-    }else{
-      await sb.from('permessi_utenti').upsert(
-        {user_id:a.userId,modulo:a.modulo,accesso:a.nuovoValore,aggiornato_da:USER.id},
-        {onConflict:'user_id,modulo'}
-      );
-    }
+    _permSessionUnlocked=true; // sblocca sessione — non chiederà più la pwd
     closeModal('mod-pwd-permessi');
-    const azione=a.nuovoValore==='si'?'✅ Accesso concesso':a.nuovoValore==='no'?'🚫 Accesso rimosso':'↩️ Ripristinato default';
-    showToast(a.userName+' — '+a.moduloLabel+': '+azione);
-    if(a.callback)a.callback();
-    _permPendingAction=null;
+    showToast('🔓 Sessione sbloccata — puoi modificare i permessi liberamente');
+    await eseguiAzionePermesso();
   }catch(e){
     document.getElementById('pwd-perm-err').textContent=e.message;
     document.getElementById('pwd-perm-err').style.display='block';
   }finally{btn.textContent='Conferma';btn.disabled=false;}
 }
 
-function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore,callback){
+async function richiedePasswordPermesso(userId,userName,modulo,moduloLabel,nuovoValore,callback){
+  // Se sessione già sbloccata, esegui direttamente senza richiedere password
+  if(_permSessionUnlocked){
+    _permPendingAction={userId,userName,modulo,moduloLabel,nuovoValore,callback};
+    await eseguiAzionePermesso();
+    return;
+  }
   _permPendingAction={userId,userName,modulo,moduloLabel,nuovoValore,callback};
   document.getElementById('pwd-perm-inp').value='';
   document.getElementById('pwd-perm-err').style.display='none';
