@@ -257,6 +257,17 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 </div>
 
 <div id="app">
+
+<!-- OVERLAY BENVENUTO -->
+<div id="benvenuto-overlay" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;transition:opacity .4s" onclick="chiudiBenvenuto()">
+  <div style="text-align:center;max-width:480px">
+    <div style="font-size:48px;margin-bottom:16px">👷</div>
+    <div id="benv-saluto" style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:12px;line-height:1.2"></div>
+    <div id="benv-frase" style="font-size:16px;color:var(--t2);line-height:1.7;font-style:italic;margin-bottom:28px"></div>
+    <button onclick="chiudiBenvenuto()" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:12px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif">Inizia la giornata →</button>
+    <div style="margin-top:16px;font-size:11px;color:var(--t3)">Tocca ovunque per chiudere</div>
+  </div>
+</div>
   <div class="top">
     <div style="display:flex;align-items:center;gap:8px">
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:16px;line-height:1;flex-shrink:0" title="Indietro">←</button>
@@ -274,13 +285,36 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
   <!-- HOME -->
   <div class="scr on" id="scr-home">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="sec" style="margin:0">I tuoi cantieri</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-icon btn-sm admin-only" onclick="openModalCantiere(null)">➕ Cantiere</button>
-        <button class="btn-icon btn-sm" onclick="navTo('report')">📊 Report</button>
-        <button class="btn-icon btn-sm admin-only" onclick="goTo('admin')">⚙️</button>
-      </div>
+    <!-- GRIGLIA NAVIGAZIONE RAPIDA -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <button onclick="navTo('giornata-1')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">➕</span>Nuova giornata
+      </button>
+      <button onclick="navTo('piano')" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">📅</span>Piano del giorno
+      </button>
+      <button onclick="navTo('situazione')" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;position:relative">
+        <span style="font-size:28px">🔔</span>Situazione
+        <span id="home-badge-sit" style="display:none;position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px">!</span>
+      </button>
+      <button onclick="navTo('spese')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">🧾</span>Spese
+      </button>
+      <button onclick="navTo('report')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">📊</span>Report
+      </button>
+      <button onclick="navTo('personale')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">👷</span>Personale
+      </button>
+      <button onclick="navTo('impostazioni')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
+        <span style="font-size:28px">⚙️</span>Impostazioni
+      </button>
+    </div>
+
+    <!-- CANTIERI ATTIVI -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec" style="margin:0">📋 Cantieri attivi</div>
+      <button class="btn-icon btn-sm admin-only" onclick="openModalCantiere(null)">➕ Nuovo</button>
     </div>
     <div id="home-list"></div>
     <div class="bsp"></div>
@@ -1744,6 +1778,7 @@ async function afterLogin(){
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     const nome=(PROF?.nome||USER.email).split('@')[0];
     document.getElementById('ubadge').textContent=nome;
+    mostraBenvenuto(nome, ruolo);
     const ruolo=PROF?.ruolo||'caposquadra';
     const rb=document.getElementById('rbadge');
     rb.textContent=ruolo;rb.className='rbadge '+(ruolo==='titolare'?'r-tit':'r-cap');
@@ -5404,6 +5439,57 @@ function initFontSize(){
   const saved=parseInt(localStorage.getItem('ct_font_size'))||2;
   setFontSize(saved);
 }
+// ── BENVENUTO ──
+const FRASI_GIORNO = [
+  "Chi lavora bene non ha bisogno di parlare molto.",
+  "Un cantiere pulito è un cantiere sicuro.",
+  "La squadra che si rispetta, lavora meglio.",
+  "Misura due volte, taglia una.",
+  "Il legno non mente. Neanche il lavoro ben fatto.",
+  "Ogni trave al suo posto, ogni giorno al suo tempo.",
+  "Chi arriva puntuale rispetta gli altri.",
+  "Il lavoro fatto bene non ha bisogno di essere rifatto.",
+  "Oggi si costruisce. Domani si vedrà il risultato.",
+  "Un buon artigiano conosce i suoi strumenti.",
+  "La qualità si vede, non si dichiara.",
+  "Pianifica prima di costruire. Pensa prima di agire.",
+  "Il cantiere è di tutti. La responsabilità anche.",
+  "Poco rumore, molto lavoro.",
+  "Il rispetto si guadagna sul campo.",
+  "Una squadra unita finisce il lavoro in tempo.",
+  "Chi impara ogni giorno, migliora ogni giorno.",
+  "La sicurezza non è un optional. Mai.",
+  "Un problema segnalato è un problema a metà risolto.",
+  "Il lavoro manuale è arte quando è fatto con cura.",
+  "Buona giornata. Testa sul lavoro, occhi aperti.",
+  "Ogni giornata ben lavorata conta.",
+];
+
+function getFraseGiorno(){
+  const d=new Date();
+  const idx=d.getDate()%FRASI_GIORNO.length;
+  return FRASI_GIORNO[idx];
+}
+
+function mostraBenvenuto(nome, ruolo){
+  const ora=new Date().getHours();
+  const saluto=ora<12?'Buongiorno':ora<17?'Buon pomeriggio':'Buonasera';
+  const frase=getFraseGiorno();
+  const el=document.getElementById('benvenuto-overlay');
+  if(!el)return;
+  const nomeBreve=(nome||'').split(' ')[0];
+  document.getElementById('benv-saluto').textContent=saluto+', '+nomeBreve+'!';
+  document.getElementById('benv-frase').textContent=frase;
+  el.style.display='flex';
+  // Auto-chiudi dopo 3 secondi
+  setTimeout(()=>chiudiBenvenuto(),3000);
+}
+
+function chiudiBenvenuto(){
+  const el=document.getElementById('benvenuto-overlay');
+  if(el){el.style.opacity='0';setTimeout(()=>{el.style.display='none';el.style.opacity='1';},400);}
+}
+
 </script>
 </body>
 </html>
