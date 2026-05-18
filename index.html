@@ -1765,10 +1765,81 @@ function apriContabilitaSett(cantId){
 }
 
 async function init(){
+  // Gestione link reset password da email
+  const hash=window.location.hash;
+  if(hash&&hash.includes('type=recovery')){
+    mostraFormNuovaPassword();
+    return;
+  }
+  // Ascolta eventi auth (incluso PASSWORD_RECOVERY)
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){
+      mostraFormNuovaPassword();
+    } else if(event==='SIGNED_IN'&&session&&!USER){
+      USER=session.user;
+      await afterLogin();
+      initFontSize();
+    }
+  });
   const {data:{session}}=await sb.auth.getSession();
   if(session){USER=session.user;await afterLogin();
   initFontSize();}
   else showLogin();
+}
+
+function mostraFormNuovaPassword(){
+  document.getElementById('loading').style.display='none';
+  // Nascondi login normale, mostra form nuova password
+  const loginEl=document.getElementById('login');
+  loginEl.classList.add('on');
+  loginEl.innerHTML=`
+    <div class="lbox">
+      <div class="llogo">
+        <b>CantiereMaster</b>
+        <h1>Nuova password</h1>
+      </div>
+      <div class="lerr" id="lerr-np"></div>
+      <div class="fg"><label class="fl">Nuova password</label>
+        <div style="position:relative">
+          <input type="password" class="fi" id="np-pwd" placeholder="Minimo 6 caratteri" autocomplete="new-password" style="padding-right:44px">
+          <button type="button" onclick="togglePwd('np-pwd',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px">👁</button>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Conferma password</label>
+        <div style="position:relative">
+          <input type="password" class="fi" id="np-conf" placeholder="Ripeti la password" autocomplete="new-password" style="padding-right:44px" oninput="checkNpMatch()">
+          <button type="button" onclick="togglePwd('np-conf',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px">👁</button>
+        </div>
+        <div id="np-match-err" style="color:var(--red);font-size:12px;margin-top:4px;display:none">❌ Le password non corrispondono</div>
+      </div>
+      <button class="btn btn-g" onclick="salvaPasswordReset()">🔑 Salva nuova password</button>
+    </div>`;
+}
+
+function checkNpMatch(){
+  const n=document.getElementById('np-pwd')?.value;
+  const k=document.getElementById('np-conf')?.value;
+  const err=document.getElementById('np-match-err');
+  if(err)err.style.display=(k&&n&&k!==n)?'block':'none';
+}
+
+async function salvaPasswordReset(){
+  const pwd=document.getElementById('np-pwd')?.value;
+  const conf=document.getElementById('np-conf')?.value;
+  const err=document.getElementById('lerr-np');
+  if(!pwd||pwd.length<6){if(err){err.textContent='Minimo 6 caratteri';err.classList.add('on');}return;}
+  if(pwd!==conf){if(err){err.textContent='Le password non corrispondono';err.classList.add('on');}return;}
+  try{
+    const{error}=await sb.auth.updateUser({password:pwd});
+    if(error)throw error;
+    // Password cambiata — ora fa login automatico
+    const{data:{session}}=await sb.auth.getSession();
+    if(session){USER=session.user;await afterLogin();initFontSize();}
+    else showLogin();
+  }catch(e){
+    const err=document.getElementById('lerr-np');
+    if(err){err.textContent='Errore: '+e.message;err.classList.add('on');}
+  }
 }
 function showLogin(){
   document.getElementById('loading').style.display='none';
