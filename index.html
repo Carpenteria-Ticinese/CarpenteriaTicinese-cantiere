@@ -248,7 +248,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
     <div class="lerr" id="lerr"></div>
     <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="l-email" autocomplete="email" placeholder="nome@carpenteriaticinese.ch"></div>
-    <div class="fg"><label class="fl">Password</label><input type="password" class="fi" id="l-pass" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="fg"><label class="fl">Password</label><div style="position:relative">
+        <input type="password" class="fi" id="l-pass" autocomplete="current-password" placeholder="••••••••" style="padding-right:44px">
+        <button type="button" onclick="togglePwd('l-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px">👁</button>
+      </div></div>
     <button class="btn btn-g" onclick="doLogin()">Accedi →</button>
     <div style="text-align:center;margin-top:12px">
       <span style="font-size:13px;color:var(--t2);cursor:pointer;text-decoration:underline" onclick="resetPassword()">Password dimenticata?</span>
@@ -1834,7 +1837,7 @@ function checkPwdMatch(){
 }
 
 async function resetPassword(){
-  const email=document.getElementById('login-email').value.trim();
+  const email=(document.getElementById('login-email')||document.getElementById('l-email'))?.value.trim()||'';
   if(!email){showToast('Inserisci prima la tua email','e');return;}
   try{
     const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
