@@ -1765,26 +1765,37 @@ function apriContabilitaSett(cantId){
 }
 
 async function init(){
-  // Gestione link reset password da email
-  const hash=window.location.hash;
-  if(hash&&hash.includes('type=recovery')){
+  // Gestione link reset password da email (Supabase manda hash nell'URL)
+  const hash=window.location.hash||'';
+  const params=new URLSearchParams(hash.replace('#',''));
+  if(params.get('type')==='recovery'||hash.includes('type=recovery')){
+    // Supabase ha già impostato la sessione con il token di recovery
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){USER=session.user;}
     mostraFormNuovaPassword();
     return;
   }
-  // Ascolta eventi auth (incluso PASSWORD_RECOVERY)
-  sb.auth.onAuthStateChange(async(event,session)=>{
+  // Solo per password recovery — non intercettare SIGNED_IN qui
+  sb.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){
+      if(session)USER=session.user;
       mostraFormNuovaPassword();
-    } else if(event==='SIGNED_IN'&&session&&!USER){
+    }
+  });
+  // Login normale
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){
       USER=session.user;
       await afterLogin();
       initFontSize();
+    } else {
+      showLogin();
     }
-  });
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){USER=session.user;await afterLogin();
-  initFontSize();}
-  else showLogin();
+  }catch(e){
+    console.error('Init error:',e);
+    showLogin();
+  }
 }
 
 function mostraFormNuovaPassword(){
