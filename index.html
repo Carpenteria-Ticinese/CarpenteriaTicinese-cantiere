@@ -1564,9 +1564,9 @@ async function renderContabilita(cantId){
 
       <!-- KPI PRINCIPALI -->
       <div class="cont-kpi">
-        <div class="kpi-box"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera</div></div>
-        <div class="kpi-box"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese totali</div></div>
-        ${totGruPaga>0?`<div class="kpi-box"><div class="kpi-val kpi-red">${totGruPaga.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da pagare</div></div>`:''}
+        <div class="kpi-box" onclick="navTo('report')" style="cursor:pointer" title="Vai al report"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera ↗</div></div>
+        <div class="kpi-box" onclick="navTo('spese')" style="cursor:pointer" title="Vai alle spese"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese ↗</div></div>
+        ${totGruPaga>0?`<div class="kpi-box" onclick="navTo('gru')" style="cursor:pointer"><div class="kpi-val kpi-red">${totGruPaga.toFixed(0)}</div><div class="kpi-lbl">CHF Gru ↗</div></div>`:''}
         ${totGruIncassa>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncassa.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da incassare</div></div>`:''}
         <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
         <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi totali</div></div>
@@ -1654,21 +1654,25 @@ async function renderContabilitaGlobale(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const tariffa=IMPOSTAZIONI.tariffa_ora||78;
-    const [{data:giornate},{data:spese},{data:regia}]=await Promise.all([
+    const [{data:giornate},{data:spese},{data:regia},{data:gruG},{data:incassiG}]=await Promise.all([
       sb.from('giornate').select('cantiere_id,ore_totali').order('data'),
       sb.from('spese').select('cantiere_id,importo,stato_pag').order('data'),
       sb.from('regia').select('cantiere_id,quantita,prezzo_unitario,fatturato').order('data'),
+      sb.from('tiri_gru').select('cantiere_id,importo,tipo').order('data'),
+      sb.from('pagamenti_ricevuti').select('cantiere_id,importo').order('data'),
     ]);
     const cantAttivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo.</p></div>';return;}
     const byCant={};
-    cantAttivi.forEach(c=>byCant[c.id]={nome:c.nome,ore:0,spese:0,ricavi:0,da:0});
+    cantAttivi.forEach(c=>byCant[c.id]={nome:c.nome,ore:0,spese:0,ricavi:0,da:0,gru:0,incassi:0});
     (giornate||[]).forEach(g=>{if(byCant[g.cantiere_id])byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);});
     (spese||[]).forEach(s=>{if(byCant[s.cantiere_id]){byCant[s.cantiere_id].spese+=(parseFloat(s.importo)||0);if(s.stato_pag==='Da pagare')byCant[s.cantiere_id].da+=(parseFloat(s.importo)||0);}});
     (regia||[]).forEach(r=>{if(byCant[r.cantiere_id]&&r.fatturato)byCant[r.cantiere_id].ricavi+=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));});
-    const riepilogo=Object.values(byCant).map(c=>({...c,costo:c.ore*tariffa+c.spese,margine:c.ricavi-(c.ore*tariffa+c.spese)}));
+    (gruG||[]).forEach(g=>{if(byCant[g.cantiere_id]){if(g.tipo==='paghiamo')byCant[g.cantiere_id].gru+=(parseFloat(g.importo)||0);else byCant[g.cantiere_id].ricavi+=(parseFloat(g.importo)||0);}});
+    (incassiG||[]).forEach(p=>{if(byCant[p.cantiere_id])byCant[p.cantiere_id].incassi+=(parseFloat(p.importo)||0);});
+    const riepilogo=Object.values(byCant).map(c=>({...c,costo:c.ore*tariffa+c.spese+c.gru,ricaviTot:c.ricavi+c.incassi,margine:(c.ricavi+c.incassi)-(c.ore*tariffa+c.spese+c.gru)}));
     const totCosto=riepilogo.reduce((s,c)=>s+c.costo,0);
-    const totRicavi=riepilogo.reduce((s,c)=>s+c.ricavi,0);
+    const totRicavi=riepilogo.reduce((s,c)=>s+(c.ricaviTot||c.ricavi+c.incassi),0);
     const totMargine=totRicavi-totCosto;
     const margCls=totMargine>=0?'kpi-green':'kpi-red';
     const margPre=totMargine>=0?'+':'';
@@ -1678,11 +1682,11 @@ async function renderContabilitaGlobale(){
     html+='<div class="kpi-box"><div class="kpi-val '+margCls+'">'+margPre+totMargine.toFixed(0)+'</div><div class="kpi-lbl">CHF Margine globale</div></div>';
     html+='</div>';
     riepilogo.forEach(function(c){
-      const m=c.ricavi>0?((c.margine/c.ricavi)*100):null;
+      const m=(c.ricaviTot||0)>0?((c.margine/(c.ricaviTot||1))*100):null;
       const col=c.margine>=0?'var(--green)':'var(--red)';
       const cantId=CANTIERI.find(function(x){return x.nome===c.nome;})||{};
       const cId=cantId.id||'';
-      const pct=c.ricavi>0?Math.min(100,(c.costo/c.ricavi*100)).toFixed(0):100;
+      const pct=(c.ricaviTot||0)>0?Math.min(100,(c.costo/(c.ricaviTot||1)*100)).toFixed(0):100;
       const mStr=c.margine>=0?'+':'';
       html+='<div class="sett-row" style="cursor:pointer" onclick="navToCant(\''+cId+'\')">'; 
       html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
@@ -5278,7 +5282,8 @@ async function salvaGruPagato(){
 async function segnaGruPagato(id, pagato){
   try{
     await sb.from('tiri_gru').update({pagato}).eq('id',id);
-    renderGru();
+    await renderGru();
+    aggiornaBadgeSituazione();
     showToast(pagato?'Segnato come pagato ✓':'Riaperto');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
