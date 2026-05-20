@@ -460,7 +460,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- PAGAMENTI RICEVUTI -->
   <div class="scr" id="scr-pagamenti">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">💳 Pagamenti ricevuti</div>
+      <div class="sec" style="margin:0">💳 Incassi</div>
       <button class="btn-icon btn-sm" onclick="apriModalPagamento(null)">➕ Registra</button>
     </div>
     <!-- Filtri -->
@@ -651,6 +651,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div style="margin-bottom:16px" id="sit-rich-wrap">
       <div class="sec" style="margin-top:8px">📋 Richieste ferie / permessi</div>
       <div id="sit-rich-content"><div style="font-size:13px;color:var(--t2);padding:8px 0">—</div></div>
+      <div class="sec admin-only" style="margin-top:16px">🏗️ Tiri gru da pagare</div>
+      <div id="sit-gru-content" class="admin-only"><div style="font-size:13px;color:var(--t2);padding:8px 0">—</div></div>
     </div>
     <div class="bsp"></div>
   </div>
@@ -769,7 +771,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="nb" id="nb-bolle" onclick="navTo('bolle')"><div class="nb-icon">📦</div><div class="nb-label">Bolle</div></div>
     <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano del g.</div></div>
     <div class="nb" id="nb-personale" onclick="navTo('personale')" style="display:none"><div class="nb-icon">👷</div><div class="nb-label">Personale</div></div>
-    <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label">Pagamenti</div></div>
+    <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label">Incassi</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
   </div>
@@ -1490,11 +1492,13 @@ async function renderContabilita(cantId){
       {data:spese},
       {data:regia},
       {data:gru},
+      {data:incassi},
     ] = await Promise.all([
       sb.from('giornate').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('spese').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('regia').select('*').eq('cantiere_id',cantId).order('data'),
       sb.from('tiri_gru').select('*').eq('cantiere_id',cantId).order('data'),
+      sb.from('pagamenti_ricevuti').select('*').eq('cantiere_id',cantId).order('data'),
     ]);
 
     // ── CALCOLI BASE ──
@@ -1507,8 +1511,9 @@ async function renderContabilita(cantId){
     const totRegiaDa=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const totGruPaga=(gru||[]).filter(g=>g.tipo==='paghiamo').reduce((s,g)=>s+(parseFloat(g.importo)||0),0);
     const totGruIncassa=(gru||[]).filter(g=>g.tipo==='incassiamo').reduce((s,g)=>s+(parseFloat(g.importo)||0),0);
+    const totIncassi=(incassi||[]).reduce((s,p)=>s+(parseFloat(p.importo)||0),0);
     const costoTotale=costoManodopera+totSpeseAll+totGruPaga;
-    const ricaviTotali=totRegiaFatt;
+    const ricaviTotali=totRegiaFatt+totIncassi;
     const margine=ricaviTotali-costoTotale;
     const marginePerc=ricaviTotali>0?((margine/ricaviTotali)*100):0;
 
@@ -1564,7 +1569,8 @@ async function renderContabilita(cantId){
         ${totGruPaga>0?`<div class="kpi-box"><div class="kpi-val kpi-red">${totGruPaga.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da pagare</div></div>`:''}
         ${totGruIncassa>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncassa.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da incassare</div></div>`:''}
         <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
-        <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi (regia fatt.)</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi totali</div></div>
+        ${totIncassi>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totIncassi.toFixed(0)}</div><div class="kpi-lbl">CHF Incassi registrati</div></div>`:''}
       </div>
 
       <!-- MARGINE -->
@@ -3231,7 +3237,7 @@ function navTo(dest){
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
 
   else if(dest==='personale'){pushNav('personale');showScr('personale');document.getElementById('top-title').textContent='Personale';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Personale'}]);loadOperai().then(()=>renderPersonale());return;}
-  else if(dest==='pagamenti'){pushNav('pagamenti');showScr('pagamenti');document.getElementById('top-title').textContent='Pagamenti ricevuti';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Pagamenti'}]);renderPagamenti();return;}
+  else if(dest==='pagamenti'){pushNav('pagamenti');showScr('pagamenti');document.getElementById('top-title').textContent='Incassi';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Incassi'}]);renderPagamenti();return;}
   else if(dest==='impostazioni'){navToImpostazioni();return;}
   else if(dest==='permessi'){pushNav('permessi');showScr('permessi');document.getElementById('top-title').textContent='Permessi e visibilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin',onclick:"navTo('admin')"},{label:'Permessi'}]);renderPermessi();return;}
   else if(dest==='piano'){pushNav('piano');showScr('piano');document.getElementById('top-title').textContent='Piano del giorno';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Piano del giorno'}]);initPiano();}
@@ -3312,6 +3318,30 @@ async function renderSituazione(){
       }catch(e){elRich.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
     }
   }
+  // ── Sezione GRU da pagare ──
+  const elGru=document.getElementById('sit-gru-content');
+  if(elGru){
+    elGru.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+    try{
+      const{data:gruDaPag}=await sb.from('tiri_gru').select('*, cantieri(nome)').eq('tipo','paghiamo').eq('pagato',false).order('data',{ascending:false});
+      if(!gruDaPag?.length){elGru.innerHTML='<div style="font-size:13px;color:var(--t2);padding:8px 0">✅ Nessun tiro gru da pagare</div>';}
+      else{
+        const totGru=gruDaPag.reduce((s,g)=>s+(parseFloat(g.importo)||0),0);
+        let hg=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--red);font-weight:700">Totale gru da pagare</span><span style="font-family:'DM Mono';font-size:18px;color:var(--red)">${totGru.toFixed(2)} CHF</span></div>`;
+        gruDaPag.forEach(g=>{
+          hg+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:14px;font-weight:700">🏗️ ${escHtml(g.ditta||'—')}</div>
+            <div style="font-size:12px;color:var(--t2)">${g.cantieri?.nome||'—'} · ${g.data||''} · ${g.n_tiri||0} tiri</div></div>
+            <div style="text-align:right">
+              <div style="font-family:'DM Mono';font-size:16px;color:var(--red)">${parseFloat(g.importo||0).toFixed(2)} CHF</div>
+              <button onclick="apriDettaglioGru('${g.id}')" style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);cursor:pointer;margin-top:3px">✓ Segna pagato</button>
+            </div>
+          </div>`;
+        });
+        elGru.innerHTML=hg;
+      }
+    }catch(e){elGru.innerHTML=`<div class="empty" style="color:var(--red)">Errore: ${e.message}</div>`;}
+  }
 }
 async function segnaSpesaPagata(id){
   if(!confirm('Segnare questa spesa come pagata?'))return;
@@ -3368,8 +3398,19 @@ async function renderSpese(){
       ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
       ${s.note?`<div style="font-size:12px;color:var(--t2);margin-top:4px">📝 ${s.note}</div>`:''}
       ${s.foto_path?`<div style="font-size:11px;color:var(--blue);margin-top:4px">📎 Documento allegato</div>`:''}
+    </div>
+      ${!isPag?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:flex-end"><button onclick=\"event.stopPropagation();segnaSpesaPagataRapido(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">✅ Segna pagata</button></div>':''}
     </div>`;
   }).join('');
+}
+
+async function segnaSpesaPagataRapido(id){
+  if(!confirm('Segnare questa spesa come pagata?'))return;
+  try{
+    await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id);
+    showToast('Spesa segnata come pagata ✓');
+    renderSpese();aggiornaBadgeSituazione();
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
 async function visualizzaSpesa(id){
@@ -4303,7 +4344,7 @@ async function salvaPagamento(){
     closeModal('mod-pagamento');
     _alertCheckPending=false;
     renderPagamenti();
-    showToast('Pagamento registrato ✓');
+    showToast('Incasso registrato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Registra';btn.disabled=false;}
 }
@@ -4380,7 +4421,7 @@ const MODULI_APP = [
   {id:'gru',             label:'Tiri Gru',            desc:'Registrare tiri gru',                            gruppoDefault:['tutti']},
   {id:'situazione',      label:'Situazione',          desc:'Spese da pagare, gru, regia in sospeso',         gruppoDefault:['titolare','responsabile']},
   {id:'contabilita',     label:'Contabilità',         desc:'Costi, ricavi e margine per cantiere',           gruppoDefault:['titolare','responsabile']},
-  {id:'pagamenti',       label:'Pagamenti ricevuti',  desc:'Pagamenti del cliente — dati sensibili',         gruppoDefault:['titolare']},
+  {id:'pagamenti',       label:'Incassi',  desc:'Pagamenti del cliente — dati sensibili',         gruppoDefault:['titolare']},
   {id:'report',          label:'Report',              desc:'Stipendi, analisi, export dati',                 gruppoDefault:['titolare']},
   {id:'piano',           label:'Piano del g.',        desc:'Assegnazione operai ai cantieri',                gruppoDefault:['titolare']},
   {id:'personale',       label:'Personale',           desc:'Gestione collaboratori e ruoli',                 gruppoDefault:['titolare']},
@@ -5159,7 +5200,7 @@ async function renderGru(){
       const cant=(CANTIERI||[]).find(c=>c.id===r.cantiere_id);
       const isI=r.tipo==='incassiamo';
       const col=isI?'var(--green)':'var(--red)';
-      '<div class="cant-card" data-id="'+r.id+'" onclick="apriDettaglioGru(\"'+r.id+'\")" style="cursor:pointer">'
+      return '<div class="cant-card" data-id="'+r.id+'" onclick="apriDettaglioGru(\"'+r.id+'\")" style="cursor:pointer">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div><div style="font-size:12px;font-weight:700;color:'+col+'">'+(isI?'🏗️ CT incassa':'🏗️ CT paga')+'</div>'
         +'<div style="font-size:15px;font-weight:700">'+escHtml(r.ditta||'—')+'</div>'
