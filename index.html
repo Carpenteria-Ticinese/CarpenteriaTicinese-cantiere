@@ -13,6 +13,8 @@
 <title>CT Cantiere</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -236,14 +238,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <body>
 
 <div id="loading">
-  <div style="font-size:13px;letter-spacing:4px;color:var(--gold);font-weight:700;text-transform:uppercase">Carpenteria Ticinese</div>
+  <div style="font-size:13px;letter-spacing:4px;color:var(--gold);font-weight:700;text-transform:uppercase" id="loading-nome-az">CantiereMaster</div>
   <div class="spin"></div>
 </div>
 
 <div id="login">
   <div class="lbox">
     <div class="llogo">
-      <b>Carpenteria Ticinese Sàgl</b>
+      <b id="login-nome-az">CantiereMaster</b>
       <h1>Gestione Cantieri</h1>
     </div>
     <div class="lerr" id="lerr"></div>
@@ -274,7 +276,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="top">
     <div style="display:flex;align-items:center;gap:8px">
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:16px;line-height:1;flex-shrink:0" title="Indietro">←</button>
-      <div class="top-brand"><b>CT Sàgl</b><span id="top-title">Cantieri</span></div>
+      <div class="top-brand"><b id="top-brand-nome">CantiereMaster</b><span id="top-title">Cantieri</span></div>
     </div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
@@ -288,6 +290,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
   <!-- HOME -->
   <div class="scr on" id="scr-home">
+    <!-- BANNER ALERT FOTO (PE) -->
+    <div id="home-foto-banner" style="display:none"></div>
     <!-- GRIGLIA NAVIGAZIONE RAPIDA -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
       <button onclick="navTo('giornata-1')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Bricolage Grotesque',sans-serif">
@@ -326,6 +330,17 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- CANTIERE DETAIL -->
   <div class="scr" id="scr-cantiere">
     <div id="cant-detail-content"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- TIMBRATURA QR (P23/P24) -->
+  <div class="scr" id="scr-timbratura">
+    <div id="timb-content">
+      <!-- renderizzato da renderTimbratura() -->
+    </div>
+    <div style="margin-top:16px;text-align:center">
+      <button onclick="goHome()" style="background:none;border:none;color:var(--t2);font-size:14px;cursor:pointer;text-decoration:underline">← Torna all'app</button>
+    </div>
     <div class="bsp"></div>
   </div>
 
@@ -407,6 +422,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
           </div>
         </div>
         <div class="fg"><label class="fl">Note operaio</label><textarea class="ft" id="g2-note" placeholder="Avanzamento, problemi, imprevisti..." style="min-height:60px"></textarea></div>
+        <div class="fg"><label class="fl">🧱 Materiale utilizzato</label><textarea class="ft" id="g2-materiale-g" placeholder="Es. 50 tegole Pada, 10m² sottotetto MTL..." style="min-height:60px"></textarea></div>
+        <div class="fg"><label class="fl">🔧 Attrezzatura / Macchinari</label><textarea class="ft" id="g2-attrezzatura-g" placeholder="Es. Sega circolare, trapano, scala 6m, elicottero..." style="min-height:60px"></textarea></div>
         <div class="fg">
           <label class="fl">Foto — <select id="foto-tipo-upload" style="font-size:12px;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--text)"><option value="durante">Durante</option><option value="prima">Prima dei lavori</option><option value="dopo">Dopo i lavori</option><option value="dettaglio">Dettaglio</option></select></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
@@ -444,6 +461,62 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn-icon btn-sm" onclick="exportReportPDF()">📄 PDF</button>
     </div>
     <div id="report-content"></div>
+    <hr style="margin:16px 0;border-color:var(--border)">
+    <button class="btn btn-g" style="width:100%" onclick="navTo('report-avanzato')">📊 Report avanzato →</button>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- REPORT AVANZATO (P-D) -->
+  <div class="scr" id="scr-report-avanzato">
+    <div style="margin-bottom:14px">
+      <div class="sec" style="margin:0">📊 Report avanzato</div>
+    </div>
+    <!-- Filtri -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div class="row2" style="margin-bottom:8px">
+        <div class="fg" style="margin-bottom:0"><label class="fl">Collaboratore</label>
+          <select class="fs" id="ra-op" onchange="renderReportAvanzato()">
+            <option value="">Tutti</option>
+            <option value="__agenzia__">Solo agenzia</option>
+            <option value="__diretti__">Solo diretti</option>
+          </select>
+        </div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Cantiere</label>
+          <select class="fs" id="ra-cant" onchange="renderReportAvanzato()"><option value="">Tutti</option></select>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:8px"><label class="fl">Periodo</label>
+        <select class="fs" id="ra-periodo" onchange="toggleRaPeriodo();renderReportAvanzato()">
+          <option value="mese">Mese corrente</option>
+          <option value="settimana">Settimana corrente</option>
+          <option value="oggi">Oggi</option>
+          <option value="anno">Anno corrente</option>
+          <option value="cantiere">Durata cantiere</option>
+          <option value="custom">Range personalizzato</option>
+        </select>
+      </div>
+      <div id="ra-custom-wrap" style="display:none">
+        <div class="row2">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Da</label><input type="date" class="fi" id="ra-da" onchange="renderReportAvanzato()" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">A</label><input type="date" class="fi" id="ra-a" onchange="renderReportAvanzato()" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Tab bar -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+      <button class="btn btn-s btn-sm ra-tab on" data-tab="ore" onclick="switchRaTab('ore')">⏱ Ore</button>
+      <button class="btn btn-s btn-sm ra-tab" data-tab="materiali" onclick="switchRaTab('materiali')">🧱 Materiali</button>
+      <button class="btn btn-s btn-sm ra-tab" data-tab="attrezzatura" onclick="switchRaTab('attrezzatura')">🔧 Attrezzatura</button>
+      <button class="btn btn-s btn-sm ra-tab" data-tab="pranzi" onclick="switchRaTab('pranzi')">🍽️ Pranzi</button>
+      <button class="btn btn-s btn-sm ra-tab" data-tab="spese" onclick="switchRaTab('spese')">💰 Spese</button>
+    </div>
+    <!-- Export buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-s btn-sm" onclick="exportRaExcel()">⬇️ Excel</button>
+      <button class="btn btn-s btn-sm" onclick="exportRaPDF()">📄 PDF</button>
+    </div>
+    <!-- Contenuto tab -->
+    <div id="ra-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <div class="bsp"></div>
   </div>
 
@@ -569,6 +642,69 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-s" style="width:100%" onclick="openModalPwd()">🔑 Cambia password →</button>
     </div>
 
+    <!-- Categorie Materiali (P-B) -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">📦 Categorie materiali</div>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">Categorie disponibili nel form materiali cantiere. Il titolare può aggiungerne di personalizzate.</p>
+      <div id="imp-cat-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="fi" id="imp-cat-new" placeholder="Nuova categoria..." style="flex:1;font-size:13px">
+        <button class="btn btn-g btn-sm" onclick="aggiungiCategoriaDaImp()">➕ Aggiungi</button>
+      </div>
+      <button class="btn btn-s btn-sm" style="margin-top:8px;width:100%" onclick="ripristinaCategorieDef()">↩️ Ripristina default</button>
+    </div>
+
+    <!-- Alert Archivio Foto (PE) -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">📷 Archivio foto cantiere</div>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">Alert settimanale per archiviare le foto (>75 gg). Le foto vengono compresse automaticamente a max 800 KB al caricamento.</p>
+      <div class="fg"><label class="fl">Giorno alert settimanale</label>
+        <select class="fs" id="foto-alert-giorno">
+          <option value="lun">Lunedì</option>
+          <option value="mar">Martedì</option>
+          <option value="mer">Mercoledì</option>
+          <option value="gio">Giovedì</option>
+          <option value="ven">Venerdì</option>
+          <option value="sab">Sabato</option>
+          <option value="dom">Domenica</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Responsabile archivio foto</label>
+        <select class="fs" id="foto-alert-resp">
+          <option value="">— Tutti —</option>
+        </select>
+      </div>
+      <button class="btn btn-g btn-sm" style="width:100%;margin-top:4px" onclick="salvaImpostazioniFoto()">💾 Salva impostazioni foto</button>
+    </div>
+
+    <!-- QR Timbratura (P23/P24) -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">📲 QR Timbratura presenze</div>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.6">Genera il QR da appendere in cantiere. Gli operai lo scansionano per timbrare entrata/uscita dal loro telefono.</p>
+      <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:12px;min-height:60px"></div>
+      <div id="qr-url-txt" style="font-size:10px;color:var(--t2);text-align:center;word-break:break-all;margin-bottom:12px;font-family:'DM Mono',monospace"></div>
+      <button class="btn btn-g" style="width:100%;margin-bottom:8px" onclick="generaQRTimbratura()">🔲 Genera QR</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-s" style="flex:1" onclick="scaricaQR()">⬇️ Scarica PNG</button>
+        <button class="btn btn-s" style="flex:1" onclick="stampaQR()">🖨️ Stampa</button>
+      </div>
+      <hr style="margin:14px 0;border-color:var(--border)">
+      <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--t2)">Impostazioni timbratura</div>
+      <div class="row2">
+        <div class="fg"><label class="fl">Arrotondamento</label>
+          <select class="fs" id="timb-set-arr">
+            <option value="5">5 minuti</option>
+            <option value="10">10 minuti</option>
+            <option value="15">15 minuti</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Pausa default (min)</label>
+          <input type="number" class="fi" id="timb-set-pausa" value="60" min="0" max="180" step="5" style="font-family:'DM Mono',monospace">
+        </div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="salvaImpostazioniTimb()">💾 Salva impostazioni timbratura</button>
+    </div>
+
     <div class="bsp"></div>
   </div>
 
@@ -651,6 +787,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
   <!-- SITUAZIONE -->
   <div class="scr" id="scr-situazione">
+    <!-- Timbrature da assegnare (P23/P24) -->
+    <div id="sit-timb-wrap" style="display:none;margin-bottom:16px" class="admin-only">
+      <div class="sec">⏱ Timbrature da assegnare</div>
+      <div id="sit-timb-content"></div>
+    </div>
     <div style="margin-bottom:16px">
       <div class="sec">💸 Spese da pagare</div>
       <div id="sit-spese-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
@@ -705,10 +846,15 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="Operaio generico">Operaio generico</option>
       </select>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
       <label style="font-size:12px;color:var(--t2);display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="pers-raggruppa" onchange="renderPersonale()"> Raggruppa per categoria
       </label>
+      <select class="fs" id="pers-filtro-agenzia" onchange="renderPersonale()" style="font-size:12px;padding:4px 8px;flex:0 0 auto">
+        <option value="">Diretti + Agenzia</option>
+        <option value="diretti">Solo diretti</option>
+        <option value="agenzia">Solo agenzia</option>
+      </select>
     </div>
     <div id="pers-list"></div>
     <div class="bsp"></div>
@@ -974,6 +1120,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg"><label class="fl">Note</label><input type="text" class="fi" id="o-note" placeholder="es. Patente gru, specializzazioni..."></div>
     <div class="fg"><label class="fl">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
+    <div class="toggle-wrap" style="margin-bottom:8px">
+      <div><div class="toggle-lbl">Collaboratore di agenzia (interinale)</div><div class="toggle-sub">Mostra badge AGZ, filtrabile nel report</div></div>
+      <label class="toggle"><input type="checkbox" id="o-agenzia" onchange="document.getElementById('o-agenzia-wrap').style.display=this.checked?'block':'none'"><span class="toggle-sl"></span></label>
+    </div>
+    <div id="o-agenzia-wrap" style="display:none;margin-bottom:12px">
+      <div class="fg" style="margin-bottom:0"><label class="fl">Nome agenzia</label><input type="text" class="fi" id="o-nome-agenzia" placeholder="es. Manpower, Adecco, Randstad..."></div>
+    </div>
     <div id="op-docs-section" style="display:none">
       <hr style="margin:14px 0">
       <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 Documenti e scadenze</div>
@@ -1205,6 +1358,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </div>
     </div>
     <div class="fg"><label class="fl">Note</label><textarea class="ft" id="mg-note" style="min-height:60px"></textarea></div>
+    <div class="fg"><label class="fl">🧱 Materiale utilizzato</label><textarea class="ft" id="mg-materiale-g" placeholder="Es. 50 tegole Pada, 10m² sottotetto MTL..." style="min-height:60px"></textarea></div>
+    <div class="fg"><label class="fl">🔧 Attrezzatura / Macchinari</label><textarea class="ft" id="mg-attrezzatura-g" placeholder="Es. Sega circolare, trapano, scala 6m, elicottero..." style="min-height:60px"></textarea></div>
     <div class="fg"><label class="fl">Materiali ricevuti</label><input type="text" class="fi" id="mg-mat" placeholder="es. BSH 200ml, Flumroc 50 lastre..."></div>
     <div class="fg">
       <label class="fl">📷 Foto giornata</label>
@@ -1342,6 +1497,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="mod-t" id="mod-mat-t">Nuovo materiale</div>
     <div class="fg"><label class="fl">Descrizione</label><input type="text" class="fi" id="mat-nome" placeholder="es. Tegole, Viti 5mm, Teli impermeabilizzanti..."></div>
     <div class="fg"><label class="fl">Quantità</label><input type="text" class="fi" id="mat-qta" placeholder="es. 200, 3 pallet, 5 sacchi..."></div>
+    <div class="fg"><label class="fl">Categoria</label>
+      <select class="fs" id="mat-cat" onchange="if(this.value==='__nuova__'){document.getElementById('mat-cat-new-wrap').style.display='flex';}else{document.getElementById('mat-cat-new-wrap').style.display='none';}"></select>
+      <div id="mat-cat-new-wrap" style="display:none;gap:8px;margin-top:6px">
+        <input type="text" class="fi" id="mat-cat-new" placeholder="Nome nuova categoria..." style="flex:1">
+        <button class="btn btn-g btn-sm" onclick="aggiungiCategoriaMat()">➕ Salva</button>
+      </div>
+    </div>
     <div class="fg"><label class="fl">Note</label><textarea class="ft" id="mat-note" style="min-height:50px" placeholder="Opzionale..."></textarea></div>
     <hr>
     <div class="row2">
@@ -1591,6 +1753,7 @@ let USER=null,PROF=null;
 let CANTIERI=[],OPERAI=[],OPERAI_TUTTI=[],LAVS=[];
 let curCant=null;
 let fFiles=[],fB64=[];
+let _fotoDaArchiviare=[];
 
 // ── DATA/ORA TIMEZONE ZURIGO (ora legale/solare automatica) ──
 function nowZurich(){
@@ -2009,6 +2172,7 @@ async function afterLogin(){
     const {data:prof}=await sb.from('profili').select('*').eq('id',USER.id).single();
     PROF=prof;
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
+    verificaColonneGiornate(); // node check — logga SQL in console se colonne mancanti
     const nome=(PROF?.nome||USER.email).split('@')[0];
     const ruolo=PROF?.ruolo||'caposquadra';
     document.getElementById('ubadge').textContent=nome;
@@ -2028,8 +2192,8 @@ async function afterLogin(){
       if(nbPers)nbPers.style.display='flex';
       const nbPag=document.getElementById('nb-pagamenti');
       if(nbPag)nbPag.style.display='flex';
-      caricaNomeAzienda();
     }
+    await caricaNomeAzienda(); // P21: per tutti i ruoli
     // Caposquadra/operaio: mostra "Il mio giorno"
     if(PROF?.ruolo!=='titolare'){
       const nbMioG2=document.getElementById('nb-mio-giorno');
@@ -2068,6 +2232,11 @@ async function afterLogin(){
     setBread([{label:'Cantieri'}]);
     initNavbarDrag();
     aggiornaBadgeSituazione();
+    // P23/P24: check ?timbra=1
+    if(new URLSearchParams(window.location.search).get('timbra')==='1'){mostraTimbratura();}
+    else{controllaTimbraturaSerale();}
+    // PE: alert settimanale foto archivio
+    controllaAlertFoto();
   }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
 }
 function togglePwd(id, btn){
@@ -2131,6 +2300,88 @@ async function cambiaPwd(){
 
 // ── LOAD ──
 async function loadCantieri(){const {data}=await sb.from('cantieri').select('*').order('nome');CANTIERI=data||[];}
+
+// ── CATEGORIE MATERIALI (P-B) ──
+const CATEGORIE_MAT_DEFAULT=['Isolante','Legname strutturale','Legname non strutturale','Membrane','Minuteria','Viti/fissaggi','Accessori','Lattoneria','Calcestruzzo/muratura','Altro'];
+
+function _catMatList(){
+  const raw=IMPOSTAZIONI.categorie_materiali;
+  if(raw){try{return JSON.parse(raw);}catch(e){return raw.split(',').map(s=>s.trim()).filter(Boolean);}}
+  return [...CATEGORIE_MAT_DEFAULT];
+}
+
+function popolaCatMatSelect(selectedVal){
+  const sel=document.getElementById('mat-cat');
+  if(!sel)return;
+  const cats=_catMatList();
+  sel.innerHTML=cats.map(c=>`<option value="${escHtml(c)}"${c===selectedVal?'selected':''}>${escHtml(c)}</option>`).join('')
+    +`<option value="__nuova__">➕ Aggiungi categoria...</option>`;
+  if(selectedVal&&!cats.includes(selectedVal))sel.value='';
+}
+
+async function aggiungiCategoriaMat(){
+  const inp=document.getElementById('mat-cat-new');
+  const nome=(inp?.value||'').trim();
+  if(!nome){showToast('Scrivi il nome della categoria','e');return;}
+  const cats=_catMatList();
+  if(cats.includes(nome)){showToast('Categoria già presente','e');return;}
+  cats.push(nome);
+  await _salvaCategorieMat(cats);
+  document.getElementById('mat-cat-new-wrap').style.display='none';
+  if(inp)inp.value='';
+  popolaCatMatSelect(nome);
+  showToast('Categoria aggiunta ✓');
+}
+
+async function aggiungiCategoriaDaImp(){
+  const inp=document.getElementById('imp-cat-new');
+  const nome=(inp?.value||'').trim();
+  if(!nome){showToast('Scrivi il nome della categoria','e');return;}
+  const cats=_catMatList();
+  if(cats.includes(nome)){showToast('Categoria già presente','e');return;}
+  cats.push(nome);
+  await _salvaCategorieMat(cats);
+  if(inp)inp.value='';
+  _renderImpCatList();
+  showToast('Categoria aggiunta ✓');
+}
+
+async function eliminaCategoriaMat(nome){
+  const cats=_catMatList().filter(c=>c!==nome);
+  await _salvaCategorieMat(cats);
+  _renderImpCatList();
+  showToast('Categoria rimossa ✓');
+}
+
+async function ripristinaCategorieDef(){
+  await _salvaCategorieMat([...CATEGORIE_MAT_DEFAULT]);
+  _renderImpCatList();
+  showToast('Categorie ripristinate ✓');
+}
+
+async function _salvaCategorieMat(cats){
+  const val=JSON.stringify(cats);
+  IMPOSTAZIONI.categorie_materiali=val;
+  try{await sb.from('impostazioni').upsert({chiave:'categorie_materiali',valore:val},{onConflict:'chiave'});}catch(e){}
+}
+
+function _renderImpCatList(){
+  const el=document.getElementById('imp-cat-list');
+  if(!el)return;
+  const cats=_catMatList();
+  el.innerHTML=cats.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px;display:flex;align-items:center;gap:6px">${escHtml(c)}<button onclick="eliminaCategoriaMat('${escHtml(c).replace(/'/g,"\\'")}');event.stopPropagation()" style="background:none;border:none;color:var(--t2);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></span>`).join('');
+}
+
+async function verificaColonneGiornate(){
+  const {error}=await sb.from('giornate').select('materiale_giorno,attrezzatura_giorno').limit(1);
+  if(error){
+    console.group('%c⚠️ CantiereMaster — colonne mancanti in tabella giornate','color:#e05555;font-weight:bold;font-size:14px');
+    console.log('%cEsegui queste istruzioni SQL nel Supabase SQL Editor:','color:#888');
+    console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS materiale_giorno text;');
+    console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS attrezzatura_giorno text;');
+    console.groupEnd();
+  }
+}
 async function loadOperai(){
   try{
     const oggi=new Date().toISOString().split('T')[0];
@@ -2151,6 +2402,11 @@ async function loadLavs(cantId){
 async function loadImpostazioni(){
   const cached=localStorage.getItem('ct_impostazioni');
   if(cached)try{IMPOSTAZIONI={...IMPOSTAZIONI,...JSON.parse(cached)};}catch(e){}
+  // Carica chiavi remote da Supabase
+  try{
+    const{data}=await sb.from('impostazioni').select('chiave,valore').in('chiave',['timb_arrotondamento','timb_pausa','categorie_materiali','foto_alert_giorno','foto_resp_id']);
+    (data||[]).forEach(r=>{IMPOSTAZIONI[r.chiave]=r.valore;});
+  }catch(e){}
 }
 function saveImpostazioni(){
   localStorage.setItem('ct_impostazioni',JSON.stringify(IMPOSTAZIONI));
@@ -2299,6 +2555,26 @@ async function renderCantiere(){
         <button class="btn btn-s" onclick="apriFotoCantiere()">📷 Foto cantiere</button>
         <button class="btn btn-s" onclick="apriMaterialiCantiere()">📦 Materiali</button>
       </div>
+      ${['titolare','responsabile','caposquadra'].includes(PROF?.ruolo)?`
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Capitolato</div>
+        ${prev?.file_path?`
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prev.file_nome||'File allegato'}</div>
+              ${prev.file_caricato_il?`<div style="font-size:11px;color:var(--t2)">Caricato: ${new Date(prev.file_caricato_il).toLocaleDateString('it-IT')}</div>`:''}
+            </div>
+            <button onclick="apriCapitolato('${prev.file_path}','${prev.file_nome||''}')" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">👁 Apri</button>
+            ${['titolare','responsabile'].includes(PROF?.ruolo)?`
+              <button onclick="uploadCapitolato('${curCant.id}')" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">🔄 Sostituisci</button>
+              <button onclick="eliminaCapitolato('${curCant.id}','${prev.file_path}')" style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--red);white-space:nowrap">🗑</button>
+            `:''}
+          </div>
+        `:`
+          <div style="font-size:13px;color:var(--t2);margin-bottom:8px">Nessun capitolato caricato.</div>
+          ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="uploadCapitolato('${curCant.id}')" class="btn btn-s" style="font-size:13px">📎 Carica capitolato (PDF / Excel)</button>`:''}
+        `}
+      </div>`:''}
       <div style="margin-bottom:16px">
         <button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42)" onclick="apriContabilita()">💰 Contabilità cantiere</button>
       </div>
@@ -2698,6 +2974,8 @@ async function apriModificaGiornata(gid){
   document.getElementById('mg-fine').value=g.ora_fine||'17:00';
   document.getElementById('mg-pausa').value=g.pausa_minuti||60;
   document.getElementById('mg-note').value=g.note||'';
+  document.getElementById('mg-materiale-g').value=g.materiale_giorno||'';
+  document.getElementById('mg-attrezzatura-g').value=g.attrezzatura_giorno||'';
   document.getElementById('mg-mat').value=(mats||[])[0]?.descrizione||'';
   document.querySelectorAll('.meteo-b[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===g.meteo));
   calcOreModifica();
@@ -2718,10 +2996,9 @@ async function apriModificaGiornata(gid){
 }
 function aggiungiMgFoto(e){
   const files=Array.from(e.target.files);if(!files.length)return;
-  mgFotoFiles=[...mgFotoFiles,...files];
-  const grid=document.getElementById('mg-foto-nuove');
-  files.forEach(f=>{const r=new FileReader();r.onload=ev=>{const div=document.createElement('div');div.style.cssText='position:relative';div.innerHTML=`<img src="${ev.target.result}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm)"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">🆕 ${f.name.substring(0,15)}</div>`;grid.appendChild(div);};r.readAsDataURL(f);});
   e.target.value='';
+  const grid=document.getElementById('mg-foto-nuove');
+  files.forEach(f=>{compressImg(f,800,compressed=>{mgFotoFiles.push(compressed);const r=new FileReader();r.onload=ev=>{const div=document.createElement('div');div.style.cssText='position:relative';div.innerHTML=`<img src="${ev.target.result}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm)"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">🆕 ${f.name.substring(0,15)}</div>`;grid.appendChild(div);};r.readAsDataURL(compressed);});});
 }
 function calcOreModifica(){
   const ini=document.getElementById('mg-ini').value,fine=document.getElementById('mg-fine').value;
@@ -2839,7 +3116,9 @@ async function salvaModificaGiornata(){
   const pausa=_pausaMgRaw===''||_pausaMgRaw===null?60:Math.max(0,parseInt(_pausaMgRaw)||0);
     const note=document.getElementById('mg-note').value.trim();
     const mat=document.getElementById('mg-mat').value.trim();
-    const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null}).eq('id',modificaGid).select().single();
+    const materialeG=document.getElementById('mg-materiale-g')?.value.trim()||'';
+    const attrezzaturaG=document.getElementById('mg-attrezzatura-g')?.value.trim()||'';
+    const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null}).eq('id',modificaGid).select().single();
     if(error)throw error;
     if(mat){await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});}
     // Salva modifiche alle voci lavoro
@@ -2916,7 +3195,9 @@ async function openCantLog(gid){
     </div>
     ${vociHtml?`<div class="sec">Lavori svolti</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>Lavorazione</th><th>Ore</th><th>Quantità</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
     ${(mats||[]).length?`<div class="sec">Materiali ricevuti</div><div style="font-size:13px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
-    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px">${g.note}</div>`:''}
+    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.note}</div>`:''}
+    ${g.materiale_giorno?`<div class="sec">🧱 Materiale utilizzato</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.materiale_giorno}</div>`:''}
+    ${g.attrezzatura_giorno?`<div class="sec">🔧 Attrezzatura / Macchinari</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.attrezzatura_giorno}</div>`:''}
     <div class="sec">📷 Foto (${(foto||[]).length})</div>
     <div id="cantlog-foto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
       ${!(foto||[]).length?'<div style="font-size:13px;color:var(--t2);grid-column:span 2">Nessuna foto caricata</div>':'<div style="grid-column:span 2;font-size:12px;color:var(--t2)">⏳ Caricamento foto...</div>'}
@@ -2960,7 +3241,8 @@ async function generaPdfGiornata(data){
     const rows=(giornate||[]).map(function(g){
       const voceRows=(g.voci_lavoro||[]).map(function(v){return '<tr><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0">'+escHtml(v.lavorazioni?.nome||v.lavorazione_nome||'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace">'+parseFloat(v.ore||0).toFixed(2)+'h</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;color:#666">'+( v.quantita?v.quantita+' '+(v.um||''):'—')+'</td></tr>';}).join('');
       const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:10px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta&&g.zona_trasferta!=='locale'?'<span style="font-size:10px;background:#e08840;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">'+g.zona_trasferta+'</span>':'');
-      return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:15px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:12px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti||60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+(g.note?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px;white-space:pre-line">'+escHtml(g.note)+'</div>':'')+'</div>';
+      const extraPdf=(g.note?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px;white-space:pre-line">'+escHtml(g.note)+'</div>':'')+(g.materiale_giorno?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888">🧱 Materiale utilizzato</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.materiale_giorno)+'</div></div>':'')+(g.attrezzatura_giorno?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888">🔧 Attrezzatura / Macchinari</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.attrezzatura_giorno)+'</div></div>':'');
+      return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:15px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:12px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti||60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+extraPdf+'</div>';
     }).join('');
     const matsHtml=(mats||[]).length?'<div style="margin-bottom:16px"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px">📦 Materiali ricevuti</h3><ul style="font-size:13px;margin:0;padding-left:20px">'+mats.map(function(m){return '<li>'+escHtml(m.descrizione)+'</li>';}).join('')+'</ul></div>':'';
     const noteHtml=noteCs?'<div style="margin-bottom:16px;padding:10px;background:#fffbef;border:1px solid #f0d080;border-radius:6px"><strong style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#a08000">📋 Note caposquadra</strong><div style="font-size:13px;margin-top:6px;white-space:pre-line">'+escHtml(noteCs)+'</div></div>':'';
@@ -2969,7 +3251,7 @@ async function generaPdfGiornata(data){
     const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>CT Giornata</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:14px;color:#111;padding:24px;max-width:820px;margin:0 auto}@media print{.no-print{display:none!important}body{padding:0}}</style></head><body>'
       +'<div class="no-print" style="background:#fffbef;border:1px solid #ddd;padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border-radius:6px"><span style="font-size:12px;color:#666">Anteprima — usa il pulsante per stampare o salvare come PDF</span><button onclick="window.print()" style="background:#c8a84b;border:none;color:#fff;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700">🖨️ Stampa / Salva PDF</button></div>'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid #c8a84b">'
-        +'<div><div style="font-weight:800;font-size:14px;letter-spacing:2px;color:#c8a84b;text-transform:uppercase;margin-bottom:4px">Carpenteria Ticinese Sagl</div>'
+        +'<div><div style="font-weight:800;font-size:14px;letter-spacing:2px;color:#c8a84b;text-transform:uppercase;margin-bottom:4px">'+(IMPOSTAZIONI.nome_azienda||'CantiereMaster')+'</div>'
         +'<div style="font-size:22px;font-weight:800;margin-bottom:2px">'+escHtml(curCant.nome)+'</div>'
         +(indrStr?'<div style="font-size:13px;color:#666;margin-bottom:4px">'+escHtml(indrStr)+'</div>':'')
         +'<div style="font-size:15px;color:#444">'+fmtD(data)+'</div></div>'
@@ -3102,11 +3384,13 @@ async function salvaOperaio(){
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
   const pausa=parseInt(document.getElementById('g2-pausa').value)||60;if(!ini||!fine){showToast('Inserisci orari','e');return;}
   const ore=calcOreRaw(ini,fine,pausa);const note=document.getElementById('g2-note').value.trim();
+  const materialeG=document.getElementById('g2-materiale-g')?.value.trim()||'';
+  const attrezzaturaG=document.getElementById('g2-attrezzatura-g')?.value.trim()||'';
   const oreStr=parseFloat(document.getElementById('g2-straordinari').value)||0;
   const zonaTrasferta=document.getElementById('g2-trasferta').value||'locale';
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,created_by:USER.id}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id}).select().single();
     if(ge)throw ge;
     const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
       const sel=row.querySelector('.voce-sel');const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;if(!oreV)return null;
@@ -3129,6 +3413,8 @@ async function salvaOperaio(){
     GIO.operaiSalvati.push({opId,nome:op?.nome+' '+op?.cognome,ini,fine,ore,voci:vociNomi});
     refreshOperaiSelect();renderSalvati();
     document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
+    const _gMat=document.getElementById('g2-materiale-g');if(_gMat)_gMat.value='';
+    const _gAtt=document.getElementById('g2-attrezzatura-g');if(_gAtt)_gAtt.value='';
     document.getElementById('g2-straordinari').value='';document.getElementById('g2-trasferta').value='locale';
     fFiles=[];fB64=[];showToast(`${op?.nome} salvato ✓`);
   }catch(e){showToast('Errore: '+e.message,'e');}
@@ -3361,6 +3647,9 @@ function openModalOp(id){
   const tEl=document.getElementById('o-telefono');if(tEl)tEl.value=o?.telefono||'';
   const nEl=document.getElementById('o-note');if(nEl)nEl.value=o?.note||'';
   const fEl=document.getElementById('o-fine');if(fEl)fEl.value=o?.data_fine_rapporto||'';
+  const agEl=document.getElementById('o-agenzia');if(agEl)agEl.checked=!!o?.agenzia;
+  const agNEl=document.getElementById('o-nome-agenzia');if(agNEl)agNEl.value=o?.nome_agenzia||'';
+  const agWrap=document.getElementById('o-agenzia-wrap');if(agWrap)agWrap.style.display=o?.agenzia?'block':'none';
   const wEl=document.getElementById('o-fine-warn');
   if(wEl&&o?.data_fine_rapporto)wEl.style.display=o.data_fine_rapporto<new Date().toISOString().split('T')[0]?'block':'none';
   else if(wEl)wEl.style.display='none';
@@ -3387,13 +3676,16 @@ async function saveOp(){
   if(!nome||!cogn){showToast('Inserisci nome e cognome','e');return;}
   const fine=document.getElementById('o-fine')?.value||null;
   try{
+    const isAgenzia=document.getElementById('o-agenzia')?.checked||false;
     const p={
       nome,cognome:cogn,
       ruolo:document.getElementById('o-ruolo').value,
       email:document.getElementById('o-email')?.value.trim()||null,
       telefono:document.getElementById('o-telefono')?.value.trim()||null,
       note:document.getElementById('o-note')?.value.trim()||null,
-      data_fine_rapporto:fine||null
+      data_fine_rapporto:fine||null,
+      agenzia:isAgenzia,
+      nome_agenzia:isAgenzia?(document.getElementById('o-nome-agenzia')?.value.trim()||null):null
     };
     if(editOid){
       const{error}=await sb.from('operai').update(p).eq('id',editOid);
@@ -3453,7 +3745,10 @@ async function eliminaDocumentoOp(docId){
 // ── FOTO ──
 function apriFotoCamera(){document.getElementById('foto-inp-cam').click();}
 function apriFotoGalleria(){document.getElementById('foto-inp').click();}
-function addFoto(e){Array.from(e.target.files).forEach(f=>{fFiles.push(f);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(f);});e.target.value='';}
+function addFoto(e){
+  const files=Array.from(e.target.files);e.target.value='';
+  files.forEach(f=>{compressImg(f,800,compressed=>{fFiles.push(compressed);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(compressed);});});
+}
 function renderFoto(){document.getElementById('foto-prv').innerHTML=fB64.map((b,i)=>`<div class="fthumb"><img src="${b}"><button class="fdel" onclick="delFoto(${i})">×</button></div>`).join('');}
 function delFoto(i){fFiles.splice(i,1);fB64.splice(i,1);renderFoto();}
 
@@ -3493,16 +3788,640 @@ function showToast(msg,type){const t=document.getElementById('toast');t.textCont
 // ── NAVBAR ──
 async function aggiornaBadgeSituazione(){
   try{
-    const [{data:spese},{data:regia},{data:assInAttesa}]=await Promise.all([
+    const [{data:spese},{data:regia},{data:assInAttesa},{data:timb}]=await Promise.all([
       sb.from('spese').select('id',{count:'exact'}).eq('stato_pag','Da pagare'),
       sb.from('regia').select('id',{count:'exact'}).eq('fatturato',false),
-      sb.from('assenze').select('id',{count:'exact'}).eq('stato','in_attesa')
+      sb.from('assenze').select('id',{count:'exact'}).eq('stato','in_attesa'),
+      sb.from('giornate').select('id',{count:'exact'}).eq('cantiere_da_assegnare',true)
     ]);
-    const tot=(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0);
+    const tot=(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0)+(timb?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
 }
+
+// ── TIMBRATURA QR (P23/P24) ──
+function arrotondaMinuti(date,step){
+  const ms=1000*60*step;
+  return new Date(Math.round(date.getTime()/ms)*ms);
+}
+
+function mostraTimbratura(){
+  document.getElementById('top-title').textContent='Timbratura';
+  showScr('timbratura');
+  renderTimbratura();
+}
+
+async function _getOpId(){
+  const{data:op}=await sb.from('operai').select('id').ilike('email',USER.email).maybeSingle();
+  if(op?.id)return op.id;
+  // fallback: cerca per nome da profilo
+  if(PROF?.nome){
+    const parti=PROF.nome.trim().split(' ');
+    const{data:op2}=await sb.from('operai').select('id').ilike('nome',parti[0]+'%').maybeSingle();
+    if(op2?.id)return op2.id;
+  }
+  return null;
+}
+
+async function renderTimbratura(){
+  const el=document.getElementById('timb-content');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const oggi=nowZurich().date;
+  const opId=await _getOpId();
+  const passo=parseInt(IMPOSTAZIONI.timb_arrotondamento||'5');
+  const pausaDef=parseInt(IMPOSTAZIONI.timb_pausa||'60');
+  let g=null;
+  if(opId){
+    const{data}=await sb.from('giornate').select('*,cantieri(nome)').eq('operaio_id',opId).eq('data',oggi).not('ora_inizio_timbrata','is',null).maybeSingle();
+    g=data;
+  }
+  const giornoLabel=new Date(oggi+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+  if(!g||!g.ora_inizio_timbrata){
+    el.innerHTML=`
+      <div style="text-align:center;padding:32px 16px">
+        <div style="font-size:48px;margin-bottom:16px">🟢</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:6px">${giornoLabel}</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:32px">Nessuna timbratura registrata oggi</div>
+        <button onclick="timbraEntrata()" class="btn btn-g" style="width:100%;font-size:18px;padding:18px;border-radius:14px;letter-spacing:1px">✅ ENTRATA</button>
+      </div>`;
+  } else if(!g.ora_fine_timbrata){
+    el.innerHTML=`
+      <div style="text-align:center;padding:32px 16px">
+        <div style="font-size:48px;margin-bottom:16px">🔴</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:6px">${giornoLabel}</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:4px">Entrata registrata alle</div>
+        <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green);margin-bottom:32px">${g.ora_inizio_timbrata}</div>
+        <button onclick="timbraUscita('${g.id}')" class="btn" style="width:100%;font-size:18px;padding:18px;border-radius:14px;letter-spacing:1px;background:var(--red);color:#fff">🔚 USCITA</button>
+      </div>`;
+  } else {
+    const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||pausaDef);
+    el.innerHTML=`
+      <div style="text-align:center;padding:32px 16px">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:14px">${giornoLabel}</div>
+        <div style="display:flex;justify-content:center;gap:32px;margin-bottom:16px">
+          <div><div style="font-size:12px;color:var(--t2)">Entrata</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${g.ora_inizio_timbrata}</div></div>
+          <div><div style="font-size:12px;color:var(--t2)">Uscita</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)">${g.ora_fine_timbrata}</div></div>
+        </div>
+        <div style="font-size:14px;color:var(--t2);margin-bottom:12px">Ore lavorate: <strong style="color:var(--text)">${ore}h</strong> &nbsp;(pausa ${g.pausa_minuti_timbrata||pausaDef} min)</div>
+        ${g.cantiere_da_assegnare?`<div style="background:rgba(200,168,75,0.15);border:1px solid var(--gold);border-radius:8px;padding:10px;font-size:13px;color:var(--gold)">⏳ Cantiere da assegnare dal responsabile</div>`:`<div style="font-size:13px;color:var(--t2)">${g.cantieri?.nome||''}</div>`}
+      </div>`;
+  }
+}
+
+async function timbraEntrata(){
+  const passo=parseInt(IMPOSTAZIONI.timb_arrotondamento||'5');
+  const oraArr=arrotondaMinuti(new Date(),passo);
+  const {time}=nowZurich();
+  // Arrotonda l'orario Zurigo
+  const [hh,mm]=time.split(':').map(Number);
+  const totalMin=hh*60+mm;
+  const step=passo;
+  const arrotMin=Math.round(totalMin/step)*step;
+  const ora=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
+  const oggi=nowZurich().date;
+  const opId=await _getOpId();
+  if(!opId){showToast('Operaio non trovato — controlla il profilo','e');return;}
+  try{
+    const{data:g}=await sb.from('giornate').select('id').eq('operaio_id',opId).eq('data',oggi).maybeSingle();
+    if(g){
+      const{error}=await sb.from('giornate').update({ora_inizio_timbrata:ora,cantiere_da_assegnare:true}).eq('id',g.id);
+      if(error)throw error;
+    }else{
+      const{error}=await sb.from('giornate').insert({operaio_id:opId,data:oggi,ora_inizio_timbrata:ora,cantiere_da_assegnare:true,created_by:USER.id});
+      if(error)throw error;
+    }
+    showToast('Entrata registrata: '+ora+' ✓');
+    renderTimbratura();aggiornaBadgeSituazione();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function timbraUscita(gid){
+  const passo=parseInt(IMPOSTAZIONI.timb_arrotondamento||'5');
+  const pausaDef=parseInt(IMPOSTAZIONI.timb_pausa||'60');
+  const {time}=nowZurich();
+  const [hh,mm]=time.split(':').map(Number);
+  const totalMin=hh*60+mm;
+  const arrotMin=Math.round(totalMin/passo)*passo;
+  const ora=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
+  const cantOpts=(CANTIERI||[]).filter(c=>c.stato!=='completato').map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join('');
+  const el=document.getElementById('timb-content');
+  if(!el)return;
+  el.innerHTML=`
+    <div style="padding:16px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:20px;text-align:center">🔚 Conferma uscita</div>
+      <div class="fg"><label class="fl">Cantiere di oggi *</label>
+        <select class="fs" id="timb-cantiere" required><option value="">— Seleziona cantiere —</option>${cantOpts}</select>
+      </div>
+      <div class="row2">
+        <div class="fg"><label class="fl">Ora uscita</label>
+          <input type="time" class="fi" id="timb-ora-fine" value="${ora}" style="font-family:'DM Mono',monospace">
+        </div>
+        <div class="fg"><label class="fl">Pausa (min)</label>
+          <input type="number" class="fi" id="timb-pausa-inp" value="${pausaDef}" min="0" max="240" step="5" style="font-family:'DM Mono',monospace">
+        </div>
+      </div>
+      <button class="btn btn-g" style="width:100%;margin-top:8px" onclick="salvaTimbratura('${gid}')">✅ Conferma uscita</button>
+      <button onclick="mostraTimbratura()" style="width:100%;margin-top:8px;background:none;border:none;color:var(--t2);font-size:13px;cursor:pointer">← Annulla</button>
+    </div>`;
+}
+
+async function salvaTimbratura(gid){
+  const cantId=document.getElementById('timb-cantiere')?.value;
+  const oraFine=document.getElementById('timb-ora-fine')?.value;
+  const pausa=parseInt(document.getElementById('timb-pausa-inp')?.value||'60');
+  if(!cantId){showToast('Seleziona il cantiere','e');return;}
+  if(!oraFine){showToast('Inserisci ora uscita','e');return;}
+  try{
+    const{data:g}=await sb.from('giornate').select('ora_inizio_timbrata,ora_inizio,ora_fine').eq('id',gid).single();
+    const ore=_calcOreTimb(g.ora_inizio_timbrata,oraFine,pausa);
+    const upd={ora_fine_timbrata:oraFine,pausa_minuti_timbrata:pausa,cantiere_id:cantId,cantiere_da_assegnare:false};
+    if(!g.ora_inizio)upd.ora_inizio=g.ora_inizio_timbrata;
+    if(!g.ora_fine){upd.ora_fine=oraFine;upd.pausa_minuti=pausa;}
+    const{error}=await sb.from('giornate').update(upd).eq('id',gid);
+    if(error)throw error;
+    showToast('Uscita registrata: '+oraFine+' — '+ore+'h ✓');
+    renderTimbratura();aggiornaBadgeSituazione();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+function _calcOreTimb(ini,fine,pausaMin){
+  if(!ini||!fine)return 0;
+  const [h1,m1]=ini.split(':').map(Number);
+  const [h2,m2]=fine.split(':').map(Number);
+  const min=(h2*60+m2)-(h1*60+m1)-(parseInt(pausaMin)||0);
+  return Math.max(0,Math.round(min/6)/10);
+}
+
+async function assegnaCantiereTimbrata(gid){
+  const sel=document.getElementById('assegna-cant-'+gid);
+  const cantId=sel?.value;
+  if(!cantId){showToast('Seleziona cantiere','e');return;}
+  try{
+    const{error}=await sb.from('giornate').update({cantiere_id:cantId,cantiere_da_assegnare:false}).eq('id',gid);
+    if(error)throw error;
+    showToast('Cantiere assegnato ✓');
+    renderSituazione();aggiornaBadgeSituazione();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+function controllaTimbraturaSerale(){
+  const {time}=nowZurich();
+  const h=parseInt(time.split(':')[0]);
+  if(h<17)return;
+  const ruolo=PROF?.ruolo||'';
+  if(ruolo==='titolare'||ruolo==='responsabile')return;
+  const oggi=nowZurich().date;
+  _getOpId().then(opId=>{
+    if(!opId)return;
+    sb.from('giornate').select('ora_inizio_timbrata,ora_fine_timbrata').eq('operaio_id',opId).eq('data',oggi).not('ora_inizio_timbrata','is',null).maybeSingle().then(({data})=>{
+      if(data&&!data.ora_fine_timbrata&&!document.getElementById('timb-banner')){
+        const banner=document.createElement('div');
+        banner.id='timb-banner';
+        banner.style.cssText='position:fixed;bottom:70px;left:0;right:0;background:var(--gold);color:#1a1a1a;padding:12px 16px;text-align:center;font-size:14px;font-weight:600;z-index:9999;cursor:pointer;border-radius:12px 12px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,0.3)';
+        banner.innerHTML='⏰ Ricorda di timbrare l\'uscita! <u>Timbra ora →</u>';
+        banner.onclick=()=>{mostraTimbratura();banner.remove();};
+        document.body.appendChild(banner);
+      }
+    });
+  });
+}
+
+function generaQRTimbratura(){
+  const qrDiv=document.getElementById('qr-canvas');
+  if(!qrDiv)return;
+  qrDiv.innerHTML='';
+  const baseUrl=window.location.href.split('?')[0];
+  const url=baseUrl+'?timbra=1';
+  new QRCode(qrDiv,{text:url,width:200,height:200,colorDark:'#c8a84b',colorLight:'#1a1a1a',correctLevel:QRCode.CorrectLevel.M});
+  document.getElementById('qr-url-txt').textContent=url;
+}
+
+function scaricaQR(){
+  const qrDiv=document.getElementById('qr-canvas');
+  if(!qrDiv){showToast('Genera prima il QR','e');return;}
+  const img=qrDiv.querySelector('img');
+  const cvs=qrDiv.querySelector('canvas');
+  if(!img&&!cvs){showToast('Genera prima il QR','e');return;}
+  const a=document.createElement('a');
+  a.href=cvs?cvs.toDataURL('image/png'):img.src;
+  a.download='qr-timbratura.png';a.click();
+}
+
+function stampaQR(){
+  const qrDiv=document.getElementById('qr-canvas');
+  if(!qrDiv){showToast('Genera prima il QR','e');return;}
+  const img=qrDiv.querySelector('img');
+  const cvs=qrDiv.querySelector('canvas');
+  if(!img&&!cvs){showToast('Genera prima il QR','e');return;}
+  const src=cvs?cvs.toDataURL('image/png'):img.src;
+  const nomeAz=IMPOSTAZIONI.nome_azienda||'CantiereMaster';
+  const w=window.open('','_blank');
+  if(!w)return;
+  w.document.write(`<!DOCTYPE html><html><body style="text-align:center;padding:40px 20px;background:#1a1a1a;font-family:sans-serif">
+    <div style="color:#c8a84b;font-size:20px;font-weight:700;margin-bottom:4px">${nomeAz}</div>
+    <div style="color:#aaa;font-size:14px;margin-bottom:20px">Scansiona per timbrare la tua presenza</div>
+    <img src="${src}" style="width:220px;height:220px">
+    <div style="color:#888;font-size:11px;margin-top:16px">Entrata / Uscita</div>
+    <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+async function salvaImpostazioniTimb(){
+  const arr=document.getElementById('timb-set-arr')?.value||'5';
+  const pausa=document.getElementById('timb-set-pausa')?.value||'60';
+  IMPOSTAZIONI.timb_arrotondamento=arr;
+  IMPOSTAZIONI.timb_pausa=pausa;
+  try{
+    await Promise.all([
+      sb.from('impostazioni').upsert({chiave:'timb_arrotondamento',valore:arr},{onConflict:'chiave'}),
+      sb.from('impostazioni').upsert({chiave:'timb_pausa',valore:pausa},{onConflict:'chiave'})
+    ]);
+    showToast('Impostazioni timbratura salvate ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+// ── REPORT AVANZATO (P-D) ──
+let _raTab='ore';
+let _raCharts=[];
+
+function switchRaTab(tab){
+  _raTab=tab;
+  document.querySelectorAll('.ra-tab').forEach(b=>{b.classList.toggle('on',b.dataset.tab===tab);});
+  renderReportAvanzato();
+}
+
+function toggleRaPeriodo(){
+  const p=document.getElementById('ra-periodo')?.value;
+  document.getElementById('ra-custom-wrap').style.display=p==='custom'?'block':'none';
+}
+
+async function initReportAvanzato(){
+  // Popola select collaboratori
+  const opSel=document.getElementById('ra-op');
+  if(opSel&&opSel.options.length<=3){
+    (OPERAI||[]).forEach(o=>{
+      const opt=document.createElement('option');
+      opt.value=o.id;opt.textContent=o.nome+' '+o.cognome+(o.agenzia?' (AGZ)':'');
+      opSel.appendChild(opt);
+    });
+  }
+  // Popola select cantieri
+  const cantSel=document.getElementById('ra-cant');
+  if(cantSel&&cantSel.options.length<=1){
+    (CANTIERI||[]).forEach(c=>{
+      const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.nome;cantSel.appendChild(opt);
+    });
+  }
+  // Date default per custom
+  const now=nowZurich();
+  const d=document.getElementById('ra-da');const a=document.getElementById('ra-a');
+  if(d&&!d.value){const m=new Date(now.date+'T12:00');m.setDate(1);d.value=m.toISOString().split('T')[0];}
+  if(a&&!a.value)a.value=now.date;
+  await renderReportAvanzato();
+}
+
+async function _raGetRange(){
+  const p=document.getElementById('ra-periodo')?.value||'mese';
+  const now=nowZurich().date;
+  let from,to;
+  if(p==='oggi'){from=to=now;}
+  else if(p==='settimana'){
+    const d=new Date(now+'T12:00');const day=d.getDay()||7;
+    const mon=new Date(d);mon.setDate(d.getDate()-(day-1));
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    from=mon.toISOString().split('T')[0];to=sun.toISOString().split('T')[0];
+  }else if(p==='mese'){
+    from=now.slice(0,7)+'-01';
+    const last=new Date(parseInt(now.slice(0,4)),parseInt(now.slice(5,7)),0);
+    to=now.slice(0,7)+'-'+String(last.getDate()).padStart(2,'0');
+  }else if(p==='anno'){from=now.slice(0,4)+'-01-01';to=now.slice(0,4)+'-12-31';}
+  else if(p==='cantiere'){
+    const cantId=document.getElementById('ra-cant')?.value;
+    if(cantId){
+      const{data}=await sb.from('giornate').select('data').eq('cantiere_id',cantId).order('data',{ascending:true}).limit(1);
+      from=(data||[])[0]?.data||now.slice(0,4)+'-01-01';
+      to=now;
+    }else{from=now.slice(0,4)+'-01-01';to=now;}
+  }else{from=document.getElementById('ra-da')?.value||now.slice(0,7)+'-01';to=document.getElementById('ra-a')?.value||now;}
+  return{from,to};
+}
+
+function _raOpFilter(){
+  const v=document.getElementById('ra-op')?.value||'';
+  return v;
+}
+
+function _destroyRaCharts(){
+  _raCharts.forEach(c=>{try{c.destroy();}catch(e){}});
+  _raCharts=[];
+}
+
+async function renderReportAvanzato(){
+  const el=document.getElementById('ra-content');
+  if(!el)return;
+  _destroyRaCharts();
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    const{from,to}=await _raGetRange();
+    const opF=_raOpFilter();
+    const cantF=document.getElementById('ra-cant')?.value||'';
+    if(_raTab==='ore')await _raOre(el,from,to,opF,cantF);
+    else if(_raTab==='materiali')await _raMateriali(el,from,to,opF,cantF);
+    else if(_raTab==='attrezzatura')await _raAttrezzatura(el,from,to,opF,cantF);
+    else if(_raTab==='pranzi')await _raPranzi(el,from,to,opF,cantF);
+    else if(_raTab==='spese')await _raSpese(el,from,to,cantF);
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">Errore: ${e.message}</div>`;}
+}
+
+async function _raOre(el,from,to,opF,cantF){
+  let q=sb.from('giornate').select('*,operai(nome,cognome,agenzia),cantieri(nome)').gte('data',from).lte('data',to);
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
+  const{data:gio}=await q.order('data');
+  let lista=gio||[];
+  if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
+  if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
+  const totOre=lista.reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
+  const totStr=lista.reduce((s,g)=>s+parseFloat(g.ore_straordinari||0),0);
+  // Per operaio
+  const byOp={};lista.forEach(g=>{const k=g.operaio_id;if(!byOp[k])byOp[k]={op:g.operai,ore:0,str:0,giorni:0};byOp[k].ore+=parseFloat(g.ore_totali||0);byOp[k].str+=parseFloat(g.ore_straordinari||0);byOp[k].giorni++;});
+  // Per cantiere
+  const byCant={};lista.forEach(g=>{const k=g.cantiere_id;if(!byCant[k])byCant[k]={nome:g.cantieri?.nome||'—',ore:0};byCant[k].ore+=parseFloat(g.ore_totali||0);});
+  const opKeys=Object.keys(byOp);const cantKeys=Object.keys(byCant);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="ore-box"><div class="ore-num">${totOre.toFixed(1)}</div><div class="ore-lbl">ore totali</div></div>
+      <div class="ore-box"><div class="ore-num" style="color:var(--green)">${totStr.toFixed(1)}</div><div class="ore-lbl">straordinari</div></div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Per collaboratore</div>
+      <table class="rtable"><thead><tr><th>Collaboratore</th><th>Ruolo</th><th>Giorni</th><th>Ore</th><th>Straord.</th></tr></thead><tbody>
+      ${opKeys.sort((a,b)=>byOp[b].ore-byOp[a].ore).map(k=>`<tr><td>${escHtml(byOp[k].op?.nome||'')+ ' '+escHtml(byOp[k].op?.cognome||'')}${byOp[k].op?.agenzia?'<span style="font-size:9px;background:var(--orange);color:#fff;border-radius:4px;padding:1px 4px;margin-left:4px">AGZ</span>':''}</td><td style="color:var(--t2)">${escHtml(byOp[k].op?.ruolo||'')}</td><td class="mono">${byOp[k].giorni}</td><td class="mono">${byOp[k].ore.toFixed(1)}h</td><td class="mono" style="color:var(--green)">${byOp[k].str>0?byOp[k].str.toFixed(1)+'h':'—'}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Ore per cantiere</div>
+      <canvas id="ra-chart-cant" style="max-height:220px"></canvas>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Ore per collaboratore</div>
+      <canvas id="ra-chart-op" style="max-height:220px"></canvas>
+    </div>`;
+  // Grafici
+  if(cantKeys.length&&typeof Chart!=='undefined'){
+    const cCant=new Chart(document.getElementById('ra-chart-cant'),{type:'bar',data:{labels:cantKeys.map(k=>byCant[k].nome),datasets:[{label:'Ore',data:cantKeys.map(k=>byCant[k].ore),backgroundColor:'#c8a84b88',borderColor:'#c8a84b',borderWidth:1}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#857f73'},grid:{color:'#2e2e2e'}},y:{ticks:{color:'#f0ece2'},grid:{color:'#2e2e2e'}}}}});
+    _raCharts.push(cCant);
+    const cOp=new Chart(document.getElementById('ra-chart-op'),{type:'bar',data:{labels:opKeys.map(k=>(byOp[k].op?.nome||'')+(byOp[k].op?.cognome?' '+byOp[k].op.cognome:'')),datasets:[{label:'Ore',data:opKeys.map(k=>byOp[k].ore),backgroundColor:'#5588e088',borderColor:'#5588e0',borderWidth:1}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#f0ece2',maxRotation:30},grid:{color:'#2e2e2e'}},y:{ticks:{color:'#857f73'},grid:{color:'#2e2e2e'}}}}});
+    _raCharts.push(cOp);
+  }
+}
+
+async function _raMateriali(el,from,to,opF,cantF){
+  let q=sb.from('giornate').select('data,materiale_giorno,cantieri(nome),operai(nome,cognome)').gte('data',from).lte('data',to).not('materiale_giorno','is',null);
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
+  const{data:gio}=await q.order('data',{ascending:false});
+  let lista=gio||[];
+  el.innerHTML=`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Materiali utilizzati (${lista.length} giornate)</div>
+      ${!lista.length?'<div style="color:var(--t2);font-size:13px">Nessun materiale registrato nel periodo.</div>':
+        '<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Collaboratore</th><th>Materiale</th></tr></thead><tbody>'+
+        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(g.cantieri?.nome||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.materiale_giorno||'')}</td></tr>`).join('')+
+        '</tbody></table></div>'}
+    </div>`;
+}
+
+async function _raAttrezzatura(el,from,to,opF,cantF){
+  let q=sb.from('giornate').select('data,attrezzatura_giorno,cantieri(nome),operai(nome,cognome)').gte('data',from).lte('data',to).not('attrezzatura_giorno','is',null);
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
+  const{data:gio}=await q.order('data',{ascending:false});
+  let lista=gio||[];
+  el.innerHTML=`
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Attrezzatura utilizzata (${lista.length} giornate)</div>
+      ${!lista.length?'<div style="color:var(--t2);font-size:13px">Nessuna attrezzatura registrata nel periodo.</div>':
+        '<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Collaboratore</th><th>Attrezzatura</th></tr></thead><tbody>'+
+        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(g.cantieri?.nome||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.attrezzatura_giorno||'')}</td></tr>`).join('')+
+        '</tbody></table></div>'}
+    </div>`;
+}
+
+async function _raPranzi(el,from,to,opF,cantF){
+  let q=sb.from('giornate').select('data,operaio_id,operai(nome,cognome,ruolo)').gte('data',from).lte('data',to);
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
+  const{data:gio}=await q;
+  let lista=gio||[];
+  const pastiOn=IMPOSTAZIONI.pasti_abilitati==='1';
+  const tarCarp=parseFloat(IMPOSTAZIONI.pasto_carpentiere)||18;
+  const tarLatt=parseFloat(IMPOSTAZIONI.pasto_lattoniere)||15;
+  const tarAlt=parseFloat(IMPOSTAZIONI.pasto_altri)||18;
+  if(!pastiOn){el.innerHTML='<div style="background:var(--s2);border-radius:var(--r);padding:20px;text-align:center;color:var(--t2)">Il modulo pasti non è attivo.<br><small>Attivalo in Impostazioni → Indennità pasti.</small></div>';return;}
+  const byOp={};lista.forEach(g=>{const k=g.operaio_id;if(!byOp[k])byOp[k]={op:g.operai,giorni:0,tot:0};byOp[k].giorni++;const ruolo=(g.operai?.ruolo||'').toLowerCase();const tar=ruolo.includes('lattoniere')?tarLatt:tarCarp;byOp[k].tot+=tar;});
+  const grandTot=Object.values(byOp).reduce((s,v)=>s+v.tot,0);
+  el.innerHTML=`
+    <div style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--gold);font-weight:700">Totale indennità pasti</span><span style="font-family:'DM Mono';font-size:18px;color:var(--gold)">${grandTot.toFixed(2)} CHF</span></div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
+      <table class="rtable"><thead><tr><th>Collaboratore</th><th>Ruolo</th><th>Giorni</th><th>Indennità totale</th></tr></thead><tbody>
+      ${Object.values(byOp).sort((a,b)=>b.tot-a.tot).map(v=>`<tr><td>${escHtml(v.op?.nome||'')} ${escHtml(v.op?.cognome||'')}</td><td style="color:var(--t2)">${escHtml(v.op?.ruolo||'')}</td><td class="mono">${v.giorni}</td><td class="mono" style="color:var(--gold)">${v.tot.toFixed(2)} CHF</td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+async function _raSpese(el,from,to,cantF){
+  let q=sb.from('spese').select('*,cantieri(nome),operai(nome,cognome)').gte('data',from).lte('data',to);
+  if(cantF)q=q.eq('cantiere_id',cantF);
+  const{data:spese}=await q.order('data',{ascending:false});
+  const lista=spese||[];
+  const totDaPag=lista.filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+parseFloat(x.importo||0),0);
+  const totPag=lista.filter(s=>s.stato_pag!=='Da pagare').reduce((s,x)=>s+parseFloat(x.importo||0),0);
+  const nonPrev=lista.filter(s=>s.non_prevista);
+  // Grafico torta per tipo spesa
+  const byTipo={};lista.forEach(s=>{const t=s.tipo_spesa||'Altro';if(!byTipo[t])byTipo[t]=0;byTipo[t]+=parseFloat(s.importo||0);});
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="ore-box" style="border-color:rgba(224,85,85,.3)"><div class="ore-num" style="color:var(--red);font-size:20px">${totDaPag.toFixed(0)}</div><div class="ore-lbl">CHF da pagare</div></div>
+      <div class="ore-box"><div class="ore-num" style="font-size:20px">${totPag.toFixed(0)}</div><div class="ore-lbl">CHF pagati</div></div>
+    </div>
+    ${nonPrev.length?`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:8px 12px;font-size:12px;color:var(--red);margin-bottom:12px">⚠️ ${nonPrev.length} spese non previste da preventivo (${nonPrev.reduce((s,x)=>s+parseFloat(x.importo||0),0).toFixed(2)} CHF)</div>`:''}
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Ripartizione per tipo</div>
+      <canvas id="ra-chart-spese" style="max-height:220px;max-width:220px;margin:0 auto;display:block"></canvas>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
+      <table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Descrizione</th><th>Tipo</th><th>Importo</th><th>Stato</th></tr></thead><tbody>
+      ${lista.map(s=>`<tr><td class="mono">${fmtDate(s.data)}</td><td>${escHtml(s.cantieri?.nome||'—')}</td><td>${escHtml(s.descrizione||'')}</td><td>${escHtml(s.tipo_spesa||'—')}</td><td class="mono">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</td><td><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:${s.stato_pag==='Da pagare'?'rgba(224,85,85,.15)':'rgba(76,175,125,.15)'};color:${s.stato_pag==='Da pagare'?'var(--red)':'var(--green)'}">${escHtml(s.stato_pag||'—')}</span></td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  if(Object.keys(byTipo).length&&typeof Chart!=='undefined'){
+    const colors=['#c8a84b','#5588e0','#4caf7d','#e08840','#e05555','#a855f7','#06b6d4'];
+    const tipoKeys=Object.keys(byTipo);
+    const cTorta=new Chart(document.getElementById('ra-chart-spese'),{type:'doughnut',data:{labels:tipoKeys,datasets:[{data:tipoKeys.map(k=>byTipo[k]),backgroundColor:tipoKeys.map((_,i)=>colors[i%colors.length]+'cc'),borderColor:'#1a1a1a',borderWidth:2}]},options:{responsive:true,plugins:{legend:{labels:{color:'#f0ece2',font:{size:11}}}}}});
+    _raCharts.push(cTorta);
+  }
+}
+
+// Export Excel Report Avanzato
+async function exportRaExcel(){
+  const{from,to}=await _raGetRange();
+  const opF=_raOpFilter();const cantF=document.getElementById('ra-cant')?.value||'';
+  const wb=XLSX.utils.book_new();
+  const tabs={ore:'Ore',materiali:'Materiali',attrezzatura:'Attrezzatura',pranzi:'Pranzi',spese:'Spese'};
+  for(const[tab,sheetName] of Object.entries(tabs)){
+    try{
+      let rows=[[]];
+      if(tab==='ore'){
+        let q=sb.from('giornate').select('data,ore_totali,ore_straordinari,operai(nome,cognome,ruolo),cantieri(nome)').gte('data',from).lte('data',to);
+        if(cantF)q=q.eq('cantiere_id',cantF);if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
+        const{data}=await q.order('data');let lista=data||[];
+        if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
+        if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
+        rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari'],...lista.map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0)])];
+      }else if(tab==='materiali'){
+        let q=sb.from('giornate').select('data,materiale_giorno,operai(nome,cognome),cantieri(nome)').gte('data',from).lte('data',to).not('materiale_giorno','is',null);
+        if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
+        rows=[['Data','Cantiere','Collaboratore','Materiale'],...(data||[]).map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.materiale_giorno||''])];
+      }else if(tab==='attrezzatura'){
+        let q=sb.from('giornate').select('data,attrezzatura_giorno,operai(nome,cognome),cantieri(nome)').gte('data',from).lte('data',to).not('attrezzatura_giorno','is',null);
+        if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
+        rows=[['Data','Cantiere','Collaboratore','Attrezzatura'],...(data||[]).map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.attrezzatura_giorno||''])];
+      }else if(tab==='spese'){
+        let q=sb.from('spese').select('data,descrizione,tipo_spesa,importo,valuta,stato_pag,cantieri(nome)').gte('data',from).lte('data',to);
+        if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
+        rows=[['Data','Cantiere','Descrizione','Tipo','Importo','Valuta','Stato'],...(data||[]).map(s=>[s.data,s.cantieri?.nome||'',s.descrizione||'',s.tipo_spesa||'',parseFloat(s.importo||0),s.valuta||'CHF',s.stato_pag||''])];
+      }
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),sheetName);
+    }catch(e){}
+  }
+  XLSX.writeFile(wb,`CT_ReportAvanzato_${from}_${to}.xlsx`);showToast('Excel scaricato ✓');
+}
+
+async function exportRaPDF(){
+  const{from,to}=await _raGetRange();
+  const el=document.getElementById('ra-content');
+  const nomeAz=IMPOSTAZIONI.nome_azienda||'CantiereMaster';
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report Avanzato</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:13px;color:#111;padding:24px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th,td{padding:5px 8px;border:1px solid #ddd;text-align:left}th{background:#f7f7f7}@media print{.no-print{display:none!important}}</style></head><body>
+    <div class="no-print" style="margin-bottom:12px"><button onclick="window.print()" style="background:#c8a84b;border:none;color:#fff;padding:7px 18px;border-radius:4px;cursor:pointer;font-weight:700">🖨️ Stampa / PDF</button></div>
+    <h2 style="color:#c8a84b;margin-bottom:4px">${escHtml(nomeAz)} — Report Avanzato</h2>
+    <p style="color:#888;font-size:12px;margin-bottom:16px">Periodo: ${from} → ${to}</p>
+    ${el?.innerHTML||''}
+    </body></html>`);
+  w.document.close();
+}
+// ── PUNTO E — COMPRESSIONE FOTO + RETENTION ALERT ──
+function compressImg(file,maxKB,callback){
+  if(!file.type.startsWith('image/')){callback(file);return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height,quality=0.85;
+      const canvas=document.createElement('canvas');
+      const tryCompress=()=>{
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{
+          if(!blob){callback(file);return;}
+          if(blob.size<=maxKB*1024||quality<=0.3){
+            callback(new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg',lastModified:Date.now()}));
+          } else {
+            if(blob.size>maxKB*1024*2){w=Math.round(w*0.8);h=Math.round(h*0.8);}
+            quality=Math.max(0.3,quality-0.15);
+            tryCompress();
+          }
+        },'image/jpeg',quality);
+      };
+      tryCompress();
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function controllaAlertFoto(){
+  try{
+    if(PROF?.ruolo!=='titolare'){
+      const respId=IMPOSTAZIONI.foto_resp_id;
+      if(respId&&respId!==USER.id)return;
+    }
+    const giorni=['dom','lun','mar','mer','gio','ven','sab'];
+    const giorno=IMPOSTAZIONI.foto_alert_giorno||'lun';
+    const oggi=new Date().getDay();
+    if(giorni.indexOf(giorno)!==oggi)return;
+    const soglia=new Date();soglia.setDate(soglia.getDate()-75);
+    const{data:foto}=await sb.from('foto').select('id,storage_path,nome_file,data_foto').eq('archiviata',false).lt('data_foto',soglia.toISOString());
+    if(!foto||!foto.length)return;
+    _fotoDaArchiviare=foto;
+    const urgenti=foto.filter(f=>f.data_foto&&(new Date()-new Date(f.data_foto))>90*24*3600*1000);
+    const banner=document.getElementById('home-foto-banner');
+    if(!banner)return;
+    const col=urgenti.length?'var(--red)':'var(--orange)';
+    const icona=urgenti.length?'🔴':'🟡';
+    const maxGg=urgenti.length?'90':'75';
+    banner.style.display='block';
+    banner.innerHTML='<div style="background:'+col+'22;border:1px solid '+col+';border-radius:var(--r);padding:12px 14px;margin-bottom:14px">'
+      +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+icona+' '+foto.length+' foto da archiviare (>'+maxGg+' gg)</div>'
+      +'<div style="font-size:12px;color:var(--t2);margin-bottom:10px">Scarica lo ZIP e archivia le foto per liberare spazio.</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="btn btn-s btn-sm" onclick="scaricaZipFoto()">⬇️ Scarica ZIP</button>'
+      +'<button class="btn btn-g btn-sm" onclick="archiviaFotoVecchie()">✅ Ho scaricato, archivia</button>'
+      +'</div></div>';
+  }catch(e){console.warn('controllaAlertFoto:',e.message);}
+}
+
+async function scaricaZipFoto(){
+  if(!_fotoDaArchiviare||!_fotoDaArchiviare.length){showToast('Nessuna foto da scaricare','e');return;}
+  try{
+    await caricaJSZip();
+    const zip=new JSZip();
+    showToast('Preparazione ZIP...','i');
+    for(const f of _fotoDaArchiviare){
+      try{
+        const{data:u}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,300);
+        if(!u?.signedUrl)continue;
+        const resp=await fetch(u.signedUrl);if(!resp.ok)continue;
+        zip.file(f.nome_file||f.id+'.jpg',await resp.blob());
+      }catch(err){console.warn('zip skip:',f.id,err.message);}
+    }
+    const content=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(content);
+    a.download='foto_archivio_'+new Date().toISOString().slice(0,10)+'.zip';
+    a.click();URL.revokeObjectURL(a.href);
+    showToast('ZIP scaricato ✓');
+  }catch(e){showToast('Errore ZIP: '+e.message,'e');}
+}
+
+async function archiviaFotoVecchie(){
+  if(!_fotoDaArchiviare||!_fotoDaArchiviare.length)return;
+  try{
+    const ids=_fotoDaArchiviare.map(f=>f.id);
+    await sb.from('foto').update({archiviata:true}).in('id',ids);
+    _fotoDaArchiviare=[];
+    const banner=document.getElementById('home-foto-banner');
+    if(banner)banner.style.display='none';
+    showToast('Foto archiviate ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function salvaImpostazioniFoto(){
+  try{
+    const giorno=document.getElementById('foto-alert-giorno')?.value||'lun';
+    const respId=document.getElementById('foto-alert-resp')?.value||'';
+    IMPOSTAZIONI.foto_alert_giorno=giorno;
+    IMPOSTAZIONI.foto_resp_id=respId;
+    await sb.from('impostazioni').upsert({chiave:'foto_alert_giorno',valore:giorno},{onConflict:'chiave'});
+    await sb.from('impostazioni').upsert({chiave:'foto_resp_id',valore:respId||''},{onConflict:'chiave'});
+    showToast('Impostazioni foto salvate ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
 // ── NAVIGAZIONE INDIETRO ──
 let _navHistory=[];
 
@@ -3541,6 +4460,7 @@ function navTo(dest){
     const _rm=document.getElementById('rep-mese');
     if(_rm&&!_rm.value){const _n=new Date();_rm.value=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0');}
     renderReport();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report'}]);}
+  else if(dest==='report-avanzato'){pushNav('report-avanzato');showScr('report-avanzato');document.getElementById('top-title').textContent='Report avanzato';initReportAvanzato();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Report',onclick:"navTo('report')"},{label:'Report avanzato'}]);}
   else if(dest==='admin'){pushNav('admin');showScr('admin');document.getElementById('top-title').textContent='Admin';renderAdmin();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin'}]);}
   else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
@@ -3558,6 +4478,41 @@ function navTo(dest){
 
 // ── SITUAZIONE ──
 async function renderSituazione(){
+  // Timbrature da assegnare (P23/P24 — solo titolare/responsabile)
+  if(['titolare','responsabile'].includes(PROF?.ruolo)){
+    const elTimbW=document.getElementById('sit-timb-wrap');
+    const elTimb=document.getElementById('sit-timb-content');
+    if(elTimb){
+      try{
+        const{data:timb}=await sb.from('giornate').select('id,data,ora_inizio_timbrata,ora_fine_timbrata,pausa_minuti_timbrata,operai(nome,cognome)').eq('cantiere_da_assegnare',true).order('data',{ascending:false});
+        if(timb&&timb.length){
+          if(elTimbW)elTimbW.style.display='block';
+          const cantOpts=(CANTIERI||[]).filter(c=>c.stato!=='completato').map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join('');
+          let html='';
+          timb.forEach(g=>{
+            const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||60);
+            html+=`<div style="background:var(--s1);border:1px solid rgba(200,168,75,.4);border-radius:var(--r);padding:12px 14px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+                <div>
+                  <div style="font-size:13px;font-weight:700">${g.operai?.nome||'—'} ${g.operai?.cognome||''}</div>
+                  <div style="font-size:12px;color:var(--t2);font-family:'DM Mono',monospace">${fmtDate(g.data)} &nbsp;${g.ora_inizio_timbrata||'—'} → ${g.ora_fine_timbrata||'in corso'}${g.ora_fine_timbrata?' ('+ore+'h)':''}</div>
+                </div>
+                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(200,168,75,.15);color:var(--gold);font-weight:700;flex-shrink:0">Da assegnare</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select class="fs" id="assegna-cant-${g.id}" style="flex:1"><option value="">— Cantiere —</option>${cantOpts}</select>
+                <button class="btn btn-g btn-sm" onclick="assegnaCantiereTimbrata('${g.id}')">✓ Assegna</button>
+              </div>
+            </div>`;
+          });
+          elTimb.innerHTML=html;
+        }else{
+          if(elTimbW)elTimbW.style.display='none';
+        }
+      }catch(e){if(elTimbW)elTimbW.style.display='none';}
+    }
+  }
+
   const elSp=document.getElementById('sit-spese-content');
   elSp.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
@@ -3822,10 +4777,13 @@ function openModalSpesa(id){
   openModal('mod-spesa');
 }
 function addFotoSpesa(e){
-  spFotoFile=e.target.files[0];if(!spFotoFile)return;
-  const r=new FileReader();
-  r.onload=ev=>{const isImg=spFotoFile.type.startsWith('image/');document.getElementById('sp-foto-prv').innerHTML=isImg?`<img src="${ev.target.result}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:200px;object-fit:contain">`:`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:13px;color:var(--t2);margin-top:8px">📄 ${spFotoFile.name}</div>`;};
-  r.readAsDataURL(spFotoFile);e.target.value='';
+  const raw=e.target.files[0];if(!raw)return;e.target.value='';
+  compressImg(raw,800,compressed=>{
+    spFotoFile=compressed;
+    const r=new FileReader();
+    r.onload=ev=>{const isImg=raw.type.startsWith('image/');document.getElementById('sp-foto-prv').innerHTML=isImg?`<img src="${ev.target.result}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:200px;object-fit:contain">`:`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:13px;color:var(--t2);margin-top:8px">📄 ${raw.name}</div>`;};
+    r.readAsDataURL(compressed);
+  });
 }
 async function salvaSpesa(){
   const cantId=document.getElementById('sp-cant-sel').value,data=document.getElementById('sp-data').value,desc=document.getElementById('sp-desc').value.trim();
@@ -4347,7 +5305,7 @@ function apriSchermoPiano(){
   const data=document.getElementById('piano-data')?.value||nowZurich().date;
   const SB_URL_P='https://wgidgbauhivdctdxfjnk.supabase.co';
   const SB_KEY_P='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
-  const nomeAz=document.getElementById('top-brand')?.querySelector('b')?.textContent||'CT Sàgl';
+  const nomeAz=IMPOSTAZIONI.nome_azienda||'CantiereMaster';
   const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Piano del giorno — '+data+'</title>'
     +'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>'
     +'<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0d0d0d;color:#f0ece2;font-family:Arial,sans-serif;padding:32px}'
@@ -4472,13 +5430,16 @@ async function eliminaMezzo(id){
 async function caricaNomeAzienda(){
   try{
     const{data,error}=await sb.from('impostazioni').select('valore').eq('chiave','nome_azienda').maybeSingle();
-    // Se errore 406 (tabella non esiste) ignora silenziosamente
     if(error&&(error.code==='42P01'||error.message?.includes('406')))return;
-    if(!error&&data?.valore){
-      const el=document.querySelector('#top-brand b');
-      if(el)el.textContent=data.valore;
-    }
-  }catch(e){/* usa default CT Sàgl */}
+    const nome=((!error&&data?.valore)?data.valore:null)||IMPOSTAZIONI.nome_azienda||'CantiereMaster';
+    if(!error&&data?.valore)IMPOSTAZIONI.nome_azienda=data.valore;
+    aggiornaNomeAzienda(nome);
+  }catch(e){aggiornaNomeAzienda(IMPOSTAZIONI.nome_azienda||'CantiereMaster');}
+}
+function aggiornaNomeAzienda(nome){
+  nome=nome||IMPOSTAZIONI.nome_azienda||'CantiereMaster';
+  const ids=['top-brand-nome','login-nome-az','loading-nome-az'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=nome;});
 }
 
 async function salvaNomeAzienda(){
@@ -4487,9 +5448,60 @@ async function salvaNomeAzienda(){
   try{
     const{error}=await sb.from('impostazioni').upsert({chiave:'nome_azienda',valore:nome},{onConflict:'chiave'});
     if(error)throw error;
-    const el=document.querySelector('#top-brand b');
-    if(el)el.textContent=nome;
+    IMPOSTAZIONI.nome_azienda=nome;
+    aggiornaNomeAzienda(nome);
+    const fi=document.getElementById('imp-nome-az');if(fi)fi.value=nome;
     showToast('Nome azienda aggiornato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+// ══════════════════════════════════════════════════
+// CAPITOLATO (P22)
+// ══════════════════════════════════════════════════
+function uploadCapitolato(cantId){
+  const input=document.createElement('input');
+  input.type='file';input.accept='.pdf,.xlsx,.xls,.ods';
+  input.onchange=async function(){
+    const file=input.files[0];
+    if(!file)return;
+    if(file.size>20*1024*1024){showToast('File troppo grande (max 20 MB)','e');return;}
+    showToast('Caricamento in corso…');
+    try{
+      const ext=file.name.split('.').pop();
+      const path=`${cantId}/${Date.now()}_capitolato.${ext}`;
+      const{error:upErr}=await sb.storage.from('cantiere-docs').upload(path,file,{upsert:true,contentType:file.type});
+      if(upErr)throw upErr;
+      // Upsert in preventivi_cantiere (crea o aggiorna)
+      const{data:existing}=await sb.from('preventivi_cantiere').select('id').eq('cantiere_id',cantId).maybeSingle();
+      const payload={cantiere_id:cantId,file_path:path,file_nome:file.name,file_caricato_il:new Date().toISOString(),caricato_da:USER.id};
+      if(existing?.id){
+        await sb.from('preventivi_cantiere').update(payload).eq('id',existing.id);
+      }else{
+        await sb.from('preventivi_cantiere').insert({...payload,n_voci:0,totale:0});
+      }
+      showToast('Capitolato caricato ✓');
+      renderCantiere();
+    }catch(e){showToast('Errore upload: '+e.message,'e');}
+  };
+  input.click();
+}
+async function apriCapitolato(path,nome){
+  try{
+    const{data,error}=await sb.storage.from('cantiere-docs').createSignedUrl(path,60*60);
+    if(error)throw error;
+    const ext=(nome||path).split('.').pop().toLowerCase();
+    if(['pdf'].includes(ext)){window.open(data.signedUrl,'_blank');}
+    else{// Excel: scarica
+      const a=document.createElement('a');a.href=data.signedUrl;a.download=nome||'capitolato';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    }
+  }catch(e){showToast('Errore apertura: '+e.message,'e');}
+}
+async function eliminaCapitolato(cantId,path){
+  if(!confirm('Eliminare il capitolato?'))return;
+  try{
+    await sb.storage.from('cantiere-docs').remove([path]);
+    await sb.from('preventivi_cantiere').update({file_path:null,file_nome:null,file_caricato_il:null,caricato_da:null}).eq('cantiere_id',cantId);
+    showToast('Capitolato eliminato ✓');renderCantiere();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
@@ -4771,7 +5783,25 @@ const MODULI_APP = [
   {id:'admin',           label:'Admin / Impostazioni',desc:'Cantieri, impostazioni, permessi',               gruppoDefault:['titolare']},
   {id:'magazzino',       label:'Magazzino',           desc:'Lista materiali da portare in cantiere',          gruppoDefault:['titolare','responsabile']},
   {id:'committente',     label:'Dati committente',    desc:'Nome, telefono, email del committente',           gruppoDefault:['titolare','responsabile','caposquadra']},
+  {id:'capitolato',      label:'Capitolato',          desc:'Preventivo/capitolato PDF o Excel del cantiere',  gruppoDefault:['titolare','responsabile','caposquadra']},
 ];
+
+/* ══════════════════════════════════════════════════
+   SQL DA ESEGUIRE IN SUPABASE (una tantum):
+
+   -- CAPITOLATO (P22)
+   ALTER TABLE preventivi_cantiere ADD COLUMN IF NOT EXISTS file_path text;
+   ALTER TABLE preventivi_cantiere ADD COLUMN IF NOT EXISTS file_nome text;
+   ALTER TABLE preventivi_cantiere ADD COLUMN IF NOT EXISTS file_caricato_il timestamptz;
+   ALTER TABLE preventivi_cantiere ADD COLUMN IF NOT EXISTS caricato_da uuid REFERENCES auth.users(id);
+   -- Crea bucket: Supabase Dashboard → Storage → New bucket → "cantiere-docs" → Public: false
+
+   -- TIMBRATURA (P23/P24)
+   ALTER TABLE giornate ADD COLUMN IF NOT EXISTS cantiere_da_assegnare boolean DEFAULT false;
+   ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ora_inizio_timbrata text;
+   ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ora_fine_timbrata text;
+   ALTER TABLE giornate ADD COLUMN IF NOT EXISTS pausa_minuti_timbrata integer DEFAULT 60;
+══════════════════════════════════════════════════ */
 
 // Controlla se utente ha accesso a modulo (considera ruolo + eccezioni)
 function utenteHaAccesso(utente, moduloId, eccezioni){
@@ -5153,6 +6183,9 @@ async function renderPersonale(){
     if(filtroStato==='attivi')lista=lista.filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=oggi);
     else if(filtroStato==='ex')lista=lista.filter(o=>o.data_fine_rapporto&&o.data_fine_rapporto<oggi);
     if(filtroRuolo)lista=lista.filter(o=>o.ruolo===filtroRuolo);
+    const filtroAgenzia=document.getElementById('pers-filtro-agenzia')?.value||'';
+    if(filtroAgenzia==='agenzia')lista=lista.filter(o=>!!o.agenzia);
+    else if(filtroAgenzia==='diretti')lista=lista.filter(o=>!o.agenzia);
     const ricerca=(document.getElementById('pers-ricerca')?.value||'').trim().toLowerCase();
     if(ricerca)lista=lista.filter(o=>(o.nome+' '+o.cognome).toLowerCase().includes(ricerca)||(o.cognome+' '+o.nome).toLowerCase().includes(ricerca));
     lista=lista.slice().sort(function(a,b){return (a.cognome||'').localeCompare(b.cognome||'')||( a.nome||'').localeCompare(b.nome||'');});
@@ -5178,9 +6211,10 @@ async function renderPersonale(){
       div.id='op-card-'+o.id;
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
       const icon=ruoloIcon[o.ruolo]||'👤';
+      const agzBadge=o.agenzia?'<span style="font-size:9px;background:var(--orange);color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">AGZ'+(o.nome_agenzia?' · '+escHtml(o.nome_agenzia):'')+'</span>':'';
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
         +'<div>'
-        +'<div style="font-size:15px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+'<span id="op-badge-'+o.id+'"></span></div>'
+        +'<div style="font-size:15px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+agzBadge+'<span id="op-badge-'+o.id+'"></span></div>'
         +'<div style="font-size:12px;color:var(--t2)">'+o.ruolo
         +(isEx?'&nbsp;<span style="color:var(--red);font-weight:700">· Ex (fine '+o.data_fine_rapporto+')</span>':'')
         +(hasAccount?'&nbsp;<span style="color:var(--green);font-size:10px">● App attiva</span>':'')
@@ -5325,16 +6359,18 @@ function openModalBolla(id){
 }
 
 function addFotoBolla(e){
-  bolleFotoFile=e.target.files[0];if(!bolleFotoFile)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const isImg=bolleFotoFile.type.startsWith('image/');
-    document.getElementById('bol-foto-prv').innerHTML=isImg
-      ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
-      :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+bolleFotoFile.name+'</div>';
-  };
-  r.readAsDataURL(bolleFotoFile);
-  e.target.value='';
+  const raw=e.target.files[0];if(!raw)return;e.target.value='';
+  compressImg(raw,800,compressed=>{
+    bolleFotoFile=compressed;
+    const r=new FileReader();
+    r.onload=ev=>{
+      const isImg=raw.type.startsWith('image/');
+      document.getElementById('bol-foto-prv').innerHTML=isImg
+        ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
+        :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+raw.name+'</div>';
+    };
+    r.readAsDataURL(compressed);
+  });
 }
 
 async function salvaBolla(){
@@ -5488,7 +6524,9 @@ function _buildMatRow(m){
   chk.addEventListener('change',function(){toggleMateriale(m.id,chk.checked);});
   const info=document.createElement('div');
   info.style.cssText='flex:1;min-width:0';
-  info.innerHTML='<div style="font-size:14px;font-weight:700'+(m.fatto?';text-decoration:line-through;color:var(--t2)':'')+'">'+escHtml(m.nome)+'</div>'
+  info.innerHTML='<div style="font-size:14px;font-weight:700'+(m.fatto?';text-decoration:line-through;color:var(--t2)':'')+'">'+escHtml(m.nome)
+    +(m.categoria?'<span style="font-size:10px;background:var(--s3);border-radius:8px;padding:1px 7px;margin-left:6px;color:var(--t2);font-weight:400">'+escHtml(m.categoria)+'</span>':'')
+    +'</div>'
     +(m.quantita?'<div style="font-size:12px;color:var(--t2)">Qtà: '+escHtml(m.quantita)+'</div>':'')
     +(m.note?'<div style="font-size:12px;color:var(--t2)">📝 '+escHtml(m.note)+'</div>':'');
   const btn=document.createElement('button');
@@ -5505,6 +6543,8 @@ function openModalMateriale(m){
   document.getElementById('mat-nome').value=m?m.nome:'';
   document.getElementById('mat-qta').value=m?m.quantita||'':'';
   document.getElementById('mat-note').value=m?m.note||'':'';
+  popolaCatMatSelect(m?.categoria||'Altro');
+  document.getElementById('mat-cat-new-wrap').style.display='none';
   const delW=document.getElementById('del-mat-w');
   delW.innerHTML='';
   if(m){
@@ -5521,11 +6561,13 @@ async function salvaMateriale(){
   if(!nome){showToast('Inserisci una descrizione','e');return;}
   const btn=document.getElementById('btn-salva-mat');btn.textContent='⏳...';btn.disabled=true;
   try{
+    const catVal=document.getElementById('mat-cat')?.value;
     const payload={
       cantiere_id:_matCantiereId,
       nome:nome,
       quantita:document.getElementById('mat-qta').value.trim()||null,
       note:document.getElementById('mat-note').value.trim()||null,
+      categoria:(catVal&&catVal!=='__nuova__')?catVal:null,
     };
     if(_editMatId){
       const{error}=await sb.from('materiali_cantiere').update(payload).eq('id',_editMatId);
@@ -6156,16 +7198,18 @@ async function segnaGruPagato(id, pagato){
 }
 
 function addFotoGru(e){
-  gruFotoFile=e.target.files[0];if(!gruFotoFile)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const isImg=gruFotoFile.type.startsWith('image/');
-    document.getElementById('gru-foto-prv').innerHTML=isImg
-      ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
-      :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+gruFotoFile.name+'</div>';
-  };
-  r.readAsDataURL(gruFotoFile);
-  e.target.value='';
+  const raw=e.target.files[0];if(!raw)return;e.target.value='';
+  compressImg(raw,800,compressed=>{
+    gruFotoFile=compressed;
+    const r=new FileReader();
+    r.onload=ev=>{
+      const isImg=raw.type.startsWith('image/');
+      document.getElementById('gru-foto-prv').innerHTML=isImg
+        ?'<img src="'+ev.target.result+'" style="width:100%;border-radius:var(--rsm);margin-top:4px;max-height:180px;object-fit:contain">'
+        :'<div style="background:var(--s2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t2);margin-top:4px">📄 '+raw.name+'</div>';
+    };
+    r.readAsDataURL(compressed);
+  });
 }
 
 function openModalGru(id){
@@ -6366,6 +7410,21 @@ async function caricaImpostazioniSchermata(){
     if(map.pasto_carpentiere)document.getElementById('imp-pasto-carp').value=map.pasto_carpentiere;
     if(map.pasto_lattoniere)document.getElementById('imp-pasto-latt').value=map.pasto_lattoniere;
     if(map.pasto_altri)document.getElementById('imp-pasto-altri').value=map.pasto_altri;
+    // Timbratura
+    const timbArr=document.getElementById('timb-set-arr');
+    const timbPausa=document.getElementById('timb-set-pausa');
+    if(timbArr&&map.timb_arrotondamento)timbArr.value=map.timb_arrotondamento;
+    if(timbPausa&&map.timb_pausa)timbPausa.value=map.timb_pausa;
+    // Categorie materiali
+    if(map.categorie_materiali)IMPOSTAZIONI.categorie_materiali=map.categorie_materiali;
+    _renderImpCatList();
+    // Alert foto
+    const alertGiorno=document.getElementById('foto-alert-giorno');
+    const alertResp=document.getElementById('foto-alert-resp');
+    if(alertGiorno&&map.foto_alert_giorno)alertGiorno.value=map.foto_alert_giorno;
+    if(alertResp){
+      alertResp.innerHTML='<option value="">— Tutti —</option>'+(OPERAI_TUTTI||[]).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+(o.nome||o.email||o.id)+'</option>').join('');
+    }
   }catch(e){console.warn('caricaImpostazioni:',e.message);}
 }
 
