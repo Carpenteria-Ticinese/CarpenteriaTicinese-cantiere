@@ -1082,10 +1082,6 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl">Città</label><input type="text" class="fi" id="c-citta" placeholder="Bellinzona"></div>
     </div>
     <div class="fg"><label class="fl">Committente (nome)</label><input type="text" class="fi" id="c-comm"></div>
-    <div class="row2">
-      <div class="fg"><label class="fl">Telefono committente</label><input type="tel" class="fi" id="c-tel-comm" placeholder="+41 79 ..."></div>
-      <div class="fg"><label class="fl">Email committente</label><input type="email" class="fi" id="c-email-comm" placeholder="nome@email.ch"></div>
-    </div>
     <div class="fg"><label class="fl">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
     <hr>
     <div class="row2">
@@ -2539,12 +2535,10 @@ async function renderCantiere(){
       </div>
       ${totSpeseDaPagare>0?`<div style="background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:8px;cursor:pointer" onclick="apriSpeseCantiere()">🧾 Spese da pagare: <strong>${totSpeseDaPagare.toFixed(2)} CHF</strong> → tocca per vedere</div>`:''}
       ${totRegiaDaFatt>0?`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--gold);margin-bottom:8px;cursor:pointer" onclick="apriRegiaCantiere()">🔧 Regia da fatturare: <strong>${totRegiaDaFatt.toFixed(2)} CHF</strong> → tocca per vedere</div>`:''}
-      ${utenteHaAccesso(PROF,'committente',null)&&(curCant.committente||curCant.tel_committente||curCant.email_committente)?`
+      ${utenteHaAccesso(PROF,'committente',null)&&curCant.committente?`
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Committente</div>
-        ${curCant.committente?`<div style="font-size:14px;font-weight:700;margin-bottom:4px">👤 ${escHtml(curCant.committente)}</div>`:''}
-        ${curCant.tel_committente?`<div style="font-size:13px;margin-bottom:2px"><a href="tel:${curCant.tel_committente}" style="color:var(--blue);text-decoration:none">📞 ${escHtml(curCant.tel_committente)}</a></div>`:''}
-        ${curCant.email_committente?`<div style="font-size:13px"><a href="mailto:${curCant.email_committente}" style="color:var(--blue);text-decoration:none">✉️ ${escHtml(curCant.email_committente)}</a></div>`:''}
+        <div style="font-size:14px;font-weight:700">👤 ${escHtml(curCant.committente)}</div>
       </div>`:''}
       <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">➕ Nuova giornata</button>
       <div class="row2" style="margin-bottom:8px">
@@ -3626,15 +3620,13 @@ function openModalCantiere(id){
   document.getElementById('c-cap').value=c?.cap||'';
   document.getElementById('c-citta').value=c?.citta||'';
   document.getElementById('c-comm').value=c?.committente||'';
-  document.getElementById('c-tel-comm').value=c?.tel_committente||'';
-  document.getElementById('c-email-comm').value=c?.email_committente||'';
   document.getElementById('c-stato').value=c?.stato||'Attivo';
   document.getElementById('del-cant-w').innerHTML=c?`<button class="btn btn-d" onclick="deleteCant('${id}')">🗑️ Elimina</button>`:'';
   openModal('mod-cant');
 }
 async function saveCant(){
   const nome=document.getElementById('c-nome').value.trim();if(!nome){showToast('Inserisci nome','e');return;}
-  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,committente:document.getElementById('c-comm').value.trim()||null,tel_committente:document.getElementById('c-tel-comm').value.trim()||null,email_committente:document.getElementById('c-email-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
+  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
   try{
     if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid);if(error)throw error;}
     else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
