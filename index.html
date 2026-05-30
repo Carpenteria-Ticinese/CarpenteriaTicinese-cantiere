@@ -702,6 +702,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
           <input type="number" class="fi" id="timb-set-pausa" value="60" min="0" max="180" step="5" style="font-family:'DM Mono',monospace">
         </div>
       </div>
+      <div style="margin-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Offset entrata (min preparazione)</div>
+        <div class="fg">
+          <label class="fl">Offset globale (min) — per tutti</label>
+          <input type="number" class="fi" id="timb-offset-globale" value="0" min="0" max="60" step="1" style="font-family:'DM Mono',monospace">
+        </div>
+        <div id="timb-offset-ruoli-wrap" style="margin-top:8px"></div>
+      </div>
       <button class="btn btn-g btn-sm" onclick="salvaImpostazioniTimb()">💾 Salva impostazioni timbratura</button>
     </div>
 
@@ -2404,7 +2412,7 @@ async function loadImpostazioni(){
   if(cached)try{IMPOSTAZIONI={...IMPOSTAZIONI,...JSON.parse(cached)};}catch(e){}
   // Carica chiavi remote da Supabase
   try{
-    const{data}=await sb.from('impostazioni').select('chiave,valore').in('chiave',['timb_arrotondamento','timb_pausa','categorie_materiali','foto_alert_giorno','foto_resp_id']);
+    const{data}=await sb.from('impostazioni').select('chiave,valore');
     (data||[]).forEach(r=>{IMPOSTAZIONI[r.chiave]=r.valore;});
   }catch(e){}
 }
@@ -3847,12 +3855,15 @@ async function renderTimbratura(){
         <button onclick="timbraEntrata()" class="btn btn-g" style="width:100%;font-size:18px;padding:18px;border-radius:14px;letter-spacing:1px">✅ ENTRATA</button>
       </div>`;
   } else if(!g.ora_fine_timbrata){
+    const offsetMostrato=opId?await getOffsetPerOperaio(opId):0;
+    const prepNota=offsetMostrato>0?`<div style="font-size:11px;color:var(--t2);margin-top:-24px;margin-bottom:32px">(include + ${offsetMostrato} min preparazione)</div>`:'<div style="margin-bottom:32px"></div>';
     el.innerHTML=`
       <div style="text-align:center;padding:32px 16px">
         <div style="font-size:48px;margin-bottom:16px">🔴</div>
         <div style="font-size:20px;font-weight:700;margin-bottom:6px">${giornoLabel}</div>
         <div style="font-size:13px;color:var(--t2);margin-bottom:4px">Entrata registrata alle</div>
-        <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green);margin-bottom:32px">${g.ora_inizio_timbrata}</div>
+        <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green);margin-bottom:8px">${g.ora_inizio_timbrata}</div>
+        ${prepNota}
         <button onclick="timbraUscita('${g.id}')" class="btn" style="width:100%;font-size:18px;padding:18px;border-radius:14px;letter-spacing:1px;background:var(--red);color:#fff">🔚 USCITA</button>
       </div>`;
   } else {
@@ -3873,17 +3884,23 @@ async function renderTimbratura(){
 
 async function timbraEntrata(){
   const passo=parseInt(IMPOSTAZIONI.timb_arrotondamento||'5');
-  const oraArr=arrotondaMinuti(new Date(),passo);
   const {time}=nowZurich();
   // Arrotonda l'orario Zurigo
   const [hh,mm]=time.split(':').map(Number);
   const totalMin=hh*60+mm;
-  const step=passo;
-  const arrotMin=Math.round(totalMin/step)*step;
-  const ora=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
+  const arrotMin=Math.round(totalMin/passo)*passo;
+  const oraTimbrata=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
   const oggi=nowZurich().date;
   const opId=await _getOpId();
   if(!opId){showToast('Operaio non trovato — controlla il profilo','e');return;}
+  // Applica offset preparazione (anticipa l'orario di inizio registrato)
+  const offsetMin=await getOffsetPerOperaio(opId);
+  let ora=oraTimbrata;
+  if(offsetMin>0){
+    const [oh,om]=oraTimbrata.split(':').map(Number);
+    const totFin=(oh*60+om+offsetMin);
+    ora=String(Math.floor(totFin/60)%24).padStart(2,'0')+':'+String(totFin%60).padStart(2,'0');
+  }
   try{
     const{data:g}=await sb.from('giornate').select('id').eq('operaio_id',opId).eq('data',oggi).maybeSingle();
     if(g){
@@ -3893,7 +3910,8 @@ async function timbraEntrata(){
       const{error}=await sb.from('giornate').insert({operaio_id:opId,data:oggi,ora_inizio_timbrata:ora,cantiere_da_assegnare:true,created_by:USER.id});
       if(error)throw error;
     }
-    showToast('Entrata registrata: '+ora+' ✓');
+    const toastMsg=offsetMin>0?'Entrata registrata: '+ora+' (+ '+offsetMin+' min prep) ✓':'Entrata registrata: '+ora+' ✓';
+    showToast(toastMsg);
     renderTimbratura();aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -4030,16 +4048,53 @@ function stampaQR(){
   w.document.close();
 }
 
+async function renderOffsetRuoli(){
+  const wrap=document.getElementById('timb-offset-ruoli-wrap');
+  if(!wrap)return;
+  const roles=[...new Set((OPERAI||[]).map(o=>o.ruolo).filter(Boolean))].sort();
+  if(!roles.length){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div style="font-size:11px;color:var(--t2);margin-bottom:6px">Offset per ruolo (sovrascrive globale se ≥ 0)</div>'+
+    roles.map(r=>{
+      const key='offset_entrata_'+r.replace(/\s+/g,'_');
+      const val=IMPOSTAZIONI[key]??'';
+      return `<div class="fg" style="margin-bottom:6px"><label class="fl">${r}</label>`+
+        `<input type="number" class="fi" id="timb-offset-ruolo-${r.replace(/\s+/g,'_')}" value="${val}" min="0" max="60" step="1" placeholder="usa globale" style="font-family:'DM Mono',monospace"></div>`;
+    }).join('');
+}
+
+async function getOffsetPerOperaio(operaioId){
+  const op=(OPERAI||[]).find(o=>o.id===operaioId);
+  const ruolo=(op?.ruolo||'').replace(/\s+/g,'_');
+  if(ruolo){
+    const keyRuolo='offset_entrata_'+ruolo;
+    const offR=parseInt(IMPOSTAZIONI[keyRuolo]??'-1');
+    if(!isNaN(offR)&&offR>=0)return offR;
+  }
+  return parseInt(IMPOSTAZIONI['offset_entrata_globale']||'0');
+}
+
 async function salvaImpostazioniTimb(){
   const arr=document.getElementById('timb-set-arr')?.value||'5';
   const pausa=document.getElementById('timb-set-pausa')?.value||'60';
+  const offsetGlob=document.getElementById('timb-offset-globale')?.value||'0';
   IMPOSTAZIONI.timb_arrotondamento=arr;
   IMPOSTAZIONI.timb_pausa=pausa;
+  IMPOSTAZIONI.offset_entrata_globale=offsetGlob;
+  const upserts=[
+    sb.from('impostazioni').upsert({chiave:'timb_arrotondamento',valore:arr},{onConflict:'chiave'}),
+    sb.from('impostazioni').upsert({chiave:'timb_pausa',valore:pausa},{onConflict:'chiave'}),
+    sb.from('impostazioni').upsert({chiave:'offset_entrata_globale',valore:offsetGlob},{onConflict:'chiave'}),
+  ];
+  const roles=[...new Set((OPERAI||[]).map(o=>o.ruolo).filter(Boolean))];
+  roles.forEach(r=>{
+    const key='offset_entrata_'+r.replace(/\s+/g,'_');
+    const el=document.getElementById('timb-offset-ruolo-'+r.replace(/\s+/g,'_'));
+    const val=el?.value||'';
+    IMPOSTAZIONI[key]=val;
+    upserts.push(sb.from('impostazioni').upsert({chiave:key,valore:val},{onConflict:'chiave'}));
+  });
   try{
-    await Promise.all([
-      sb.from('impostazioni').upsert({chiave:'timb_arrotondamento',valore:arr},{onConflict:'chiave'}),
-      sb.from('impostazioni').upsert({chiave:'timb_pausa',valore:pausa},{onConflict:'chiave'})
-    ]);
+    await Promise.all(upserts);
     showToast('Impostazioni timbratura salvate ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -7415,6 +7470,17 @@ async function caricaImpostazioniSchermata(){
     const timbPausa=document.getElementById('timb-set-pausa');
     if(timbArr&&map.timb_arrotondamento)timbArr.value=map.timb_arrotondamento;
     if(timbPausa&&map.timb_pausa)timbPausa.value=map.timb_pausa;
+    const timbOffGlob=document.getElementById('timb-offset-globale');
+    if(timbOffGlob)timbOffGlob.value=map.offset_entrata_globale||'0';
+    Object.assign(IMPOSTAZIONI,map);
+    await renderOffsetRuoli();
+    // Imposta valori offset per ruolo (dopo che renderOffsetRuoli ha creato i campi)
+    const roles=[...new Set((OPERAI||[]).map(o=>o.ruolo).filter(Boolean))];
+    roles.forEach(r=>{
+      const key='offset_entrata_'+r.replace(/\s+/g,'_');
+      const inp=document.getElementById('timb-offset-ruolo-'+r.replace(/\s+/g,'_'));
+      if(inp&&map[key]!==undefined)inp.value=map[key];
+    });
     // Categorie materiali
     if(map.categorie_materiali)IMPOSTAZIONI.categorie_materiali=map.categorie_materiali;
     _renderImpCatList();
