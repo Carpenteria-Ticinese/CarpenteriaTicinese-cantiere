@@ -3337,8 +3337,8 @@ function aggiungiOperaioAData(data, cantId){
     document.getElementById('top-title').textContent='Aggiungi operaio';
     setBread([{label:'Cantieri',onclick:"goHome()"},{label:cant.nome,onclick:'goToCantiere()'},{label:'Aggiungi operaio'}]);
     document.getElementById('g1-data').value=data;
-    document.getElementById('g1-cant-nome').textContent=cant.nome;
-    document.getElementById('g1-cant-picker').style.display='none';
+    const _g1cd=document.getElementById('g1-cant-display');if(_g1cd)_g1cd.textContent=cant.nome;
+    // g1-cant-picker rimosso
     // Disabilita cambio data (è aggiunta a giornata esistente)
     const dataInp=document.getElementById('g1-data');
     if(dataInp){dataInp.max=data;dataInp.min=data;}
@@ -3357,7 +3357,7 @@ function startNuovaGiornata(){
   g1DataEl.value=GIO.data;
   g1DataEl.max=GIO.data; // non si può andare nel futuro
   g1DataEl.removeAttribute('min');
-  document.getElementById('g1-cant-nome').textContent=curCant.nome;
+  if(document.getElementById('g1-cant-display'))document.getElementById('g1-cant-display').textContent=curCant.nome;
   document.getElementById('g1-ini').value='07:00';document.getElementById('g1-fine').value='17:00';document.getElementById('g1-pausa').value='60';
   document.getElementById('g1-mat').value='';document.getElementById('g1-visite').value='';
   document.querySelectorAll('.meteo-b').forEach(b=>b.classList.remove('on'));
@@ -7854,7 +7854,6 @@ function selezionaCantiereDaRicerca(id, nome){
 }
 
 // Patch startNuovaGiornata: aggiorna g1-cant-display quando curCant è impostato
-const _origStartNuova = typeof startNuovaGiornata !== 'undefined' ? startNuovaGiornata : null;
 
 // ════════════════════════════════════════════════════════════════
 // PUNTO 28 — PAGATO DA: popola select al caricamento form spese
@@ -7875,12 +7874,7 @@ function populatePagatoDa(){
   });
 }
 
-// Override openModal per mod-spesa: chiama populatePagatoDa
-const _origOpenModal = typeof openModal !== 'undefined' ? openModal : null;
-function openModal(id){
-  if(_origOpenModal) _origOpenModal(id);
-  if(id === 'mod-spesa') setTimeout(populatePagatoDa, 50);
-}
+// P28: populatePagatoDa è già chiamata da populateSpeseSel() → openModalSpesa()
 
 // ════════════════════════════════════════════════════════════════
 // PUNTO 29 — AUDIT TRAIL
