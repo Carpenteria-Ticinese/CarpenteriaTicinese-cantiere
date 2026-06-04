@@ -11,7 +11,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CT Cantiere">
 <title>CT Cantiere</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Sentry — monitoraggio errori (P30) -->
+<script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+Sentry.init({
+  dsn: "DA_CONFIGURARE",
+  environment: "production",
+  release: "cantieremaster@1.0.0",
+  tracesSampleRate: 0.1,
+});
+</script>
+<!-- Leaflet — mappa cantieri (P26) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -334,6 +346,22 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   </div>
 
   <!-- TIMBRATURA QR (P23/P24) -->
+
+  <!-- MAPPA CANTIERI — P26 -->
+  <div class="scr" id="scr-mappa">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <select class="fs" id="mappa-filtro" onchange="renderMappa()" style="max-width:180px">
+        <option value="oggi">📅 Oggi</option>
+        <option value="tutti">🏗️ Tutti attivi</option>
+      </select>
+      <div id="mappa-status" style="font-size:12px;color:var(--t2)"></div>
+    </div>
+    <div id="mappa-container" style="width:100%;height:calc(100vh - 200px);min-height:360px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--s1)">
+      <div id="leaflet-map" style="width:100%;height:100%"></div>
+    </div>
+    <div id="mappa-lista" style="margin-top:12px"></div>
+    <div class="bsp"></div>
+  </div>
   <div class="scr" id="scr-timbratura">
     <div id="timb-content">
       <!-- renderizzato da renderTimbratura() -->
@@ -350,7 +378,16 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="sec">Dati della giornata</div>
       <div class="row2">
         <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="g1-data" onchange="GIO.data=this.value"></div>
-        <div class="fg"><label class="fl">Cantiere</label><div id="g1-cant-nome" style="font-size:15px;font-weight:700;padding:11px 0;color:var(--gold)">—</div></div>
+        <div class="fg" id="g1-cant-wrap">
+  <label class="fl">Cantiere</label>
+  <div id="g1-cant-sel-box">
+    <div id="g1-cant-display" style="font-size:15px;font-weight:700;padding:8px 0 4px;color:var(--gold);cursor:pointer" onclick="document.getElementById('g1-cant-search-wrap').style.display='block';document.getElementById('g1-cant-search').focus()"></div>
+    <div id="g1-cant-search-wrap" style="display:none">
+      <input type="text" class="fi" id="g1-cant-search" placeholder="Scrivi nome cantiere..." oninput="onCercaCantiere(this.value)" autocomplete="off" style="margin-bottom:4px">
+      <div id="g1-cant-risultati" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;max-height:200px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
       </div>
       <div class="fg">
         <label class="fl">Meteo</label>
@@ -980,6 +1017,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label">Piano del g.</div></div>
     <div class="nb" id="nb-personale" onclick="navTo('personale')" style="display:none"><div class="nb-icon">👷</div><div class="nb-label">Personale</div></div>
     <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label">Incassi</div></div>
+    <div class="nb" id="nb-mappa" onclick="navTo('mappa')" style="display:none"><div class="nb-icon">🗺️</div><div class="nb-label">Mappa</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label">Admin</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label">Gru</div></div>
     <div class="nb" id="nb-notifiche" onclick="navTo('notifiche')">
@@ -1187,6 +1225,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="sp-data"></div>
     </div>
     <div class="fg"><label class="fl">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
+    <div class="fg"><label class="fl">Pagato da</label><select class="fs" id="sp-pagato-da"></select></div>
     <div class="row2">
       <div class="fg"><label class="fl">Tipo documento</label>
         <select class="fs" id="sp-tipo-doc"><option>Scontrino</option><option>Bolla di consegna</option><option>Fattura fornitore</option><option>Altro</option></select>
@@ -1754,6 +1793,7 @@ const SB_KEY='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
 let USER=null,PROF=null;
+let AZIENDA_ID=null; // P25 multi-tenant
 let CANTIERI=[],OPERAI=[],OPERAI_TUTTI=[],LAVS=[];
 let curCant=null;
 let fFiles=[],fB64=[];
@@ -2175,6 +2215,18 @@ async function afterLogin(){
   try{
     const {data:prof}=await sb.from('profili').select('*').eq('id',USER.id).single();
     PROF=prof;
+    // P25 — risolvi AZIENDA_ID
+    AZIENDA_ID = PROF?.azienda_id || null;
+    if(!AZIENDA_ID){
+      try{
+        const {data:az}=await sb.from('aziende').select('id').eq('slug','carpenteria-ticinese').single();
+        if(az){
+          AZIENDA_ID=az.id;
+          await sb.from('profili').update({azienda_id:AZIENDA_ID}).eq('id',USER.id);
+          PROF={...PROF,azienda_id:AZIENDA_ID};
+        }
+      }catch(e){console.warn('azienda_id non trovato:',e.message);}
+    }
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     verificaColonneGiornate(); // node check — logga SQL in console se colonne mancanti
     const nome=(PROF?.nome||USER.email).split('@')[0];
@@ -2187,6 +2239,7 @@ async function afterLogin(){
       document.getElementById('app').classList.add('is-tit');
       const nbAdmin=document.getElementById('nb-admin');
       if(nbAdmin)nbAdmin.style.display='flex';
+      const nbMappa=document.getElementById('nb-mappa');if(nbMappa)nbMappa.style.display='flex'; // P26
       const nbPiano=document.getElementById('nb-piano');
       if(nbPiano)nbPiano.style.display='flex';
       // Titolare: nascondi "Il mio giorno"
@@ -3168,7 +3221,8 @@ async function salvaModificaGiornata(){
       }
       mgFotoFiles=[];
     }
-    closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
+    logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
+closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
   }catch(err){showToast('Errore: '+err.message,'e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
 }
@@ -3295,6 +3349,8 @@ function aggiungiOperaioAData(data, cantId){
 
 // ── NUOVA GIORNATA ──
 function startNuovaGiornata(){
+  // P27: aggiorna display cantiere nel widget search
+  setTimeout(()=>{ const d=document.getElementById('g1-cant-display'); if(d&&curCant){d.textContent=curCant.nome||'—';d.style.display='block';const w=document.getElementById('g1-cant-search-wrap');if(w)w.style.display='none';} },50);
   const now=new Date();
   GIO={cantId:curCant.id,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
   const g1DataEl=document.getElementById('g1-data');
@@ -3392,7 +3448,7 @@ async function salvaOperaio(){
   const zonaTrasferta=document.getElementById('g2-trasferta').value||'locale';
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id,azienda_id:AZIENDA_ID}).select().single();
     if(ge)throw ge;
     const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
       const sel=row.querySelector('.voce-sel');const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;if(!oreV)return null;
@@ -3629,11 +3685,12 @@ async function saveCant(){
   const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
   try{
     if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid);if(error)throw error;}
-    else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
+    else{const _pC={...p,azienda_id:AZIENDA_ID};const{error}=await sb.from('cantieri').insert(_pC);if(error)throw error;}
   }catch(e){showToast('Errore: '+e.message,'e');return;}
   await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Salvato ✓');
 }
-async function deleteCant(id){if(!confirm('Eliminare cantiere?'))return;await sb.from('cantieri').delete().eq('id',id);await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();}
+async function deleteCant(id){if(!confirm('Eliminare cantiere?'))return;const _cDel=CANTIERI.find(x=>x.id===id);await sb.from('cantieri').delete().eq('id',id);logAzione('cantieri',id,'DELETE',{nome:_cDel?.nome}); // P29
+await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();}
 function openModalOp(id){
   editOid=id;
   // Cerca in OPERAI_TUTTI (include ex-operai) così il titolare può modificarli
@@ -3691,7 +3748,7 @@ async function saveOp(){
       const{error}=await sb.from('operai').update(p).eq('id',editOid);
       if(error)throw error;
     }else{
-      const{error}=await sb.from('operai').insert(p);
+      const{error}=await sb.from('operai').insert({...p,azienda_id:AZIENDA_ID});
       if(error)throw error;
     }
     await loadOperai();closeModal('mod-op');renderPersonale();showToast('Salvato ✓');
@@ -4496,7 +4553,7 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
@@ -4512,6 +4569,14 @@ function navTo(dest){
   else if(dest==='contabilita'){pushNav('contabilita');showScr('contabilita');document.getElementById('top-title').textContent='Contabilità';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Contabilità'}]);renderContabilitaGlobale();}
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent='Tiri Gru';populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
 
+  else if(dest==='mappa'){
+    const ruolo2=PROF?.ruolo||'caposquadra';
+    if(!['titolare','responsabile'].includes(ruolo2)){showToast('Accesso non autorizzato','e');return;}
+    pushNav('mappa');showScr('mappa');
+    document.getElementById('top-title').textContent='Mappa cantieri';
+    setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Mappa cantieri'}]);
+    renderMappa();
+  }
   else if(dest==='personale'){pushNav('personale');showScr('personale');document.getElementById('top-title').textContent='Personale';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Personale'}]);loadOperai().then(()=>renderPersonale());return;}
   else if(dest==='pagamenti'){pushNav('pagamenti');showScr('pagamenti');document.getElementById('top-title').textContent='Incassi';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Incassi'}]);renderPagamenti();return;}
   else if(dest==='impostazioni'){navToImpostazioni();return;}
@@ -4671,6 +4736,8 @@ async function toggleFatturato(id,statoAttuale,btn){
 // ── SPESE — con download ──
 let spFotoFile=null,editSpId=null;
 function populateSpeseSel(){
+  setTimeout(populatePagatoDa, 100); // P28
+
   const opts='<option value="">Tutti i cantieri</option>'+CANTIERI.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('sp-cantiere').innerHTML=opts;
   document.getElementById('sp-cant-sel').innerHTML=CANTIERI.filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
@@ -4838,7 +4905,7 @@ async function salvaSpesa(){
   const btn=document.getElementById('btn-salva-sp');btn.textContent='⏳...';btn.disabled=true;
   try{
     const statoPag=document.getElementById('sp-stato-pag').value;
-    const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id};
+    const _pagDa=document.getElementById('sp-pagato-da')?.value||USER.id;const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id,pagato_da:_pagDa||USER.id,azienda_id:AZIENDA_ID};
     let spId=editSpId;
     if(editSpId)await sb.from('spese').update(payload).eq('id',editSpId);
     else{const {data:newSp,error}=await sb.from('spese').insert(payload).select().single();if(error)throw error;spId=newSp.id;}
@@ -7231,6 +7298,7 @@ async function salvaGruPagato(){
     await sb.from('tiri_gru').update({pagato,importo_pagato:imp}).eq('id',id);
     showToast(pagato?'✅ Segnato come pagato':'💰 Pagamento parziale salvato');
     closeModal('mod-gru-dettaglio');
+    logAzione('tiri_gru',id,'UPDATE',{importo_pagato:imp,pagato}); // P29
     renderGru();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -7604,6 +7672,236 @@ function chiudiBenvenuto(){
   if(el){el.style.opacity='0';setTimeout(()=>{el.style.display='none';el.style.opacity='1';},400);}
 }
 
+
+// ════════════════════════════════════════════════════════════════
+// PUNTO 25 — MULTI-TENANT helper
+// ════════════════════════════════════════════════════════════════
+
+function getAziendaId(){ return AZIENDA_ID; }
+
+// ════════════════════════════════════════════════════════════════
+// PUNTO 26 — MAPPA CANTIERI (Leaflet + OpenStreetMap)
+// ════════════════════════════════════════════════════════════════
+
+let _mappaLeaflet = null;
+
+async function geocodifica(cantiere){
+  if(!cantiere.indirizzo) return null;
+  const addr = [cantiere.indirizzo, cantiere.comune, cantiere.cap, cantiere.paese||'Svizzera'].filter(Boolean).join(', ');
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`, {headers:{'Accept-Language':'it'}});
+    const d = await r.json();
+    if(d && d[0]){
+      const lat = parseFloat(d[0].lat), lng = parseFloat(d[0].lon);
+      await sb.from('cantieri').update({lat, lng}).eq('id', cantiere.id);
+      return {lat, lng};
+    }
+  }catch(e){ console.warn('geocodifica fallita:', e.message); }
+  return null;
+}
+
+async function renderMappa(){
+  const filtro = document.getElementById('mappa-filtro')?.value || 'oggi';
+  const status = document.getElementById('mappa-status');
+  const lista  = document.getElementById('mappa-lista');
+  if(status) status.textContent = '⏳ Caricamento…';
+
+  // Cantieri attivi
+  let cantAttivi = (CANTIERI || []).filter(c => c.stato === 'Attivo' || c.stato === 'In pausa' || c.stato === 'attivo');
+
+  // Filtro oggi: usa piano_giorno per trovare cantieri con squadre oggi
+  let pianOggi = [];
+  if(filtro === 'oggi'){
+    const oggi = nowZurich().date;
+    try{
+      const {data:pg} = await sb.from('piano_giorno').select('cantiere_id, squadra, operaio_id, operai(nome,cognome)').eq('data', oggi).eq('azienda_id', AZIENDA_ID);
+      pianOggi = pg || [];
+    }catch(e){ console.warn('piano_giorno:', e.message); }
+    const idCantOggi = new Set(pianOggi.map(p => p.cantiere_id));
+    cantAttivi = cantAttivi.filter(c => idCantOggi.has(c.id));
+  }
+
+  if(!cantAttivi.length){
+    if(status) status.textContent = filtro==='oggi' ? 'Nessun cantiere attivo oggi' : 'Nessun cantiere attivo';
+    if(lista) lista.innerHTML = '<div style="color:var(--t2);font-size:13px;text-align:center;padding:20px">Nessun cantiere da mostrare</div>';
+    return;
+  }
+
+  // Geocodifica quelli senza lat/lng
+  let geocCount = 0;
+  for(const c of cantAttivi){
+    if(!c.lat || !c.lng){
+      const pos = await geocodifica(c);
+      if(pos){ c.lat = pos.lat; c.lng = pos.lng; geocCount++; }
+      await new Promise(r => setTimeout(r, 300)); // rispetta rate limit Nominatim
+    }
+  }
+
+  const conPos = cantAttivi.filter(c => c.lat && c.lng);
+  if(status) status.textContent = `${conPos.length} cantieri con posizione${geocCount > 0 ? ` (${geocCount} geocodificati)` : ''}`;
+
+  // Inizializza o reimposta la mappa Leaflet
+  const mapEl = document.getElementById('leaflet-map');
+  if(!mapEl) return;
+  if(_mappaLeaflet){ _mappaLeaflet.remove(); _mappaLeaflet = null; }
+
+  if(!conPos.length){
+    mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#857f73;font-size:14px">Nessun cantiere con indirizzo trovato. Aggiungi l\'indirizzo nei dettagli cantiere.</div>';
+    return;
+  }
+
+  _mappaLeaflet = L.map('leaflet-map');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(_mappaLeaflet);
+
+  const bounds = [];
+  for(const cant of conPos){
+    const squadraInfo = filtro === 'oggi'
+      ? (() => {
+          const righe = pianOggi.filter(p => p.cantiere_id === cant.id);
+          if(!righe.length) return 'Nessuna squadra';
+          const nomi = righe.map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(Boolean);
+          const squadra = righe.find(r => r.squadra)?.squadra;
+          return squadra ? `🏗️ ${squadra}` : nomi.slice(0,3).join(', ');
+        })()
+      : cant.stato || 'Attivo';
+
+    const icon = L.divIcon({
+      html: `<div style="background:#c8a84b;color:#1a1000;font-size:11px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">${cant.nome||'Cantiere'}</div>`,
+      className: '',
+      iconAnchor: [0, 0]
+    });
+
+    const marker = L.marker([cant.lat, cant.lng], {icon}).addTo(_mappaLeaflet);
+    marker.bindPopup(`
+      <div style="font-family:sans-serif;min-width:180px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px">🏗️ ${cant.nome||'—'}</div>
+        <div style="font-size:12px;color:#555;margin-bottom:4px">📍 ${cant.indirizzo||'—'}</div>
+        <div style="font-size:12px;color:#555;margin-bottom:4px">👷 ${squadraInfo}</div>
+        ${cant.responsabile ? `<div style="font-size:12px;color:#555">📋 ${cant.responsabile}</div>` : ''}
+        <div style="margin-top:8px"><span style="background:${cant.stato==='Attivo'?'#e8f5e9':'#fff3e0'};color:${cant.stato==='Attivo'?'#2e7d32':'#e65100'};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${cant.stato||'—'}</span></div>
+      </div>
+    `);
+    bounds.push([cant.lat, cant.lng]);
+  }
+
+  if(bounds.length === 1) _mappaLeaflet.setView(bounds[0], 14);
+  else _mappaLeaflet.fitBounds(bounds, {padding:[30,30]});
+
+  // Lista testuale sotto la mappa
+  if(lista){
+    lista.innerHTML = '<div style="font-size:11px;color:var(--t2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Cantieri su mappa</div>' +
+      conPos.map(c => {
+        const righe = filtro==='oggi' ? pianOggi.filter(p=>p.cantiere_id===c.id) : [];
+        const nomi  = righe.map(r=>(r.operai?.nome||'')+' '+(r.operai?.cognome||'')).filter(Boolean).join(', ');
+        return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="_mappaLeaflet.setView([${c.lat},${c.lng}],16)">
+          <div>
+            <div style="font-weight:700;font-size:14px">${c.nome||'—'}</div>
+            <div style="font-size:11px;color:var(--t2)">${c.indirizzo||'—'}</div>
+            ${nomi ? `<div style="font-size:11px;color:var(--gold);margin-top:2px">👷 ${nomi}</div>` : ''}
+          </div>
+          <div style="font-size:20px">📍</div>
+        </div>`;
+      }).join('');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// PUNTO 27 — RICERCA CANTIERE in nuova giornata
+// ════════════════════════════════════════════════════════════════
+
+function filtraCantieri(testo){
+  const t = testo.toLowerCase().trim();
+  if(!t) return [];
+  return (CANTIERI||[])
+    .filter(c => (c.stato==='Attivo'||c.stato==='attivo'||c.stato==='In pausa') &&
+                 c.nome && c.nome.toLowerCase().includes(t))
+    .slice(0,5);
+}
+
+function onCercaCantiere(testo){
+  const el = document.getElementById('g1-cant-risultati');
+  if(!el) return;
+  const ris = filtraCantieri(testo);
+  if(!testo.trim()){
+    el.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--t2)">Scrivi almeno 1 lettera…</div>';
+    return;
+  }
+  if(!ris.length){
+    el.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--t2)">Nessun cantiere trovato</div>';
+    return;
+  }
+  el.innerHTML = ris.map(c => `
+    <div onclick="selezionaCantiereDaRicerca('${c.id}','${(c.nome||'').replace(/'/g,"\\'")}',this)"
+         style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;transition:background .15s"
+         onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
+      ${c.nome}
+      <div style="font-size:11px;font-weight:400;color:var(--t2);margin-top:2px">${c.indirizzo||'—'}</div>
+    </div>`).join('');
+}
+
+function selezionaCantiereDaRicerca(id, nome){
+  curCant = CANTIERI.find(c => c.id===id) || {id, nome};
+  GIO.cantId = id;
+  const disp = document.getElementById('g1-cant-display');
+  if(disp){ disp.textContent = nome; disp.style.display = 'block'; }
+  const wrap = document.getElementById('g1-cant-search-wrap');
+  if(wrap) wrap.style.display = 'none';
+  const search = document.getElementById('g1-cant-search');
+  if(search) search.value = '';
+}
+
+// Patch startNuovaGiornata: aggiorna g1-cant-display quando curCant è impostato
+const _origStartNuova = typeof startNuovaGiornata !== 'undefined' ? startNuovaGiornata : null;
+
+// ════════════════════════════════════════════════════════════════
+// PUNTO 28 — PAGATO DA: popola select al caricamento form spese
+// ════════════════════════════════════════════════════════════════
+
+function populatePagatoDa(){
+  const sel = document.getElementById('sp-pagato-da');
+  if(!sel) return;
+  sel.innerHTML = '';
+  // Opzione default: utente corrente
+  const meNome = PROF?.nome || USER?.email || 'Io';
+  sel.add(new Option(`${meNome} (io)`, USER?.id || ''));
+  // Tutti gli operai attivi
+  (OPERAI||[]).forEach(op => {
+    if(op.id && op.id !== USER?.id){
+      sel.add(new Option((op.nome||'')+(op.cognome?' '+op.cognome:''), op.id));
+    }
+  });
+}
+
+// Override openModal per mod-spesa: chiama populatePagatoDa
+const _origOpenModal = typeof openModal !== 'undefined' ? openModal : null;
+function openModal(id){
+  if(_origOpenModal) _origOpenModal(id);
+  if(id === 'mod-spesa') setTimeout(populatePagatoDa, 50);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PUNTO 29 — AUDIT TRAIL
+// ════════════════════════════════════════════════════════════════
+
+async function logAzione(tabella, record_id, azione, dati={}){
+  try{
+    await sb.from('audit_log').insert({
+      azienda_id: AZIENDA_ID,
+      tabella,
+      record_id: record_id || null,
+      azione,
+      dati: dati,
+      user_id: USER?.id || null
+    });
+  }catch(e){ console.warn('audit log error:', e.message); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// END PUNTI 25-30
+// ════════════════════════════════════════════════════════════════
 </script>
 </body>
 </html>
