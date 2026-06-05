@@ -6611,6 +6611,8 @@ async function renderMaterialiCantiere(cantiereId){
       return;
     }
     el.innerHTML='';
+    // Normalizza fatto null → false (se colonna appena aggiunta con DEFAULT)
+    data.forEach(function(m){ m.fatto = !!m.fatto; });
     const daPortare=data.filter(function(m){return !m.fatto;});
     const portati=data.filter(function(m){return m.fatto;});
     if(daPortare.length){
@@ -6678,6 +6680,7 @@ async function salvaMateriale(){
     const catVal=document.getElementById('mat-cat')?.value;
     const payload={
       cantiere_id:_matCantiereId,
+      azienda_id:AZIENDA_ID,
       nome:nome,
       quantita:document.getElementById('mat-qta').value.trim()||null,
       note:document.getElementById('mat-note').value.trim()||null,
