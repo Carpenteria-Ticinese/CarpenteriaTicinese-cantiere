@@ -2219,13 +2219,20 @@ async function afterLogin(){
     AZIENDA_ID = PROF?.azienda_id || null;
     if(!AZIENDA_ID){
       try{
-        const {data:az}=await sb.from('aziende').select('id').eq('slug','carpenteria-ticinese').single();
-        if(az){
+        // P25 — cerca azienda per slug; se la tabella non esiste o query fallisce
+        // AZIENDA_ID rimane null e l'app continua normalmente (no showLogin)
+        const {data:az, error:azErr}=await sb.from('aziende').select('id')
+          .eq('slug','carpenteria-ticinese').maybeSingle();
+        if(!azErr && az){
           AZIENDA_ID=az.id;
-          await sb.from('profili').update({azienda_id:AZIENDA_ID}).eq('id',USER.id);
+          await sb.from('profili').update({azienda_id:AZIENDA_ID}).eq('id',USER.id).throwOnError();
           PROF={...PROF,azienda_id:AZIENDA_ID};
         }
-      }catch(e){console.warn('azienda_id non trovato:',e.message);}
+        // azErr (es. 404 tabella, PGRST116 nessuna riga) → AZIENDA_ID=null, si continua
+      }catch(e){
+        console.warn('P25 azienda lookup fallito, continuo con AZIENDA_ID=null:', e.message);
+        AZIENDA_ID=null; // esplicito: garantisce che afterLogin prosegua
+      }
     }
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     verificaColonneGiornate(); // node check — logga SQL in console se colonne mancanti
@@ -6837,7 +6844,7 @@ async function inviaNotifica(){
     if(!profili.length){showToast('Nessun destinatario trovato','e');return;}
     // Inserisci notifiche
     const rows=profili.map(function(p){
-      return{destinatario_id:p.id,mittente_id:USER.id,titolo:titolo,testo:testo,letta:false,tipo:'piano'};
+      return{user_id:p.id,mittente_id:USER.id,titolo:titolo,testo:testo,letta:false,tipo:'piano'};
     });
     const{error}=await sb.from('notifiche').insert(rows);
     if(error)throw error;
@@ -6853,7 +6860,7 @@ async function renderNotifiche(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const{data,error}=await sb.from('notifiche').select('*')
-      .eq('destinatario_id',USER.id).order('created_at',{ascending:false}).limit(50);
+      .eq('user_id',USER.id).order('created_at',{ascending:false}).limit(50);
     if(error)throw error;
     if(!data||!data.length){
       el.innerHTML='<div class="empty"><div class="empty-i">🔔</div><p>Nessuna notifica ricevuta</p></div>';
@@ -6892,7 +6899,7 @@ async function segnaNotificaLetta(id, divEl){
 
 async function segnaTutteNotificheLette(){
   try{
-    await sb.from('notifiche').update({letta:true}).eq('destinatario_id',USER.id).eq('letta',false);
+    await sb.from('notifiche').update({letta:true}).eq('user_id',USER.id).eq('letta',false);
     aggiornaBadgeNotifiche();
     renderNotifiche();
     showToast('Tutte segnate come lette ✓');
@@ -6901,7 +6908,7 @@ async function segnaTutteNotificheLette(){
 
 async function aggiornaBadgeNotifiche(){
   try{
-    const{data}=await sb.from('notifiche').select('id').eq('destinatario_id',USER.id).eq('letta',false);
+    const{data}=await sb.from('notifiche').select('id').eq('user_id',USER.id).eq('letta',false);
     const n=(data||[]).length;
     const badge=document.getElementById('notif-badge');
     if(badge){
@@ -7179,7 +7186,7 @@ async function gestisciRichiesta(id, stato){
         if(profilo?.id){
           const titoloNotif=stato==='approvata'?'✅ Richiesta approvata':'❌ Richiesta rifiutata';
           const testoNotif='La tua richiesta di '+assenza.tipo+' dal '+assenza.data_inizio+' al '+assenza.data_fine+' è stata '+stato+'.';
-          await sb.from('notifiche').insert({destinatario_id:profilo.id,mittente_id:USER.id,titolo:titoloNotif,testo:testoNotif,letta:false,tipo:'assenza'});
+          await sb.from('notifiche').insert({user_id:profilo.id,mittente_id:USER.id,titolo:titoloNotif,testo:testoNotif,letta:false,tipo:'assenza'});
         }
       }
     }catch(ne){/* Notifica non critica */}
