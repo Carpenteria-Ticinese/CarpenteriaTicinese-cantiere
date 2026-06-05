@@ -11,16 +11,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CT Cantiere">
 <title>CT Cantiere</title>
-<!-- Sentry — monitoraggio errori (P30) -->
-<script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
-<script>
-Sentry.init({
-  dsn: "DA_CONFIGURARE",
-  environment: "production",
-  release: "cantieremaster@1.0.0",
-  tracesSampleRate: 0.1,
-});
-</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -366,10 +356,39 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div id="timb-content">
       <!-- renderizzato da renderTimbratura() -->
     </div>
-    <div style="margin-top:16px;text-align:center">
+    <div style="margin-top:12px;text-align:center">
+      <button onclick="apriTimbraturaManualeModal()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--t2);font-size:13px;cursor:pointer;padding:10px 20px;width:100%">📋 Inserimento manuale</button>
+    </div>
+    <div style="margin-top:10px;text-align:center">
       <button onclick="goHome()" style="background:none;border:none;color:var(--t2);font-size:14px;cursor:pointer;text-decoration:underline">← Torna all'app</button>
     </div>
     <div class="bsp"></div>
+  </div>
+
+  <!-- MODAL TIMBRATURA MANUALE -->
+  <div class="ov" id="mod-timbratura-manuale">
+    <div class="mod">
+      <div class="mod-h"></div>
+      <div class="mod-t">📋 Inserimento manuale</div>
+      <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="tm-data"></div>
+      <div class="row2">
+        <div class="fg"><label class="fl">Ora inizio</label><input type="time" class="fi" id="tm-ini" oninput="calcOreTimbrManuale()"></div>
+        <div class="fg"><label class="fl">Ora fine</label><input type="time" class="fi" id="tm-fine" oninput="calcOreTimbrManuale()"></div>
+      </div>
+      <div class="fg"><label class="fl">Cantiere</label>
+        <input type="text" class="fi" id="tm-cant-search" placeholder="Cerca cantiere..." oninput="cercaCantiereManuale(this.value)" autocomplete="off">
+        <div id="tm-cant-risultati" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;max-height:160px;overflow-y:auto;display:none"></div>
+        <input type="hidden" id="tm-cant-id">
+        <div id="tm-cant-nome-sel" style="font-size:12px;color:var(--gold);margin-top:4px;font-weight:700"></div>
+      </div>
+      <div class="fg"><label class="fl">Note</label><textarea class="ft" id="tm-note" style="min-height:50px" placeholder="Note opzionali..."></textarea></div>
+      <div id="tm-ore-preview" style="background:var(--s2);border-radius:var(--rsm);padding:10px;text-align:center;font-size:14px;color:var(--t2);margin-bottom:10px"></div>
+      <hr>
+      <div class="row2">
+        <button class="btn btn-s" onclick="closeModal('mod-timbratura-manuale')">Annulla</button>
+        <button class="btn btn-g" onclick="salvaTimbraturaManualeModal()">💾 Salva</button>
+      </div>
+    </div>
   </div>
 
   <!-- NUOVA GIORNATA STEP 1 -->
@@ -1119,6 +1138,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl">CAP</label><input type="text" class="fi" id="c-cap" placeholder="6500" style="font-family:'DM Mono',monospace"></div>
       <div class="fg"><label class="fl">Città</label><input type="text" class="fi" id="c-citta" placeholder="Bellinzona"></div>
     </div>
+    <div class="fg"><label class="fl">Paese</label><select class="fs" id="c-paese"><option value="CH">🇨🇭 CH — Svizzera</option><option value="IT">🇮🇹 IT — Italia</option><option value="DE">🇩🇪 DE — Germania</option><option value="AT">🇦🇹 AT — Austria</option><option value="FR">🇫🇷 FR — Francia</option><option value="ES">🇪🇸 ES — Spagna</option></select></div>
     <div class="fg"><label class="fl">Committente (nome)</label><input type="text" class="fi" id="c-comm"></div>
     <div class="fg"><label class="fl">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
     <hr>
@@ -1352,17 +1372,21 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="mod">
     <div class="mod-h"></div>
     <div class="mod-t" id="mod-fig-t">Aggiungi figura</div>
-    <div class="fg"><label class="fl">Ruolo</label>
+    <div class="fg"><label class="fl">Tipo</label>
       <select class="fs" id="fig-ruolo">
-        <option>Direttore Lavori (DL)</option><option>Assistente di cantiere</option><option>Geometra</option>
-        <option>Ispettore</option><option>Committente</option><option>Subappaltatore</option><option>Altro</option>
+        <option value="DL">Direttore Lavori (DL)</option><option value="Geometra">Geometra</option>
+        <option value="Assistente">Assistente di cantiere</option><option value="Impresa committente">Impresa committente</option>
+        <option value="Cliente privato">Cliente privato</option><option value="Ispettore">Ispettore</option>
+        <option value="Subappaltatore">Subappaltatore</option><option value="Altro">Altro</option>
       </select>
     </div>
     <div class="row2">
       <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="fig-nome"></div>
       <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="fig-cogn"></div>
     </div>
-    <div class="fg"><label class="fl">Azienda / Studio</label><input type="text" class="fi" id="fig-azienda" placeholder="es. Studio Arch. Rossi"></div>
+    <div class="fg"><label class="fl">Nome impresa</label><input type="text" class="fi" id="fig-nome-impresa" placeholder="es. Studio Arch. Rossi SA"></div>
+    <div class="fg"><label class="fl">Nome referente</label><input type="text" class="fi" id="fig-nome-referente" placeholder="es. Ing. Bianchi"></div>
+    <div class="fg"><label class="fl">Azienda / Studio <span style="font-size:10px;color:var(--t2)">(descrizione libera)</span></label><input type="text" class="fi" id="fig-azienda" placeholder="es. Studio Arch. Rossi"></div>
     <div class="row2">
       <div class="fg"><label class="fl">Telefono</label><input type="tel" class="fi" id="fig-tel" placeholder="+41 79 ..."></div>
       <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="fig-email" placeholder="nome@studio.ch"></div>
@@ -2962,7 +2986,7 @@ async function renderAnagrafica(){
     ef.appendChild(efBtn);el.innerHTML='';el.appendChild(ef);
     return;
   }
-  const ruoloIcon={'Direttore Lavori (DL)':'🏛️','Assistente di cantiere':'👷','Geometra':'📐','Ispettore':'🔍','Committente':'🤝','Subappaltatore':'🔧','Altro':'👤'};
+  const ruoloIcon={'DL':'🏛️','Direttore Lavori (DL)':'🏛️','Assistente di cantiere':'👷','Assistente':'👷','Geometra':'📐','Ispettore':'🔍','Committente':'🤝','Impresa committente':'🏗️','Cliente privato':'🤝','Subappaltatore':'🔧','Altro':'👤'};
   el.innerHTML=data.map(f=>`
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="openModalFigura('${f.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -2971,12 +2995,14 @@ async function renderAnagrafica(){
           <div>
             <div style="font-size:15px;font-weight:800">${f.nome} ${f.cognome||''}</div>
             <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px">${f.ruolo}</div>
-            ${f.azienda?`<div style="font-size:12px;color:var(--t2)">${f.azienda}</div>`:''}
+            ${f.nome_impresa?`<div style="font-size:12px;color:var(--text);font-weight:600">🏢 ${f.nome_impresa}</div>`:''}
+            ${f.nome_referente?`<div style="font-size:12px;color:var(--t2)">👤 Ref: ${f.nome_referente}</div>`:''}
+            ${f.azienda&&!f.nome_impresa?`<div style="font-size:12px;color:var(--t2)">${f.azienda}</div>`:''}
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          ${f.telefono?`<div style="font-size:13px;color:var(--blue)">${f.telefono}</div>`:''}
-          ${f.email?`<div style="font-size:12px;color:var(--t2)">${f.email}</div>`:''}
+          ${f.telefono?`<div style="font-size:13px"><a href="tel:${f.telefono}" onclick="event.stopPropagation()" style="color:var(--blue);text-decoration:none;font-weight:600">📞 ${f.telefono}</a></div>`:''}
+          ${f.email?`<div style="font-size:12px;color:var(--t2);margin-top:2px">${f.email}</div>`:''}
         </div>
       </div>
       ${f.note?`<div style="font-size:12px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${f.note}</div>`:''}
@@ -2986,7 +3012,7 @@ function openModalFigura(id){
   editFigId=id;
   if(!id){
     document.getElementById('mod-fig-t').textContent='Aggiungi figura';
-    ['fig-nome','fig-cogn','fig-azienda','fig-tel','fig-email','fig-note'].forEach(i=>document.getElementById(i).value='');
+    ['fig-nome','fig-cogn','fig-nome-impresa','fig-nome-referente','fig-azienda','fig-tel','fig-email','fig-note'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('del-fig-w').innerHTML='';
   }else{
     sb.from('cantiere_figure').select('*').eq('id',id).single().then(({data:f})=>{
@@ -2995,6 +3021,8 @@ function openModalFigura(id){
       document.getElementById('fig-ruolo').value=f.ruolo||'Altro';
       document.getElementById('fig-nome').value=f.nome||'';
       document.getElementById('fig-cogn').value=f.cognome||'';
+      document.getElementById('fig-nome-impresa').value=f.nome_impresa||'';
+      document.getElementById('fig-nome-referente').value=f.nome_referente||'';
       document.getElementById('fig-azienda').value=f.azienda||'';
       document.getElementById('fig-tel').value=f.telefono||'';
       document.getElementById('fig-email').value=f.email||'';
@@ -3008,7 +3036,7 @@ async function salvaFigura(){
   const nome=document.getElementById('fig-nome').value.trim();
   if(!nome){showToast('Inserisci il nome','e');return;}
   if(!curCant){showToast('Nessun cantiere selezionato','e');return;}
-  const payload={cantiere_id:curCant.id,ruolo:document.getElementById('fig-ruolo').value,nome,cognome:document.getElementById('fig-cogn').value.trim()||null,azienda:document.getElementById('fig-azienda').value.trim()||null,telefono:document.getElementById('fig-tel').value.trim()||null,email:document.getElementById('fig-email').value.trim()||null,note:document.getElementById('fig-note').value.trim()||null,created_by:USER.id};
+  const payload={cantiere_id:curCant.id,ruolo:document.getElementById('fig-ruolo').value,nome,cognome:document.getElementById('fig-cogn').value.trim()||null,nome_impresa:document.getElementById('fig-nome-impresa').value.trim()||null,nome_referente:document.getElementById('fig-nome-referente').value.trim()||null,azienda:document.getElementById('fig-azienda').value.trim()||null,telefono:document.getElementById('fig-tel').value.trim()||null,email:document.getElementById('fig-email').value.trim()||null,note:document.getElementById('fig-note').value.trim()||null,created_by:USER.id};
   if(editFigId)await sb.from('cantiere_figure').update(payload).eq('id',editFigId);
   else{const {error}=await sb.from('cantiere_figure').insert(payload);if(error){showToast('Errore: '+error.message,'e');return;}}
   closeModal('mod-figura');renderAnagrafica();showToast('Salvato ✓');
@@ -3305,7 +3333,7 @@ async function generaPdfGiornata(data){
     const matsHtml=(mats||[]).length?'<div style="margin-bottom:16px"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px">📦 Materiali ricevuti</h3><ul style="font-size:13px;margin:0;padding-left:20px">'+mats.map(function(m){return '<li>'+escHtml(m.descrizione)+'</li>';}).join('')+'</ul></div>':'';
     const noteHtml=noteCs?'<div style="margin-bottom:16px;padding:10px;background:#fffbef;border:1px solid #f0d080;border-radius:6px"><strong style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#a08000">📋 Note caposquadra</strong><div style="font-size:13px;margin-top:6px;white-space:pre-line">'+escHtml(noteCs)+'</div></div>':'';
     const hotelHtml=hotel?'<div style="font-size:13px;color:#555;margin-bottom:12px">🏨 Hotel: <strong>'+escHtml(hotel)+'</strong></div>':'';
-    const indrStr=[curCant.via,[curCant.cap,curCant.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const indrStr=[curCant.via,[curCant.cap,curCant.citta].filter(Boolean).join(' '),curCant.paese&&curCant.paese!=='CH'?curCant.paese:null].filter(Boolean).join(', ');
     const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>CT Giornata</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:14px;color:#111;padding:24px;max-width:820px;margin:0 auto}@media print{.no-print{display:none!important}body{padding:0}}</style></head><body>'
       +'<div class="no-print" style="background:#fffbef;border:1px solid #ddd;padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border-radius:6px"><span style="font-size:12px;color:#666">Anteprima — usa il pulsante per stampare o salvare come PDF</span><button onclick="window.print()" style="background:#c8a84b;border:none;color:#fff;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;font-weight:700">🖨️ Stampa / Salva PDF</button></div>'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid #c8a84b">'
@@ -3680,6 +3708,7 @@ function openModalCantiere(id){
   document.getElementById('c-via').value=c?.via||'';
   document.getElementById('c-cap').value=c?.cap||'';
   document.getElementById('c-citta').value=c?.citta||'';
+  document.getElementById('c-paese').value=c?.paese||'CH';
   document.getElementById('c-comm').value=c?.committente||'';
   document.getElementById('c-stato').value=c?.stato||'Attivo';
   document.getElementById('del-cant-w').innerHTML=c?`<button class="btn btn-d" onclick="deleteCant('${id}')">🗑️ Elimina</button>`:'';
@@ -3687,7 +3716,7 @@ function openModalCantiere(id){
 }
 async function saveCant(){
   const nome=document.getElementById('c-nome').value.trim();if(!nome){showToast('Inserisci nome','e');return;}
-  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
+  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,paese:document.getElementById('c-paese').value||'CH',committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
   try{
     if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid);if(error)throw error;}
     else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
@@ -4100,6 +4129,79 @@ function stampaQR(){
     <script>window.onload=function(){window.print();}<\/script>
   </body></html>`);
   w.document.close();
+}
+
+// ── TIMBRATURA MANUALE ──
+function apriTimbraturaManualeModal(){
+  const oggi=nowZurich().date;
+  document.getElementById('tm-data').value=oggi;
+  document.getElementById('tm-ini').value='';
+  document.getElementById('tm-fine').value='';
+  document.getElementById('tm-cant-search').value='';
+  document.getElementById('tm-cant-id').value='';
+  document.getElementById('tm-cant-nome-sel').textContent='';
+  document.getElementById('tm-cant-risultati').style.display='none';
+  document.getElementById('tm-note').value='';
+  document.getElementById('tm-ore-preview').textContent='';
+  openModal('mod-timbratura-manuale');
+}
+function calcOreTimbrManuale(){
+  const ini=document.getElementById('tm-ini').value;
+  const fin=document.getElementById('tm-fine').value;
+  const prev=document.getElementById('tm-ore-preview');
+  if(!ini||!fin){prev.textContent='';return;}
+  const [hi,mi]=ini.split(':').map(Number);
+  const [hf,mf]=fin.split(':').map(Number);
+  const diff=(hf*60+mf)-(hi*60+mi);
+  if(diff<=0){prev.textContent='⚠️ Ora fine deve essere dopo ora inizio';prev.style.color='var(--red)';return;}
+  const ore=(diff/60).toFixed(2);
+  prev.textContent='Ore lavorate: '+ore+' h';
+  prev.style.color='var(--green)';
+}
+function cercaCantiereManuale(q){
+  const res=document.getElementById('tm-cant-risultati');
+  if(!q||q.length<2){res.style.display='none';return;}
+  const lista=(CANTIERI||[]).filter(c=>(c.nome+' '+(c.luogo||'')).toLowerCase().includes(q.toLowerCase()));
+  if(!lista.length){res.style.display='none';return;}
+  res.innerHTML=lista.slice(0,8).map(c=>`<div onclick="selezionaCantiereManuale('${c.id}','${(c.nome+(c.luogo?' — '+c.luogo:'')).replace(/'/g,'&#39;')}')" style="padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border)">${c.nome}${c.luogo?' <span style=\'color:var(--t2);font-size:12px\'>'+c.luogo+'</span>':''}</div>`).join('');
+  res.style.display='block';
+}
+function selezionaCantiereManuale(id,nome){
+  document.getElementById('tm-cant-id').value=id;
+  document.getElementById('tm-cant-search').value='';
+  document.getElementById('tm-cant-nome-sel').textContent='📍 '+nome;
+  document.getElementById('tm-cant-risultati').style.display='none';
+}
+async function salvaTimbraturaManualeModal(){
+  const data=document.getElementById('tm-data').value;
+  const ini=document.getElementById('tm-ini').value;
+  const fin=document.getElementById('tm-fine').value;
+  const cantId=document.getElementById('tm-cant-id').value||null;
+  const note=document.getElementById('tm-note').value.trim()||null;
+  if(!data||!ini||!fin){showToast('Data, ora inizio e ora fine sono obbligatori','e');return;}
+  const [hi,mi]=ini.split(':').map(Number);
+  const [hf,mf]=fin.split(':').map(Number);
+  if((hf*60+mf)<=(hi*60+mi)){showToast('Ora fine deve essere dopo ora inizio','e');return;}
+  const opId=await _getOpId();
+  if(!opId){showToast('Operaio non trovato — controlla il profilo','e');return;}
+  const pausaDef=parseInt(IMPOSTAZIONI.timb_pausa||'60');
+  const diffMin=(hf*60+mf)-(hi*60+mi);
+  const oreNette=Math.max(0,(diffMin-pausaDef)/60);
+  const payload={operaio_id:opId,data,ora_inizio_timbrata:ini,ora_fine_timbrata:fin,pausa_minuti_timbrata:pausaDef,ore_totali:parseFloat(oreNette.toFixed(2)),created_by:USER.id,note};
+  if(cantId)payload.cantiere_id=cantId;
+  try{
+    const{data:existing}=await sb.from('giornate').select('id').eq('operaio_id',opId).eq('data',data).maybeSingle();
+    if(existing){
+      const{error}=await sb.from('giornate').update({ora_inizio_timbrata:ini,ora_fine_timbrata:fin,pausa_minuti_timbrata:pausaDef,ore_totali:parseFloat(oreNette.toFixed(2)),cantiere_id:cantId||undefined,note}).eq('id',existing.id);
+      if(error)throw error;
+    }else{
+      const{error}=await sb.from('giornate').insert(payload);
+      if(error)throw error;
+    }
+    closeModal('mod-timbratura-manuale');
+    showToast('Timbratura manuale salvata ✓');
+    renderTimbratura();
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
 async function renderOffsetRuoli(){
@@ -5251,7 +5353,7 @@ async function renderPiano(){
   if(!data){el.innerHTML='<div class="empty">Seleziona una data</div>';return;}
   try{
     const{data:rows,error}=await sb.from('piano_giorno')
-      .select('*, operai(nome,cognome), cantieri(nome,luogo), mezzi(targa,tipo,descrizione)')
+      .select('*, operai(nome,cognome), cantieri(nome,luogo,via,cap,citta,paese), mezzi(targa,tipo,descrizione)')
       .eq('data',data).order('ordine').order('created_at');
     if(error)throw error;
     if(!rows||!rows.length){
@@ -5277,11 +5379,17 @@ async function renderPiano(){
         ?'<div style="font-size:11px;color:var(--blue);margin-top:3px">🏨 '+r.hotel_nome
           +(r.hotel_indirizzo?' · '+r.hotel_indirizzo+' <a href="'+hotelMapsUrl+'" target="_blank" style="color:var(--blue);font-weight:700">📍</a>':'')+'</div>'
         :'';
+      const rCantIndirizzo=[r.cantieri?.via,[r.cantieri?.cap,r.cantieri?.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+      const rCantMapsUrl=rCantIndirizzo?'https://maps.google.com/?q='+encodeURIComponent(rCantIndirizzo+(r.cantieri?.paese&&r.cantieri.paese!=='CH'?', '+r.cantieri.paese:'')):'';
+      const rIndirizzoHtml=rCantIndirizzo
+        ?'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+rCantIndirizzo+(r.cantieri?.paese&&r.cantieri.paese!=='CH'?' ('+r.cantieri.paese+')':(r.cantieri?.paese==='CH'?' (CH)':''))+' <a href="'+rCantMapsUrl+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--blue);font-weight:700;text-decoration:none">📍 Maps</a></div>'
+        :'';
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div>'
         +'<div style="font-size:15px;font-weight:800">'+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
         +(ruoloLabel?'<div style="margin-top:2px">'+ruoloLabel+'</div>':'')
         +'<div style="font-size:12px;color:var(--t2);margin-top:4px">📍 '+(r.cantieri?.nome||'—')+(r.cantieri?.luogo?' · '+r.cantieri.luogo:'')+'</div>'
+        +rIndirizzoHtml
         +mezzoBadge+squadra+hotelBadge
         +'</div>'
         +'<button style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px;padding:0">✏️</button>'
@@ -6953,7 +7061,7 @@ async function renderMioGiorno(){
 
     // Carica assegnazioni oggi e domani
     let queryBase=sb.from('piano_giorno')
-      .select('*, cantieri(nome,luogo,via,cap,citta), mezzi(targa,tipo,descrizione), operai(nome,cognome)')
+      .select('*, cantieri(nome,luogo,via,cap,citta,paese), mezzi(targa,tipo,descrizione), operai(nome,cognome)')
       .gte('data',oggi)
       .lte('data',domaniStr)
       .order('data');
@@ -7041,7 +7149,8 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
   const cantNome=a.cantieri?.nome||'—';
   const cantLuogo=a.cantieri?.luogo||'';
   const cantIndirizzo=[a.cantieri?.via,[a.cantieri?.cap,a.cantieri?.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  const cantMapsUrl=cantIndirizzo?'https://maps.google.com/?q='+encodeURIComponent(cantIndirizzo):'';
+  const cantPaese=a.cantieri?.paese||'CH';
+  const cantMapsUrl=cantIndirizzo?'https://maps.google.com/?q='+encodeURIComponent(cantIndirizzo+(cantPaese!=='CH'?', '+cantPaese:'')):'';
 
   // Mezzo
   const mezzo=a.mezzi?(a.mezzi.targa+(a.mezzi.descrizione?' — '+a.mezzi.descrizione:'')):null;
@@ -7689,7 +7798,9 @@ let _mappaLeaflet = null;
 
 async function geocodifica(cantiere){
   if(!cantiere.via && !cantiere.citta) return null;
-  const addr = [cantiere.via, [cantiere.cap, cantiere.citta].filter(Boolean).join(' '), 'Svizzera'].filter(Boolean).join(', ');
+  const paeseNomi={CH:'Svizzera',IT:'Italia',DE:'Germania',AT:'Austria',FR:'Francia',ES:'Spagna'};
+  const paeseNome=paeseNomi[cantiere.paese]||cantiere.paese||'Svizzera';
+  const addr = [cantiere.via, [cantiere.cap, cantiere.citta].filter(Boolean).join(' '), paeseNome].filter(Boolean).join(', ');
   try{
     const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`, {headers:{'Accept-Language':'it'}});
     const d = await r.json();
