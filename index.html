@@ -160,7 +160,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .mod-h{width:32px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 14px}
 .mod-t{font-size:18px;font-weight:800;margin-bottom:14px}
 hr{border:none;border-top:1px solid var(--border);margin:14px 0}
-.sec{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:10px;margin-top:4px}
+.sec{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text);margin-bottom:10px;margin-top:4px}
 .empty{text-align:center;padding:48px 16px;color:var(--t3)}
 .empty-i{font-size:40px;margin-bottom:12px}
 .empty p{font-size:14px;line-height:1.6}
@@ -356,8 +356,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </select>
       <div id="mappa-status" style="font-size:12px;color:var(--t2)"></div>
     </div>
-    <div id="mappa-container" style="width:100%;height:calc(100vh - 200px);min-height:360px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--s1)">
-      <div id="leaflet-map" style="width:100%;height:100%"></div>
+    <div id="mappa-container" style="width:100%;height:400px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--s1)">
+      <div id="leaflet-map" style="width:100%;height:400px"></div>
     </div>
     <div id="mappa-lista" style="margin-top:12px"></div>
     <div class="bsp"></div>
@@ -3450,7 +3450,7 @@ async function salvaOperaio(){
   const zonaTrasferta=document.getElementById('g2-trasferta').value||'locale';
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id,azienda_id:AZIENDA_ID}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id}).select().single();
     if(ge)throw ge;
     const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
       const sel=row.querySelector('.voce-sel');const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;if(!oreV)return null;
@@ -3690,7 +3690,7 @@ async function saveCant(){
   const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
   try{
     if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid);if(error)throw error;}
-    else{const _pC={...p,azienda_id:AZIENDA_ID};const{error}=await sb.from('cantieri').insert(_pC);if(error)throw error;}
+    else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
   }catch(e){showToast('Errore: '+e.message,'e');return;}
   await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Salvato ✓');
 }
@@ -3753,7 +3753,7 @@ async function saveOp(){
       const{error}=await sb.from('operai').update(p).eq('id',editOid);
       if(error)throw error;
     }else{
-      const{error}=await sb.from('operai').insert({...p,azienda_id:AZIENDA_ID});
+      const{error}=await sb.from('operai').insert(p);
       if(error)throw error;
     }
     await loadOperai();closeModal('mod-op');renderPersonale();showToast('Salvato ✓');
@@ -4580,6 +4580,7 @@ function navTo(dest){
     pushNav('mappa');showScr('mappa');
     document.getElementById('top-title').textContent='Mappa cantieri';
     setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Mappa cantieri'}]);
+    if(_mappaLeaflet) setTimeout(()=>_mappaLeaflet.invalidateSize(),50);
     renderMappa();
   }
   else if(dest==='personale'){pushNav('personale');showScr('personale');document.getElementById('top-title').textContent='Personale';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Personale'}]);loadOperai().then(()=>renderPersonale());return;}
@@ -4923,7 +4924,7 @@ async function salvaSpesa(){
   const btn=document.getElementById('btn-salva-sp');btn.textContent='⏳...';btn.disabled=true;
   try{
     const statoPag=document.getElementById('sp-stato-pag').value;
-    const _pagDa=document.getElementById('sp-pagato-da')?.value||USER.id;const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id,pagato_da:_pagDa||USER.id,azienda_id:AZIENDA_ID};
+    const _pagDa=document.getElementById('sp-pagato-da')?.value||USER.id;const payload={cantiere_id:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id,pagato_da:_pagDa||USER.id};
     let spId=editSpId;
     if(editSpId)await sb.from('spese').update(payload).eq('id',editSpId);
     else{const {data:newSp,error}=await sb.from('spese').insert(payload).select().single();if(error)throw error;spId=newSp.id;}
@@ -6697,7 +6698,6 @@ async function salvaMateriale(){
     const catVal=document.getElementById('mat-cat')?.value;
     const payload={
       cantiere_id:_matCantiereId,
-      azienda_id:AZIENDA_ID,
       nome:nome,
       quantita:document.getElementById('mat-qta').value.trim()||null,
       note:document.getElementById('mat-note').value.trim()||null,
@@ -7885,7 +7885,6 @@ function populatePagatoDa(){
 async function logAzione(tabella, record_id, azione, dati={}){
   try{
     await sb.from('audit_log').insert({
-      azienda_id: AZIENDA_ID,
       tabella,
       record_id: record_id || null,
       azione,
