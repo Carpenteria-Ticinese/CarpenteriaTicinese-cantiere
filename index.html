@@ -2377,6 +2377,8 @@ async function cambiaPwd(){
 }
 
 // ── LOAD ──
+// RLS FIX: eseguire su Supabase SQL Editor:
+// CREATE POLICY cantieri_auth ON cantieri FOR ALL USING (auth.role() = 'authenticated');
 async function loadCantieri(){const {data}=await sb.from('cantieri').select('*').order('nome');CANTIERI=data||[];}
 
 // ── CATEGORIE MATERIALI (P-B) ──
@@ -3718,8 +3720,8 @@ async function saveCant(){
   const nome=document.getElementById('c-nome').value.trim();if(!nome){showToast('Inserisci nome','e');return;}
   const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,paese:document.getElementById('c-paese').value||'CH',committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
   try{
-    if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid);if(error)throw error;}
-    else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
+    if(editCid){const{error}=await sb.from('cantieri').update(p).eq('id',editCid).select();if(error)throw error;}
+    else{const{error}=await sb.from('cantieri').insert(p).select();if(error)throw error;}
   }catch(e){showToast('Errore: '+e.message,'e');return;}
   await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Salvato ✓');
 }
@@ -7806,7 +7808,7 @@ async function geocodifica(cantiere){
     const d = await r.json();
     if(d && d[0]){
       const lat = parseFloat(d[0].lat), lng = parseFloat(d[0].lon);
-      await sb.from('cantieri').update({lat, lng}).eq('id', cantiere.id);
+      await sb.from('cantieri').update({lat, lng}).eq('id', cantiere.id).select();
       return {lat, lng};
     }
   }catch(e){ console.warn('geocodifica fallita:', e.message); }
