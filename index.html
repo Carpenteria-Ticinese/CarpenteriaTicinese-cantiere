@@ -938,7 +938,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="display:flex;gap:6px">
         <button class="btn-icon btn-sm" onclick="apriSchermoPiano()" title="Proietta su schermo">📺</button>
         <button class="btn-icon btn-sm" onclick="apriInvioNotifica()">📢</button>
-        <button class="btn-icon btn-sm" onclick="openModal('mod-piano-ass')">➕ Assegna</button>
+        <button onclick="openModal('mod-piano-ass')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">➕ Assegna operaio</button>
       </div>
     </div>
     <div id="piano-data-label" style="font-size:12px;color:var(--t2);margin-bottom:12px;text-align:center"></div>
@@ -2215,25 +2215,14 @@ async function afterLogin(){
   try{
     const {data:prof}=await sb.from('profili').select('*').eq('id',USER.id).single();
     PROF=prof;
-    // P25 — risolvi AZIENDA_ID
-    AZIENDA_ID = PROF?.azienda_id || null;
-    if(!AZIENDA_ID){
-      try{
-        // P25 — cerca azienda per slug; se la tabella non esiste o query fallisce
-        // AZIENDA_ID rimane null e l'app continua normalmente (no showLogin)
-        const {data:az, error:azErr}=await sb.from('aziende').select('id')
-          .eq('slug','carpenteria-ticinese').maybeSingle();
-        if(!azErr && az){
-          AZIENDA_ID=az.id;
-          await sb.from('profili').update({azienda_id:AZIENDA_ID}).eq('id',USER.id).throwOnError();
-          PROF={...PROF,azienda_id:AZIENDA_ID};
-        }
-        // azErr (es. 404 tabella, PGRST116 nessuna riga) → AZIENDA_ID=null, si continua
-      }catch(e){
-        console.warn('P25 azienda lookup fallito, continuo con AZIENDA_ID=null:', e.message);
-        AZIENDA_ID=null; // esplicito: garantisce che afterLogin prosegua
-      }
-    }
+    // P25 — AZIENDA_ID sempre da tabella aziende, MAI da profili (evita 400)
+    AZIENDA_ID = null;
+    try{
+      const {data:az,error:azErr}=await sb.from('aziende').select('id')
+        .eq('slug','carpenteria-ticinese').maybeSingle();
+      if(!azErr && az) AZIENDA_ID=az.id;
+      // azErr o az=null → AZIENDA_ID resta null, app continua senza bloccarsi
+    }catch(e){console.warn('P25 azienda lookup:',e.message);}
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     verificaColonneGiornate(); // node check — logga SQL in console se colonne mancanti
     const nome=(PROF?.nome||USER.email).split('@')[0];
@@ -2569,7 +2558,7 @@ async function renderCantiere(){
       byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);
     });
     let prev=null;
-    try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).single();prev=r.data;}catch(e){prev=null;}
+    try{const r=await sb.from('preventivi_cantiere').select('*').eq('cantiere_id',curCant.id).maybeSingle();prev=r?.data||null;}catch(e){prev=null;}
     const byData={};
     (giornate||[]).forEach(g=>{
       if(!byData[g.data])byData[g.data]={data:g.data,operai:[],totOre:0};
@@ -2581,13 +2570,18 @@ async function renderCantiere(){
     const _indrCant=[curCant.via,[curCant.cap,curCant.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const _mapsUrl=_indrCant?'https://maps.google.com/?q='+encodeURIComponent(_indrCant):'';
     el.innerHTML=`
-      ${(curCant.luogo||_indrCant)?`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          ${curCant.luogo?`<div style="font-size:13px;color:var(--t2)">${escHtml(curCant.luogo)}</div>`:''}
-          ${_indrCant?`<div style="font-size:12px;color:var(--t2)">${escHtml(_indrCant)}</div>`:''}
+      <div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1;min-width:0">
+            ${curCant.luogo?`<div style="font-size:13px;color:var(--t2);margin-bottom:2px">📌 ${escHtml(curCant.luogo)}</div>`:''}
+            ${_indrCant?`<div style="font-size:12px;color:var(--t2)">📍 ${escHtml(_indrCant)}</div>`:`<div style="font-size:12px;color:var(--t3);font-style:italic">Nessun indirizzo impostato</div>`}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+            ${_mapsUrl?`<button onclick="window.open('${_mapsUrl}','_blank')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap">📍 Maps</button>`:''}
+            ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="openModalCantiere('${curCant.id}')" style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--gold);font-weight:700;white-space:nowrap">✏️ Modifica cantiere</button>`:''}
+          </div>
         </div>
-        ${_mapsUrl?`<button onclick="window.open('${_mapsUrl}','_blank')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 12px;cursor:pointer;font-size:13px;white-space:nowrap">📍 Maps</button>`:''}
-      </div>`:''}
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
         <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
         <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
@@ -3648,9 +3642,12 @@ function openAnalisiMod(dStr){
 
 // ── ADMIN ──
 async function renderAdmin(){
-  document.getElementById('adm-cantieri').innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
+  const _admc=document.getElementById('adm-cantieri');
+  const _admo=document.getElementById('adm-operai');
+  if(!_admc||!_admo)return; // screen non nel DOM
+  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
   const oggi_adm=new Date().toISOString().split('T')[0];
-  document.getElementById('adm-operai').innerHTML=OPERAI_TUTTI.map(o=>{
+  _admo.innerHTML=OPERAI_TUTTI.map(o=>{
     const exAt=o.data_fine_rapporto&&o.data_fine_rapporto<oggi_adm;
     return `<div style="background:var(--s1);border:1px solid ${exAt?'rgba(224,85,85,.2)':'var(--border)'};border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:${exAt?'.65':'1'}">
       <div>
@@ -3670,7 +3667,7 @@ async function renderAdmin(){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
   sb.from('impostazioni').select('valore').eq('chiave','nome_azienda').single().then(({data})=>{const el=document.getElementById('adm-nome-az');if(el&&data?.valore)el.value=data.valore;});
-    document.getElementById('adm-utenti').innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${p.nome}</div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
+    const _admu=document.getElementById('adm-utenti');if(_admu)_admu.innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${p.nome}</div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
   }
 }
 function aggiornaTariffa(){const val=parseFloat(document.getElementById('imp-tariffa').value);if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}IMPOSTAZIONI.tariffa_ora=val;saveImpostazioni();}
@@ -7724,7 +7721,9 @@ async function renderMappa(){
   if(filtro === 'oggi'){
     const oggi = nowZurich().date;
     try{
-      const {data:pg} = await sb.from('piano_giorno').select('cantiere_id, squadra, operaio_id, operai(nome,cognome)').eq('data', oggi).eq('azienda_id', AZIENDA_ID);
+      let _pgQ=sb.from('piano_giorno').select('cantiere_id, squadra, operaio_id, operai(nome,cognome)').eq('data',oggi);
+      if(AZIENDA_ID) _pgQ=_pgQ.eq('azienda_id',AZIENDA_ID);
+      const {data:pg}=await _pgQ;
       pianOggi = pg || [];
     }catch(e){ console.warn('piano_giorno:', e.message); }
     const idCantOggi = new Set(pianOggi.map(p => p.cantiere_id));
