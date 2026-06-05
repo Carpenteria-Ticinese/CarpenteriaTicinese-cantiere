@@ -74,7 +74,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .bread-item.active{color:var(--text);font-weight:700}
 .bread-sep{color:var(--t3);font-size:10px}
 .scr{display:none!important;padding:16px;max-width:680px;margin:0 auto}
-.scr.on{display:block!important}
+.scr.on{display:block!important;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .fg{margin-bottom:13px}
 .fl{display:block;font-size:max(10px,calc(var(--fs-xs)));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
 .fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-family:'Bricolage Grotesque',sans-serif;font-size:var(--fs-base);padding:11px 13px;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
@@ -1213,6 +1213,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-s" onclick="closeModal('mod-spesa-view')">Chiudi</button>
       <button class="btn btn-g" id="spv-btn-modifica">✏️ Modifica</button>
     </div>
+    <div id="spv-btn-cantiere-wrap" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -4824,6 +4825,12 @@ async function visualizzaSpesa(id){
     <div id="spv-foto">${s.foto_path?'<div style="font-size:12px;color:var(--t2);padding:8px 0">⏳ Caricamento...</div>':'<div style="color:var(--t2);font-size:13px;margin-top:8px">📷 Nessun documento allegato</div>'}</div>
     ${s.foto_path?`<button class="btn btn-s" style="margin-top:10px;font-size:13px" onclick="downloadDocSpesa('${id}')">⬇️ Scarica documento</button>`:''}`;
   document.getElementById('spv-btn-modifica').onclick=()=>{closeModal('mod-spesa-view');openModalSpesa(id);};
+  const cantWrap=document.getElementById('spv-btn-cantiere-wrap');
+  if(cantWrap){
+    if(s.cantiere_id&&s.cantieri?.nome){
+      cantWrap.innerHTML=`<button class="btn btn-s" style="font-size:13px" onclick="closeModal('mod-spesa-view');filtraSpeseCantiere('${s.cantiere_id}')">📋 Tutte le spese di questo cantiere</button>`;
+    }else{cantWrap.innerHTML='';}
+  }
   openModal('mod-spesa-view');
   if(s.foto_path){
     try{
@@ -4835,6 +4842,13 @@ async function visualizzaSpesa(id){
       else fotoEl.innerHTML=`<div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:4px"><span style="font-size:28px">📄</span><a href="${u.signedUrl}" target="_blank" style="color:var(--blue);font-size:14px;font-weight:600">Apri documento allegato</a></div>`;
     }catch(e){const fotoEl=document.getElementById('spv-foto');if(fotoEl)fotoEl.innerHTML=`<div style="font-size:13px;color:var(--red)">⚠️ Errore: ${e.message}</div>`;}
   }
+}
+
+function filtraSpeseCantiere(cantId){
+  const sel=document.getElementById('sp-cantiere');
+  if(sel) sel.value=cantId;
+  navTo('spese');
+  renderSpese();
 }
 
 async function visualizzaRegia(id){
@@ -6315,10 +6329,9 @@ async function renderPersonale(){
       ef.appendChild(efBtn);el.innerHTML='';el.appendChild(ef);
       return;
     }
-    // Carica profili per sapere chi ha un account app
-    const{data:profiliList}=await sb.from('profili').select('id,email');
+    // profili non ha colonna email → usiamo USER.email per riconoscere solo l'account corrente
     const emailToProfiloId={};
-    (profiliList||[]).forEach(function(p){if(p.email)emailToProfiloId[p.email.toLowerCase()]=p.id;});
+    if(USER?.email) emailToProfiloId[USER.email.toLowerCase()]=USER.id;
     el.innerHTML='';
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
@@ -6824,16 +6837,9 @@ async function inviaNotifica(){
       const{data}=await sb.from('profili').select('id,ruolo').neq('id',USER.id);
       profili=data||[];
     }else if(dest==='tutti'){
-      // Operai assegnati oggi
-      const oggi=nowZurich().date;
-      const{data:ass}=await sb.from('piano_giorno').select('operai(email)')
-        .eq('data',oggi);
-      // Carica profili via email
-      const emails=(ass||[]).map(function(a){return a.operai?.email;}).filter(Boolean);
-      if(emails.length){
-        const{data}=await sb.from('profili').select('id,ruolo').in('email',emails).neq('id',USER.id);
-        profili=data||[];
-      }
+      // profili non ha colonna email → inviamo a tutti gli utenti attivi
+      const{data}=await sb.from('profili').select('id,ruolo').neq('id',USER.id);
+      profili=data||[];
     }else if(dest==='caposquadra'||dest==='responsabile'){
       const{data}=await sb.from('profili').select('id,ruolo').eq('ruolo',dest).neq('id',USER.id);
       profili=data||[];
@@ -7175,18 +7181,7 @@ async function gestisciRichiesta(id, stato){
     const{error}=await sb.from('assenze').update({stato}).eq('id',id);
     if(error)throw error;
     showToast(stato==='approvata'?'✓ Richiesta approvata':'✗ Richiesta rifiutata');
-    // Invia notifica all'operaio se ha un account in profili
-    try{
-      const{data:assenza}=await sb.from('assenze').select('operaio_id,tipo,data_inizio,data_fine,operai(email)').eq('id',id).single();
-      if(assenza?.operai?.email){
-        const{data:profilo}=await sb.from('profili').select('id').ilike('email',assenza.operai.email).maybeSingle();
-        if(profilo?.id){
-          const titoloNotif=stato==='approvata'?'✅ Richiesta approvata':'❌ Richiesta rifiutata';
-          const testoNotif='La tua richiesta di '+assenza.tipo+' dal '+assenza.data_inizio+' al '+assenza.data_fine+' è stata '+stato+'.';
-          await sb.from('notifiche').insert({user_id:profilo.id,mittente_id:USER.id,titolo:titoloNotif,testo:testoNotif,letta:false,tipo:'assenza'});
-        }
-      }
-    }catch(ne){/* Notifica non critica */}
+    // profili non ha colonna email — notifica operaio non disponibile senza user_id diretto
     renderSituazione();
     aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');}
@@ -7693,8 +7688,8 @@ function getAziendaId(){ return AZIENDA_ID; }
 let _mappaLeaflet = null;
 
 async function geocodifica(cantiere){
-  if(!cantiere.indirizzo) return null;
-  const addr = [cantiere.indirizzo, cantiere.comune, cantiere.cap, cantiere.paese||'Svizzera'].filter(Boolean).join(', ');
+  if(!cantiere.via && !cantiere.citta) return null;
+  const addr = [cantiere.via, [cantiere.cap, cantiere.citta].filter(Boolean).join(' '), 'Svizzera'].filter(Boolean).join(', ');
   try{
     const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`, {headers:{'Accept-Language':'it'}});
     const d = await r.json();
@@ -7721,9 +7716,7 @@ async function renderMappa(){
   if(filtro === 'oggi'){
     const oggi = nowZurich().date;
     try{
-      let _pgQ=sb.from('piano_giorno').select('cantiere_id, squadra, operaio_id, operai(nome,cognome)').eq('data',oggi);
-      if(AZIENDA_ID) _pgQ=_pgQ.eq('azienda_id',AZIENDA_ID);
-      const {data:pg}=await _pgQ;
+      const {data:pg}=await sb.from('piano_giorno').select('cantiere_id, squadra, operaio_id, operai(nome,cognome)').eq('data',oggi);
       pianOggi = pg || [];
     }catch(e){ console.warn('piano_giorno:', e.message); }
     const idCantOggi = new Set(pianOggi.map(p => p.cantiere_id));
@@ -7755,7 +7748,7 @@ async function renderMappa(){
   if(_mappaLeaflet){ _mappaLeaflet.remove(); _mappaLeaflet = null; }
 
   if(!conPos.length){
-    mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#857f73;font-size:14px">Nessun cantiere con indirizzo trovato. Aggiungi l\'indirizzo nei dettagli cantiere.</div>';
+    mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#857f73;font-size:14px">Nessun cantiere con via/città trovato. Aggiungi l\'indirizzo nei dettagli cantiere.</div>';
     return;
   }
 
@@ -7787,7 +7780,7 @@ async function renderMappa(){
     marker.bindPopup(`
       <div style="font-family:sans-serif;min-width:180px">
         <div style="font-weight:700;font-size:14px;margin-bottom:6px">🏗️ ${cant.nome||'—'}</div>
-        <div style="font-size:12px;color:#555;margin-bottom:4px">📍 ${cant.indirizzo||'—'}</div>
+        <div style="font-size:12px;color:#555;margin-bottom:4px">📍 ${[cant.via,[cant.cap,cant.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'—'}</div>
         <div style="font-size:12px;color:#555;margin-bottom:4px">👷 ${squadraInfo}</div>
         ${cant.responsabile ? `<div style="font-size:12px;color:#555">📋 ${cant.responsabile}</div>` : ''}
         <div style="margin-top:8px"><span style="background:${cant.stato==='Attivo'?'#e8f5e9':'#fff3e0'};color:${cant.stato==='Attivo'?'#2e7d32':'#e65100'};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${cant.stato||'—'}</span></div>
@@ -7808,7 +7801,7 @@ async function renderMappa(){
         return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="_mappaLeaflet.setView([${c.lat},${c.lng}],16)">
           <div>
             <div style="font-weight:700;font-size:14px">${c.nome||'—'}</div>
-            <div style="font-size:11px;color:var(--t2)">${c.indirizzo||'—'}</div>
+            <div style="font-size:11px;color:var(--t2)">${[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'—'}</div>
             ${nomi ? `<div style="font-size:11px;color:var(--gold);margin-top:2px">👷 ${nomi}</div>` : ''}
           </div>
           <div style="font-size:20px">📍</div>
