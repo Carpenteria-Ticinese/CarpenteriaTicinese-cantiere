@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="pwa-icon">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CT Cantiere">
 <title>CT Cantiere</title>
@@ -388,6 +388,19 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <button class="btn btn-s" onclick="closeModal('mod-timbratura-manuale')">Annulla</button>
         <button class="btn btn-g" onclick="salvaTimbraturaManualeModal()">💾 Salva</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL SELEZIONE CANTIERE PER NUOVA GIORNATA -->
+  <div class="ov" id="mod-scegli-cantiere">
+    <div class="mod" style="max-height:78vh;display:flex;flex-direction:column">
+      <div class="mod-h"></div>
+      <div class="mod-t">➕ Nuova giornata</div>
+      <div style="padding:0 0 10px;background:var(--s1)">
+        <input type="text" class="fi" id="sc-search" placeholder="🔍 Cerca cantiere..." oninput="renderScegliCantiere(this.value)" autocomplete="off">
+      </div>
+      <div id="sc-lista" style="overflow-y:auto;flex:1;margin:0 -16px"></div>
+      <button class="btn btn-s" style="width:100%;margin-top:12px" onclick="closeModal('mod-scegli-cantiere')">Annulla</button>
     </div>
   </div>
 
@@ -4670,7 +4683,7 @@ function navTo(dest){
   const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
-  else if(dest==='nuova'){if(curCant)startNuovaGiornata();else{showToast('Seleziona prima un cantiere','e');document.getElementById('nb-home').classList.add('on');}}
+  else if(dest==='nuova'){if(curCant)startNuovaGiornata();else apriScegliCantiere();}
   else if(dest==='spese'){pushNav('spese');showScr('spese');document.getElementById('top-title').textContent='Spese & Documenti';populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
   else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent='Situazione';setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
   else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent='Report';
@@ -4753,7 +4766,7 @@ async function renderSituazione(){
       let html=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da pagare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totGlobale.toFixed(2)} CHF</span></div>`;
       Object.entries(byCant).forEach(([nome,gr])=>{
         html+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:var(--fs-lg);font-weight:700">🏗️ ${nome}</div><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${gr.tot.toFixed(2)} CHF</div></div>`;
-        gr.items.forEach(s=>{html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${tipoDocIcon[s.tipo_doc]||'📄'} ${s.descrizione}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(s.data)} · ${s.tipo_spesa||''}</div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${s.importo?parseFloat(s.importo).toFixed(2)+' '+(s.valuta||'CHF'):'—'}</div><button style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);cursor:pointer;margin-top:3px" onclick="segnaSpesaPagata('${s.id}')">✓ Segna pagato</button></div></div>`;});
+        gr.items.forEach(s=>{html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="visualizzaSpesa('${s.id}')"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${tipoDocIcon[s.tipo_doc]||'📄'} ${s.descrizione}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(s.data)} · ${s.tipo_spesa||''}</div>${(s.operai?.nome||s.operai?.cognome)?`<div style="font-size:11px;color:var(--t2)">👤 Inserito da: ${s.operai.nome||''} ${s.operai.cognome||''}</div>`:''}</div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:14px;color:var(--red)">${s.importo?parseFloat(s.importo).toFixed(2)+' '+(s.valuta||'CHF'):'—'}</div><button style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);cursor:pointer;margin-top:3px" onclick="event.stopPropagation();segnaSpesaPagata('${s.id}')">✓ Segna pagato</button></div></div>`;});
         html+='</div>';
       });
       elSp.innerHTML=html;
@@ -4887,7 +4900,7 @@ async function renderSpese(){
     const icon=tipoDocIcon[s.tipo_doc]||'📋';const isPag=s.stato_pag==='Pagato';
     return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div><div style="font-size:11px;color:var(--t2)">${s.operai?.nome||''} ${s.operai?.cognome||''}</div></div></div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div>${(s.operai?.nome||s.operai?.cognome)?`<div style="font-size:11px;color:var(--t2)">👤 Inserito da: ${s.operai.nome||''} ${s.operai.cognome||''}</div>`:''}</div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono';font-size:18px;font-weight:600;color:${isPag?'var(--gold)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div><div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px;background:${isPag?'rgba(76,175,125,.15)':'rgba(224,85,85,.15)'};color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}</div></div>
       </div>
       ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
@@ -5295,6 +5308,25 @@ function initNavbarDrag(){
     });
   });
 }
+
+// ── PWA ICON & MANIFEST inline (no file esterno) ──
+(function(){
+  try{
+    const c=document.createElement('canvas');c.width=192;c.height=192;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#C8A84B';ctx.fillRect(0,0,192,192);
+    ctx.fillStyle='#ffffff';ctx.font='bold 88px Arial,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('CT',96,96);
+    const ico=c.toDataURL('image/png');
+    const mf={name:'CantiereMaster',short_name:'Cantiere',start_url:'.',display:'standalone',
+      background_color:'#0d0d0d',theme_color:'#c8a84b',
+      icons:[{src:ico,sizes:'192x192',type:'image/png'}]};
+    const blob=new Blob([JSON.stringify(mf)],{type:'application/json'});
+    const ml=document.getElementById('pwa-manifest');if(ml)ml.href=URL.createObjectURL(blob);
+    const il=document.getElementById('pwa-icon');if(il)il.href=ico;
+  }catch(e){console.warn('PWA icon:',e.message);}
+})();
 
 init();
 
@@ -7971,6 +8003,52 @@ function selezionaCantiereDaRicerca(id, nome){
   if(wrap) wrap.style.display = 'none';
   const search = document.getElementById('g1-cant-search');
   if(search) search.value = '';
+}
+
+// ── SELEZIONE CANTIERE DA NAVBAR ➕ Giornata (senza curCant) ──
+function apriScegliCantiere(){
+  const inp=document.getElementById('sc-search');
+  if(inp)inp.value='';
+  renderScegliCantiere('');
+  openModal('mod-scegli-cantiere');
+  setTimeout(()=>{if(inp)inp.focus();},200);
+}
+
+function renderScegliCantiere(filtro){
+  const el=document.getElementById('sc-lista');
+  if(!el)return;
+  const t=(filtro||'').toLowerCase().trim();
+  const lista=(CANTIERI||[]).filter(c=>
+    (c.stato==='Attivo'||c.stato==='In pausa')&&
+    (!t||(c.nome||'').toLowerCase().includes(t))
+  );
+  if(!lista.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--t2);font-size:14px">Nessun cantiere attivo trovato</div>';
+    return;
+  }
+  el.innerHTML=lista.map(c=>{
+    const stCls=c.stato==='Attivo'?'st-attivo':'st-pausa';
+    const addr=[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return `<div onclick="selezionaCantierePerGiornata('${c.id}')"
+      style="padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
+      onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <span class="cant-status ${stCls}" style="font-size:10px;padding:2px 7px">${escHtml(c.stato)}</span>
+        <span style="font-size:15px;font-weight:700;color:var(--gold)">${escHtml(c.nome)}</span>
+      </div>
+      ${c.luogo?`<div style="font-size:12px;color:var(--t2)">📌 ${escHtml(c.luogo)}</div>`:''}
+      ${addr?`<div style="font-size:11px;color:var(--t3)">${escHtml(addr)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function selezionaCantierePerGiornata(id){
+  const cant=CANTIERI.find(c=>c.id===id);
+  if(!cant){showToast('Cantiere non trovato','e');return;}
+  closeModal('mod-scegli-cantiere');
+  curCant=cant;
+  await loadLavs(id);
+  startNuovaGiornata();
 }
 
 // Patch startNuovaGiornata: aggiorna g1-cant-display quando curCant è impostato
