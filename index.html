@@ -730,6 +730,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-g" onclick="salvaImpostazioniTrasferta()">💾 Salva</button>
     </div>
 
+    <!-- Notifiche Push -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">🔔 Notifiche Push</div>
+      <div id="push-stato" style="font-size:13px;margin-bottom:12px;padding:8px 12px;border-radius:var(--rsm);background:var(--s2)">Stato: —</div>
+      <button class="btn btn-g" onclick="attivaNotifichePush()" id="btn-attiva-push">🔔 Attiva notifiche push</button>
+      <div id="push-istruzioni" style="display:none;font-size:11px;color:var(--t2);margin-top:10px;line-height:1.6">⚠️ Le notifiche sono bloccate dal browser.<br>Per sbloccarle: tocca l'icona 🔒 nella barra dell'indirizzo → Notifiche → Consenti.</div>
+    </div>
+
     <!-- Sicurezza -->
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">🔐 Sicurezza</div>
@@ -922,6 +930,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- CONTABILITÀ CANTIERE -->
   <div class="scr" id="scr-contabilita">
     <div id="cont-content"></div>
+    <div class="bsp"></div>
+  </div>
+
+  <!-- BUDGET VS REALE -->
+  <div class="scr" id="scr-budget">
+    <div id="budget-content"></div>
     <div class="bsp"></div>
   </div>
 
@@ -2189,6 +2203,127 @@ function apriContabilitaSett(cantId){
   showToast('Vista settimanale — scorri in basso');
 }
 
+function apriBudget(){
+  if(!curCant)return;
+  showScr('budget');
+  document.getElementById('top-title').textContent='Budget vs Reale — '+curCant.nome;
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Budget vs Reale'}]);
+  renderBudget(curCant.id);
+}
+
+async function renderBudget(cantId){
+  const el=document.getElementById('budget-content');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    const [{data:lavs,error:le},{data:giornate,error:ge}]=await Promise.all([
+      sb.from('lavorazioni').select('id,nome,um,h_um_preventivo').eq('cantiere_id',cantId).not('h_um_preventivo','is',null),
+      sb.from('giornate').select('id').eq('cantiere_id',cantId)
+    ]);
+    if(le)throw le;
+    if(ge)throw ge;
+    if(!(lavs||[]).length){
+      el.innerHTML='<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:14px"><div style="font-size:36px;margin-bottom:10px">📋</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">Nessun preventivo caricato</div><div style="font-size:13px;color:var(--t2)">Importa prima il file Excel dal cantiere per avere le ore preventivate.</div></div>';
+      return;
+    }
+    const gioIds=(giornate||[]).map(function(g){return g.id;});
+    let voci=[];
+    if(gioIds.length){
+      const{data:v,error:ve}=await sb.from('voci_lavoro').select('lavorazione_id,lavorazione_nome,ore').in('giornata_id',gioIds);
+      if(ve)throw ve;
+      voci=v||[];
+    }
+    const vociByLav={};
+    voci.forEach(function(v){
+      const k=v.lavorazione_id||('_'+(v.lavorazione_nome||''));
+      if(!vociByLav[k])vociByLav[k]={ore:0};
+      vociByLav[k].ore+=parseFloat(v.ore||0);
+    });
+    let totPrev=0,totReale=0;
+    const righe=(lavs||[]).map(function(l){
+      const prev=parseFloat(l.h_um_preventivo)||0;
+      const reale=(vociByLav[l.id]?vociByLav[l.id].ore:0);
+      const delta=reale-prev;
+      const pct=prev>0?((reale/prev)*100):null;
+      totPrev+=prev;totReale+=reale;
+      return{nome:l.nome||'—',um:l.um||'h',prev:prev,reale:reale,delta:delta,pct:pct};
+    }).sort(function(a,b){return b.prev-a.prev;});
+    const totDelta=totReale-totPrev;
+    const totPct=totPrev>0?((totReale/totPrev)*100):null;
+    const kpiColor=totReale<=totPrev?'var(--green)':'var(--red)';
+    const kpiHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div class="ore-box"><div class="ore-num" style="font-size:22px">'+totPrev.toFixed(1)+'</div><div class="ore-lbl">Ore prev.</div></div>'+
+      '<div class="ore-box" style="border-color:'+(totReale<=totPrev?'rgba(76,175,125,.4)':'rgba(224,85,85,.4)')+'"><div class="ore-num" style="font-size:22px;color:'+kpiColor+'">'+totReale.toFixed(1)+'</div><div class="ore-lbl">Ore reali</div></div>'+
+      '<div class="ore-box" style="border-color:'+(totDelta<=0?'rgba(76,175,125,.4)':'rgba(224,85,85,.4)')+'"><div class="ore-num" style="font-size:22px;color:'+(totDelta<=0?'var(--green)':'var(--red)')+'">'+(totDelta>0?'+':'')+totDelta.toFixed(1)+'</div><div class="ore-lbl">Delta ore</div></div>'+
+      '<div class="ore-box" style="border-color:'+(totPct!==null&&totPct<=100?'rgba(76,175,125,.4)':'rgba(224,85,85,.4)')+'"><div class="ore-num" style="font-size:22px;color:'+(totPct!==null&&totPct<=100?'var(--green)':'var(--red)')+'">'+(totPct!==null?totPct.toFixed(0)+'%':'—')+'</div><div class="ore-lbl">% complet.</div></div>'+
+      '</div>';
+    const tableRows=righe.map(function(r){
+      const ok=r.reale<=r.prev;
+      const over=r.delta>0&&r.pct!==null&&r.pct>110;
+      const dClr=ok?'var(--green)':over?'var(--red)':'var(--orange)';
+      const pStr=r.pct!==null?r.pct.toFixed(0)+'%':'—';
+      return '<tr><td>'+escHtml(r.nome)+'</td><td style="color:var(--t2)">'+escHtml(r.um)+'</td><td class="mono">'+r.prev.toFixed(2)+'</td><td class="mono" style="color:'+dClr+'">'+r.reale.toFixed(2)+'</td><td class="mono" style="color:'+dClr+'">'+(r.delta>0?'+':'')+r.delta.toFixed(2)+'</td><td class="mono" style="color:'+dClr+'">'+pStr+'</td></tr>';
+    }).join('');
+    const tableHtml='<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">'+
+      '<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Dettaglio per lavorazione</div>'+
+      '<table class="rtable" id="budget-table"><thead><tr><th>Lavorazione</th><th>UM</th><th>Prev.</th><th>Reale</th><th>Delta</th><th>%</th></tr></thead><tbody>'+
+      tableRows+
+      '<tr style="font-weight:700;border-top:2px solid var(--gold)"><td colspan="2">TOTALE</td>'+
+      '<td class="mono">'+totPrev.toFixed(2)+'</td>'+
+      '<td class="mono" style="color:'+kpiColor+'">'+totReale.toFixed(2)+'</td>'+
+      '<td class="mono" style="color:'+(totDelta<=0?'var(--green)':'var(--red)')+'">'+(totDelta>0?'+':'')+totDelta.toFixed(2)+'</td>'+
+      '<td class="mono" style="color:'+(totPct!==null&&totPct<=100?'var(--green)':'var(--red)')+'">'+(totPct!==null?totPct.toFixed(0)+'%':'—')+'</td></tr>'+
+      '</tbody></table></div>';
+    const chartUid='bc'+Date.now();
+    const top10=righe.slice(0,10);
+    const chartHtml='<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">'+
+      '<div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Top 10 lavorazioni — ore</div>'+
+      '<canvas id="'+chartUid+'" style="max-height:320px"></canvas></div>';
+    el.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div class="sec" style="margin:0">📊 Budget vs Reale</div>'+
+      '<button class="btn-icon btn-sm" onclick="esportaBudgetExcel(\''+cantId+'\')">⬇️ Excel</button></div>'+
+      kpiHtml+tableHtml+chartHtml;
+    if(typeof Chart!=='undefined'&&top10.length){
+      const labels=top10.map(function(r){return r.nome.length>22?r.nome.substring(0,22)+'…':r.nome;});
+      new Chart(document.getElementById(chartUid),{
+        type:'bar',
+        data:{
+          labels:labels,
+          datasets:[
+            {label:'Preventivo',data:top10.map(function(r){return r.prev;}),backgroundColor:'rgba(200,168,75,0.7)',borderColor:'#c8a84b',borderWidth:1},
+            {label:'Reale',data:top10.map(function(r){return r.reale;}),backgroundColor:'rgba(85,136,224,0.7)',borderColor:'#5588e0',borderWidth:1}
+          ]
+        },
+        options:{
+          indexAxis:'y',responsive:true,
+          plugins:{legend:{labels:{color:'#f0ece2',font:{size:11}}}},
+          scales:{
+            x:{ticks:{color:'#857f73'},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{ticks:{color:'#f0ece2',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'}}
+          }
+        }
+      });
+    }
+  }catch(e){el.innerHTML='<div class="empty">Errore: '+escHtml(e.message)+'</div>';}
+}
+
+async function esportaBudgetExcel(cantId){
+  try{
+    const cant=CANTIERI.find(function(c){return c.id===cantId;})||curCant;
+    if(!cant){showToast('Nessun cantiere','e');return;}
+    const table=document.getElementById('budget-table');
+    if(!table){showToast('Nessun dato da esportare','e');return;}
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(wb,ws,'Budget vs Reale');
+    const oggi=new Date().toISOString().split('T')[0];
+    const cn=(cant.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
+    XLSX.writeFile(wb,'CT_Budget_'+cn+'_'+oggi+'.xlsx');
+    showToast('Excel scaricato ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
 async function init(){
   // Gestione link reset password da email (Supabase manda hash nell'URL)
   const hash=window.location.hash||'';
@@ -2710,6 +2845,7 @@ async function renderCantiere(){
       </div>`:''}
       <div style="margin-bottom:16px">
         <button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42)" onclick="apriContabilita()">💰 Contabilità cantiere</button>
+        <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a);margin-top:8px" onclick="apriBudget()">📊 Budget vs Reale</button>
       </div>
       ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
       ${Object.values(byOp).length?`
@@ -7107,10 +7243,50 @@ async function inviaNotifica(){
     if(error)throw error;
     closeModal('mod-notifica');
     showToast('Notifica inviata a '+rows.length+' persone ✓');
+    inviaPushLocale(titolo,testo);
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='📢 Invia';btn.disabled=false;}
 }
 
+function _aggiornaPushStato(){
+  const el=document.getElementById('push-stato');
+  const btn=document.getElementById('btn-attiva-push');
+  const istr=document.getElementById('push-istruzioni');
+  if(!('Notification' in window)){
+    if(el)el.innerHTML='<span style="color:var(--t2)">Notifiche non supportate da questo browser</span>';
+    if(btn)btn.style.display='none';
+    return;
+  }
+  const p=Notification.permission;
+  if(p==='granted'){
+    if(el)el.innerHTML='<span style="color:var(--green)">✅ Notifiche attivate</span>';
+    if(btn){btn.textContent='✅ Attive';btn.disabled=true;}
+    if(istr)istr.style.display='none';
+  }else if(p==='denied'){
+    if(el)el.innerHTML='<span style="color:var(--red)">🚫 Bloccate dal browser</span>';
+    if(btn)btn.style.display='none';
+    if(istr)istr.style.display='block';
+  }else{
+    if(el)el.innerHTML='<span style="color:var(--t2)">⏸ Non attive</span>';
+    if(btn){btn.textContent='🔔 Attiva notifiche push';btn.disabled=false;btn.style.display='block';}
+    if(istr)istr.style.display='none';
+  }
+}
+async function attivaNotifichePush(){
+  if(!('Notification' in window)){showToast('Browser non supportato','e');return;}
+  try{
+    const perm=await Notification.requestPermission();
+    _aggiornaPushStato();
+    if(perm==='granted')showToast('Notifiche attivate ✓');
+    else if(perm==='denied')showToast('Notifiche bloccate dal browser','e');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+async function inviaPushLocale(titolo,corpo){
+  try{
+    if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+    new Notification(titolo,{body:corpo,tag:'cantiere-master'});
+  }catch(e){}
+}
 async function renderNotifiche(){
   const el=document.getElementById('notifiche-content');
   if(!el)return;
@@ -7811,6 +7987,7 @@ async function caricaImpostazioniSchermata(){
     if(alertResp){
       alertResp.innerHTML='<option value="">— Tutti —</option>'+(OPERAI_TUTTI||[]).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+(o.nome||o.email||o.id)+'</option>').join('');
     }
+    _aggiornaPushStato();
   }catch(e){console.warn('caricaImpostazioni:',e.message);}
 }
 
