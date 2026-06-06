@@ -481,13 +481,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <div class="row2">
           <div class="fg"><label class="fl">Ore straordinari <span style="color:var(--t2);font-weight:400">(opz.)</span></label><input type="number" class="fi" id="g2-straordinari" placeholder="0" min="0" max="10" step="0.25" style="font-family:'DM Mono'"></div>
-          <div class="fg"><label class="fl">Zona / Trasferta</label>
-            <select class="fs" id="g2-trasferta">
-              <option value="locale">Locale (nessuna indennità)</option>
-              <option value="zona1">Zona 1</option>
-              <option value="zona2">Zona 2</option>
-              <option value="trasferta">Trasferta (notte fuori)</option>
-            </select>
+          <div class="fg">
+            <label class="fl">Trasferta</label>
+            <div id="g2-trasferta-dist" style="font-size:11px;color:var(--t2);margin-bottom:6px"></div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="g2-trasferta" style="width:18px;height:18px;accent-color:var(--gold)">
+              <span style="font-size:14px;font-weight:600">🚗 Trasferta</span>
+            </label>
           </div>
         </div>
         <div class="fg"><label class="fl">Note operaio</label><textarea class="ft" id="g2-note" placeholder="Avanzamento, problemi, imprevisti..." style="min-height:60px"></textarea></div>
@@ -719,6 +719,15 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <button class="btn btn-g" onclick="salvaImpostazioniPasti()">💾 Salva importi pasti</button>
       </div>
+    </div>
+
+    <!-- Trasferta -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)">🚗 Trasferta</div>
+      <div class="fg"><label class="fl">Distanza minima trasferta (km)</label>
+        <input type="number" class="fi" id="imp-trasferta-km" value="30" min="1" max="500" step="1" style="font-family:'DM Mono',monospace;max-width:120px">
+      </div>
+      <button class="btn btn-g" onclick="salvaImpostazioniTrasferta()">💾 Salva</button>
     </div>
 
     <!-- Sicurezza -->
@@ -3372,7 +3381,7 @@ async function generaPdfGiornata(data){
     const totalOre=(giornate||[]).reduce(function(s,g){return s+parseFloat(g.ore_totali||0);},0);
     const rows=(giornate||[]).map(function(g){
       const voceRows=(g.voci_lavoro||[]).map(function(v){return '<tr><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0">'+escHtml(v.lavorazioni?.nome||v.lavorazione_nome||'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace">'+parseFloat(v.ore||0).toFixed(2)+'h</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;color:#666">'+( v.quantita?v.quantita+' '+(v.um||''):'—')+'</td></tr>';}).join('');
-      const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:10px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta&&g.zona_trasferta!=='locale'?'<span style="font-size:10px;background:#e08840;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">'+g.zona_trasferta+'</span>':'');
+      const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:10px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta?'<span style="font-size:10px;background:#e08840;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">🚗 Trasferta</span>':'');
       const extraPdf=(g.note?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px;white-space:pre-line">'+escHtml(g.note)+'</div>':'')+(g.materiale_giorno?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888">🧱 Materiale utilizzato</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.materiale_giorno)+'</div></div>':'')+(g.attrezzatura_giorno?'<div style="font-size:12px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#888">🔧 Attrezzatura / Macchinari</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.attrezzatura_giorno)+'</div></div>':'');
       return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:15px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:12px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti||60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+extraPdf+'</div>';
     }).join('');
@@ -3473,6 +3482,7 @@ function setupStep2(){
   document.getElementById('top-title').textContent='Operai — '+GIO.data;
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
   _aggiornaCheckboxPasto();
+  _aggiornaCheckboxTrasferta();
 }
 let _sedeCoordsCached=null;
 async function _getSedeCoords(){
@@ -3514,6 +3524,31 @@ async function _aggiornaCheckboxPasto(){
       if(km>distMin)cb.checked=true;
     }
   }
+}
+async function _aggiornaCheckboxTrasferta(){
+  const distEl=document.getElementById('g2-trasferta-dist');
+  const cb=document.getElementById('g2-trasferta');
+  if(!cb)return;
+  cb.checked=false;
+  if(distEl)distEl.textContent='';
+  const distMin=parseFloat(IMPOSTAZIONI.trasferta_km)||30;
+  const cant=curCant;
+  if(cant?.lat&&cant?.lng){
+    const sede=await _getSedeCoords();
+    if(sede){
+      const km=haversineKm(parseFloat(cant.lat),parseFloat(cant.lng),sede.lat,sede.lng);
+      if(distEl)distEl.textContent=`Distanza: ${km.toFixed(1)} km`;
+      if(km>distMin)cb.checked=true;
+    }
+  }
+}
+async function salvaImpostazioniTrasferta(){
+  try{
+    const val=document.getElementById('imp-trasferta-km')?.value||'30';
+    await sb.from('impostazioni').upsert({chiave:'trasferta_km',valore:val},{onConflict:'chiave'});
+    IMPOSTAZIONI.trasferta_km=val;
+    showToast('Distanza trasferta salvata ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
 }
 function refreshOperaiSelect(){
   const salvIds=GIO.operaiSalvati.map(o=>o.opId);
@@ -3563,10 +3598,10 @@ async function salvaOperaio(){
   const materialeG=document.getElementById('g2-materiale-g')?.value.trim()||'';
   const attrezzaturaG=document.getElementById('g2-attrezzatura-g')?.value.trim()||'';
   const oreStr=parseFloat(document.getElementById('g2-straordinari').value)||0;
-  const zonaTrasferta=document.getElementById('g2-trasferta').value||'locale';
+  const zonaTrasferta=document.getElementById('g2-trasferta')?.checked?'trasferta':null;
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
     if(ge)throw ge;
     const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
       const sel=row.querySelector('.voce-sel');const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;if(!oreV)return null;
@@ -3591,7 +3626,7 @@ async function salvaOperaio(){
     document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
     const _gMat=document.getElementById('g2-materiale-g');if(_gMat)_gMat.value='';
     const _gAtt=document.getElementById('g2-attrezzatura-g');if(_gAtt)_gAtt.value='';
-    document.getElementById('g2-straordinari').value='';document.getElementById('g2-trasferta').value='locale';
+    document.getElementById('g2-straordinari').value='';_aggiornaCheckboxTrasferta();
     _aggiornaCheckboxPasto();
     fFiles=[];fB64=[];showToast(`${op?.nome} salvato ✓`);
   }catch(e){showToast('Errore: '+e.message,'e');}
@@ -3715,7 +3750,7 @@ async function renderReport(){
           <div style="font-family:'DM Mono';font-size:28px;color:var(--gold);font-weight:500">${ore.toFixed(2)}<span style="font-size:14px">h</span></div>
         </div>
         <div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Orario</th><th>Ore</th><th>Straord.</th><th>Trasferta</th></tr></thead>
-        <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${g.cantieri?.nome||'—'}</td><td style="font-family:'DM Mono';font-size:11px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td><td class="mono" style="color:${g.ore_straordinari>0?'var(--orange)':'var(--t3)'}">${g.ore_straordinari>0?'+'+parseFloat(g.ore_straordinari).toFixed(2)+'h':'—'}</td><td style="font-size:11px;color:var(--t2)">${g.zona_trasferta&&g.zona_trasferta!=='locale'?({'zona1':'Zona 1','zona2':'Zona 2','trasferta':'Trasferta'}[g.zona_trasferta]||g.zona_trasferta):'—'}</td></tr>`).join('')}</tbody></table></div>
+        <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${g.cantieri?.nome||'—'}</td><td style="font-family:'DM Mono';font-size:11px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td><td class="mono" style="color:${g.ore_straordinari>0?'var(--orange)':'var(--t3)'}">${g.ore_straordinari>0?'+'+parseFloat(g.ore_straordinari).toFixed(2)+'h':'—'}</td><td style="font-size:11px;color:var(--t2)">${g.zona_trasferta?'Sì':'—'}</td></tr>`).join('')}</tbody></table></div>
         ${ass.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Assenze</div>${ass.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:var(--t2)">${motivoIcon[a.motivo]||'❓'} <span>${fmtDate(a.data)}</span> <span style="color:var(--text)">${a.motivo}</span></div>`).join('')}</div>`:''}
       </div>`).join('');
   }else if(tipo==='cantieri'){
@@ -4576,12 +4611,12 @@ async function exportRaExcel(){
     try{
       let rows=[[]];
       if(tab==='ore'){
-        let q=sb.from('giornate').select('data,ore_totali,ore_straordinari,operai(nome,cognome,ruolo),cantieri(nome)').gte('data',from).lte('data',to);
+        let q=sb.from('giornate').select('data,ore_totali,ore_straordinari,zona_trasferta,operai(nome,cognome,ruolo),cantieri(nome)').gte('data',from).lte('data',to);
         if(cantF)q=q.eq('cantiere_id',cantF);if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
         const{data}=await q.order('data');let lista=data||[];
         if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
         if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
-        rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari'],...lista.map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0)])];
+        rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari','Trasferta'],...lista.map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0),g.zona_trasferta?'Sì':'No'])];
       }else if(tab==='materiali'){
         let q=sb.from('giornate').select('data,materiale_giorno,operai(nome,cognome),cantieri(nome)').gte('data',from).lte('data',to).not('materiale_giorno','is',null);
         if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
@@ -7749,6 +7784,7 @@ async function caricaImpostazioniSchermata(){
     if(map.pasto_altri)document.getElementById('imp-pasto-altri').value=map.pasto_altri;
     if(map.pasto_distanza_km){const _pdEl=document.getElementById('imp-pasto-dist');if(_pdEl)_pdEl.value=map.pasto_distanza_km;}
     const _cbSoloTit=document.getElementById('imp-pasto-solo-tit');if(_cbSoloTit)_cbSoloTit.checked=map.pasto_solo_titolare==='1';
+    if(map.trasferta_km){const _tkEl=document.getElementById('imp-trasferta-km');if(_tkEl)_tkEl.value=map.trasferta_km;}
     // Timbratura
     const timbArr=document.getElementById('timb-set-arr');
     const timbPausa=document.getElementById('timb-set-pausa');
