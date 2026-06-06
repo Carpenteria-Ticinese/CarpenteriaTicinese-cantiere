@@ -509,6 +509,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
           <input type="file" id="foto-inp-cam" accept="image/*" multiple capture="environment" style="display:none" onchange="addFoto(event)">
           <div class="foto-grid" id="foto-prv"></div>
         </div>
+        <div id="g2-pasto-wrap" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--s2);border-radius:var(--rsm);border:1px solid rgba(200,168,75,.2)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="g2-pasto" style="width:18px;height:18px;accent-color:var(--gold)">
+            <span style="font-size:14px;font-weight:600">🍽️ Pasto riconosciuto</span>
+          </label>
+          <div id="g2-pasto-hint" style="font-size:11px;color:var(--t2);margin-top:4px;margin-left:28px"></div>
+        </div>
         <button class="btn btn-g" onclick="salvaOperaio()" id="btn-salva-op">💾 Salva operaio</button>
       </div>
     </div>
@@ -699,6 +706,16 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <div class="fg"><label class="fl">Importo pasto altri (CHF/giorno)</label>
           <input type="number" class="fi" id="imp-pasto-altri" value="18" min="0" step="0.5" style="font-family:'DM Mono',monospace;max-width:120px">
+        </div>
+        <div class="fg"><label class="fl">Distanza minima per pasto (km)</label>
+          <input type="number" class="fi" id="imp-pasto-dist" value="15" min="1" max="500" step="1" style="font-family:'DM Mono',monospace;max-width:120px">
+        </div>
+        <div class="toggle-wrap" style="margin-bottom:12px">
+          <div>
+            <div class="toggle-lbl">Solo titolare può assegnare pasti</div>
+            <div class="toggle-sub">Gli operai non vedranno il checkbox nel form giornata</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="imp-pasto-solo-tit"><span class="toggle-sl"></span></label>
         </div>
         <button class="btn btn-g" onclick="salvaImpostazioniPasti()">💾 Salva importi pasti</button>
       </div>
@@ -1457,6 +1474,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <label class="fl">📐 Voci lavoro</label>
       <div id="mg-voci-list"></div>
       <button class="btn btn-s" style="margin-top:8px;font-size:12px" onclick="mgAggiungiVoce()">➕ Aggiungi lavoro</button>
+    </div>
+    <div id="mg-pasto-wrap" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--s2);border-radius:var(--rsm);border:1px solid rgba(200,168,75,.2)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="mg-pasto" style="width:18px;height:18px;accent-color:var(--gold)">
+        <span style="font-size:14px;font-weight:600">🍽️ Pasto riconosciuto</span>
+      </label>
     </div>
     <hr>
     <div class="row2">
@@ -3087,6 +3110,8 @@ async function apriModificaGiornata(gid){
   // Popola voci lavoro editabili
   mgRenderVoci(vociEsist||[]);
   openModal('mod-modifica-g');
+  const _mgPWrap=document.getElementById('mg-pasto-wrap');const _mgPCb=document.getElementById('mg-pasto');
+  if(_mgPWrap&&_mgPCb){const _isTit=PROF?.ruolo==='titolare';const _soloTit=IMPOSTAZIONI.pasto_solo_titolare==='1';if(IMPOSTAZIONI.pasti_abilitati==='1'&&(_isTit||!_soloTit)){_mgPWrap.style.display='block';_mgPCb.checked=!!g.pasto_riconosciuto;}else{_mgPWrap.style.display='none';}}
   const grid=document.getElementById('mg-foto-esistenti');
   if(!(fotoEsist||[]).length){grid.innerHTML='<div style="font-size:11px;color:var(--t2);grid-column:span 3">Nessuna foto caricata</div>';}
   else{
@@ -3223,7 +3248,8 @@ async function salvaModificaGiornata(){
     const mat=document.getElementById('mg-mat').value.trim();
     const materialeG=document.getElementById('mg-materiale-g')?.value.trim()||'';
     const attrezzaturaG=document.getElementById('mg-attrezzatura-g')?.value.trim()||'';
-    const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null}).eq('id',modificaGid).select().single();
+    const _mgPWrap2=document.getElementById('mg-pasto-wrap');const _mgPCb2=document.getElementById('mg-pasto');const _pastiOnMg=IMPOSTAZIONI.pasti_abilitati==='1';
+    const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{})}).eq('id',modificaGid).select().single();
     if(error)throw error;
     if(mat){await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});}
     // Salva modifiche alle voci lavoro
@@ -3446,6 +3472,48 @@ function setupStep2(){
   fFiles=[];fB64=[];renderSalvati();showScr('giornata-2');
   document.getElementById('top-title').textContent='Operai — '+GIO.data;
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
+  _aggiornaCheckboxPasto();
+}
+let _sedeCoordsCached=null;
+async function _getSedeCoords(){
+  if(_sedeCoordsCached)return _sedeCoordsCached;
+  const via=IMPOSTAZIONI.via_azienda||'';const cap=IMPOSTAZIONI.cap_azienda||'';const citta=IMPOSTAZIONI.citta_azienda||'';
+  if(!citta&&!cap)return null;
+  const addr=encodeURIComponent([via,cap,citta].filter(Boolean).join(', '));
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${addr}&format=json&limit=1`,{headers:{'Accept-Language':'it'}});
+    const j=await r.json();
+    if(j&&j[0]){_sedeCoordsCached={lat:parseFloat(j[0].lat),lng:parseFloat(j[0].lon)};}
+  }catch(e){}
+  return _sedeCoordsCached;
+}
+function haversineKm(lat1,lon1,lat2,lon2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+async function _aggiornaCheckboxPasto(){
+  const wrap=document.getElementById('g2-pasto-wrap');
+  const cb=document.getElementById('g2-pasto');
+  const hint=document.getElementById('g2-pasto-hint');
+  if(!wrap||!cb)return;
+  const pastiOn=IMPOSTAZIONI.pasti_abilitati==='1';
+  if(!pastiOn){wrap.style.display='none';return;}
+  const soloTit=IMPOSTAZIONI.pasto_solo_titolare==='1';
+  if(soloTit&&PROF?.ruolo!=='titolare'){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  cb.checked=false;
+  if(hint)hint.textContent='';
+  const distMin=parseFloat(IMPOSTAZIONI.pasto_distanza_km)||15;
+  const cant=curCant;
+  if(cant?.lat&&cant?.lng){
+    const sede=await _getSedeCoords();
+    if(sede){
+      const km=haversineKm(parseFloat(cant.lat),parseFloat(cant.lng),sede.lat,sede.lng);
+      if(hint)hint.textContent=`Cantiere a ${km.toFixed(1)} km dalla sede (soglia ${distMin} km)`;
+      if(km>distMin)cb.checked=true;
+    }
+  }
 }
 function refreshOperaiSelect(){
   const salvIds=GIO.operaiSalvati.map(o=>o.opId);
@@ -3498,7 +3566,7 @@ async function salvaOperaio(){
   const zonaTrasferta=document.getElementById('g2-trasferta').value||'locale';
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,created_by:USER.id}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta!=='locale'?zonaTrasferta:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
     if(ge)throw ge;
     const vociRows=[...document.querySelectorAll('#g2-voci .voce-row')].map(row=>{
       const sel=row.querySelector('.voce-sel');const oreV=parseFloat(row.querySelector('.voce-ore-inp').value)||0;if(!oreV)return null;
@@ -3524,6 +3592,7 @@ async function salvaOperaio(){
     const _gMat=document.getElementById('g2-materiale-g');if(_gMat)_gMat.value='';
     const _gAtt=document.getElementById('g2-attrezzatura-g');if(_gAtt)_gAtt.value='';
     document.getElementById('g2-straordinari').value='';document.getElementById('g2-trasferta').value='locale';
+    _aggiornaCheckboxPasto();
     fFiles=[];fB64=[];showToast(`${op?.nome} salvato ✓`);
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Salva operaio';btn.disabled=false;}
@@ -4443,7 +4512,7 @@ async function _raAttrezzatura(el,from,to,opF,cantF){
 }
 
 async function _raPranzi(el,from,to,opF,cantF){
-  let q=sb.from('giornate').select('data,operaio_id,operai(nome,cognome,ruolo)').gte('data',from).lte('data',to);
+  let q=sb.from('giornate').select('data,operaio_id,operai(nome,cognome,ruolo)').eq('pasto_riconosciuto',true).gte('data',from).lte('data',to);
   if(cantF)q=q.eq('cantiere_id',cantF);
   if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
   const{data:gio}=await q;
@@ -4458,7 +4527,7 @@ async function _raPranzi(el,from,to,opF,cantF){
   el.innerHTML=`
     <div style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--gold);font-weight:700">Totale indennità pasti</span><span style="font-family:'DM Mono';font-size:18px;color:var(--gold)">${grandTot.toFixed(2)} CHF</span></div>
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
-      <table class="rtable"><thead><tr><th>Collaboratore</th><th>Ruolo</th><th>Giorni</th><th>Indennità totale</th></tr></thead><tbody>
+      <table class="rtable"><thead><tr><th>Collaboratore</th><th>Ruolo</th><th>Pasti</th><th>Indennità totale</th></tr></thead><tbody>
       ${Object.values(byOp).sort((a,b)=>b.tot-a.tot).map(v=>`<tr><td>${escHtml(v.op?.nome||'')} ${escHtml(v.op?.cognome||'')}</td><td style="color:var(--t2)">${escHtml(v.op?.ruolo||'')}</td><td class="mono">${v.giorni}</td><td class="mono" style="color:var(--gold)">${v.tot.toFixed(2)} CHF</td></tr>`).join('')}
       </tbody></table>
     </div>`;
@@ -6081,6 +6150,9 @@ const MODULI_APP = [
    ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ora_inizio_timbrata text;
    ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ora_fine_timbrata text;
    ALTER TABLE giornate ADD COLUMN IF NOT EXISTS pausa_minuti_timbrata integer DEFAULT 60;
+
+   -- PASTO RICONOSCIUTO (P48)
+   ALTER TABLE giornate ADD COLUMN IF NOT EXISTS pasto_riconosciuto boolean DEFAULT false;
 ══════════════════════════════════════════════════ */
 
 // Controlla se utente ha accesso a modulo (considera ruolo + eccezioni)
@@ -7675,6 +7747,8 @@ async function caricaImpostazioniSchermata(){
     if(map.pasto_carpentiere)document.getElementById('imp-pasto-carp').value=map.pasto_carpentiere;
     if(map.pasto_lattoniere)document.getElementById('imp-pasto-latt').value=map.pasto_lattoniere;
     if(map.pasto_altri)document.getElementById('imp-pasto-altri').value=map.pasto_altri;
+    if(map.pasto_distanza_km){const _pdEl=document.getElementById('imp-pasto-dist');if(_pdEl)_pdEl.value=map.pasto_distanza_km;}
+    const _cbSoloTit=document.getElementById('imp-pasto-solo-tit');if(_cbSoloTit)_cbSoloTit.checked=map.pasto_solo_titolare==='1';
     // Timbratura
     const timbArr=document.getElementById('timb-set-arr');
     const timbPausa=document.getElementById('timb-set-pausa');
@@ -7740,6 +7814,8 @@ async function salvaImpostazioniPasti(){
       {chiave:'pasto_carpentiere',valore:document.getElementById('imp-pasto-carp').value||'18'},
       {chiave:'pasto_lattoniere',valore:document.getElementById('imp-pasto-latt').value||'15'},
       {chiave:'pasto_altri',valore:document.getElementById('imp-pasto-altri').value||'18'},
+      {chiave:'pasto_distanza_km',valore:document.getElementById('imp-pasto-dist')?.value||'15'},
+      {chiave:'pasto_solo_titolare',valore:document.getElementById('imp-pasto-solo-tit')?.checked?'1':'0'},
     ];
     for(const r of rows){
       await sb.from('impostazioni').upsert(r,{onConflict:'chiave'});
@@ -7747,7 +7823,9 @@ async function salvaImpostazioniPasti(){
     IMPOSTAZIONI.pasto_carpentiere=parseFloat(rows[0].valore);
     IMPOSTAZIONI.pasto_lattoniere=parseFloat(rows[1].valore);
     IMPOSTAZIONI.pasto_altri=parseFloat(rows[2].valore);
-    showToast('Importi pasti salvati ✓');
+    IMPOSTAZIONI.pasto_distanza_km=rows[3].valore;
+    IMPOSTAZIONI.pasto_solo_titolare=rows[4].valore;
+    showToast('Impostazioni pasti salvate ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 // ══════════════════════════════════════════════════
