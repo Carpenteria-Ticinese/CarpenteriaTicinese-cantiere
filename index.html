@@ -378,7 +378,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="ov" id="mod-timbratura-manuale">
     <div class="mod">
       <div class="mod-h"></div>
-      <div class="mod-t">📋 Inserimento manuale</div>
+      <div class="mod-t" data-i18n="modal_timb_manuale">📋 Inserimento manuale</div>
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="tm-data"></div>
       <div class="row2">
         <div class="fg"><label class="fl" data-i18n="lbl_ora_inizio">Ora inizio</label><input type="time" class="fi" id="tm-ini" oninput="calcOreTimbrManuale()"></div>
@@ -615,14 +615,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-g" style="flex-shrink:0;height:44px" onclick="salvaNomeAzienda()" data-i18n="btn_salva">💾 Salva</button>
     </div>
     <hr style="margin-bottom:14px">
-    <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px">➕ Nuovo cantiere</button>
-    <div class="sec">Personale</div>
-    <button class="btn btn-s" onclick="navTo('personale')" style="margin-bottom:12px;width:100%">👷 Gestisci personale →</button>
-    <div class="sec admin-only">Utenti</div>
+    <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px" data-i18n="btn_nuovo_cantiere">➕ Nuovo cantiere</button>
+    <div class="sec" data-i18n="sec_personale_admin">Personale</div>
+    <button class="btn btn-s" onclick="navTo('personale')" style="margin-bottom:12px;width:100%" data-i18n="btn_gestisci_personale">👷 Gestisci personale →</button>
+    <div class="sec admin-only" data-i18n="sec_utenti_admin">Utenti</div>
     <div id="adm-utenti" class="admin-only"></div>
-    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px">✉️ Invita nuovo collaboratore</button></div>
-    <button class="btn btn-s admin-only" onclick="navTo('permessi')" style="margin-bottom:8px;width:100%">🔐 Permessi e visibilità →</button>
-    <button class="btn btn-s admin-only" onclick="navTo('impostazioni')" style="margin-bottom:8px;width:100%">⚙️ Impostazioni →</button>
+    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px" data-i18n="btn_invita_collab">✉️ Invita nuovo collaboratore</button></div>
+    <button class="btn btn-s admin-only" onclick="navTo('permessi')" style="margin-bottom:8px;width:100%" data-i18n="btn_perm_vis_admin">🔐 Permessi e visibilità →</button>
+    <button class="btn btn-s admin-only" onclick="navTo('impostazioni')" style="margin-bottom:8px;width:100%" data-i18n="btn_imp_admin">⚙️ Impostazioni →</button>
     <div class="bsp"></div>
   </div>
 
@@ -677,9 +677,9 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)" data-i18n="sett_testo">🔤 Dimensione testo</div>
       <p style="font-size:12px;color:var(--t2);margin-bottom:12px" data-i18n="txt_testo_info">Scegli la dimensione che preferisci. Salvata per questo dispositivo.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="setFontSize(1)" id="fs-btn-1" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block">Piccolo</span></button>
-        <button onclick="setFontSize(2)" id="fs-btn-2" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block">Normale</span></button>
-        <button onclick="setFontSize(3)" id="fs-btn-3" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:16px">A<span style="font-size:9px;display:block">Grande</span></button>
+        <button onclick="setFontSize(1)" id="fs-btn-1" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block" data-i18n="fs_piccolo">Piccolo</span></button>
+        <button onclick="setFontSize(2)" id="fs-btn-2" class="btn btn-s btn-sm" style="flex:1;min-width:60px">A<span style="font-size:9px;display:block" data-i18n="fs_normale">Normale</span></button>
+        <button onclick="setFontSize(3)" id="fs-btn-3" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:16px">A<span style="font-size:9px;display:block" data-i18n="fs_grande">Grande</span></button>
         <button onclick="setFontSize(4)" id="fs-btn-4" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:19px">A<span style="font-size:9px;display:block">XL</span></button>
         <button onclick="setFontSize(5)" id="fs-btn-5" class="btn btn-s btn-sm" style="flex:1;min-width:60px;font-size:22px">A<span style="font-size:9px;display:block">XXL</span></button>
       </div>
@@ -707,13 +707,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <label class="toggle"><input type="checkbox" id="imp-pasti-on" onchange="toggleModuloPasti(this.checked)"><span class="toggle-sl"></span></label>
       </div>
       <div id="imp-pasti-dettagli" style="display:none">
-        <div class="fg"><label class="fl">Importo pasto Carpentiere (CHF/giorno)</label>
+        <div class="fg"><label class="fl" data-i18n="lbl_imp_pasto_carp">Importo pasto Carpentiere (CHF/giorno)</label>
           <input type="number" class="fi" id="imp-pasto-carp" value="18" min="0" step="0.5" style="font-family:'DM Mono',monospace;max-width:120px">
         </div>
-        <div class="fg"><label class="fl">Importo pasto Lattoniere (CHF/giorno)</label>
+        <div class="fg"><label class="fl" data-i18n="lbl_imp_pasto_latt">Importo pasto Lattoniere (CHF/giorno)</label>
           <input type="number" class="fi" id="imp-pasto-latt" value="15" min="0" step="0.5" style="font-family:'DM Mono',monospace;max-width:120px">
         </div>
-        <div class="fg"><label class="fl">Importo pasto altri (CHF/giorno)</label>
+        <div class="fg"><label class="fl" data-i18n="lbl_imp_pasto_altri">Importo pasto altri (CHF/giorno)</label>
           <input type="number" class="fi" id="imp-pasto-altri" value="18" min="0" step="0.5" style="font-family:'DM Mono',monospace;max-width:120px">
         </div>
         <div class="fg"><label class="fl" data-i18n="lbl_distr_min_pasto">Distanza minima per pasto (km)</label>
@@ -721,8 +721,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <div class="toggle-wrap" style="margin-bottom:12px">
           <div>
-            <div class="toggle-lbl">Solo titolare può assegnare pasti</div>
-            <div class="toggle-sub">Gli operai non vedranno il checkbox nel form giornata</div>
+            <div class="toggle-lbl" data-i18n="lbl_solo_tit_pasti">Solo titolare può assegnare pasti</div>
+            <div class="toggle-sub" data-i18n="lbl_solo_tit_pasti_sub">Gli operai non vedranno il checkbox nel form giornata</div>
           </div>
           <label class="toggle"><input type="checkbox" id="imp-pasto-solo-tit"><span class="toggle-sl"></span></label>
         </div>
@@ -817,7 +817,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="margin-top:12px">
         <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Offset entrata (min preparazione)</div>
         <div class="fg">
-          <label class="fl">Offset globale (min) — per tutti</label>
+          <label class="fl" data-i18n="lbl_offset_glob">Offset globale (min) — per tutti</label>
           <input type="number" class="fi" id="timb-offset-globale" value="0" min="0" max="60" step="1" style="font-family:'DM Mono',monospace">
         </div>
         <div id="timb-offset-ruoli-wrap" style="margin-top:8px"></div>
@@ -844,20 +844,20 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- PERMESSI VISIBILITÀ -->
   <div class="scr" id="scr-permessi">
     <div style="margin-bottom:16px">
-      <div class="sec" style="margin:0">🔐 Permessi e visibilità</div>
-      <p style="font-size:13px;color:var(--t2);margin-top:6px;line-height:1.6">Gestisci chi può vedere cosa nell'app. Modifiche ai permessi richiedono la tua password.</p>
+      <div class="sec" style="margin:0" data-i18n="sec_perm_visib">🔐 Permessi e visibilità</div>
+      <p style="font-size:13px;color:var(--t2);margin-top:6px;line-height:1.6" data-i18n="txt_perm_desc">Gestisci chi può vedere cosa nell'app. Modifiche ai permessi richiedono la tua password.</p>
     </div>
     <div id="permessi-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <hr style="margin-top:20px">
-    <div class="sec">Sicurezza e accessi</div>
-    <button class="btn btn-s" style="width:100%;margin-bottom:8px" onclick="navTo('permessi')">🔐 Gestione permessi e visibilità</button>
+    <div class="sec" data-i18n="sec_sicurezza_acc">Sicurezza e accessi</div>
+    <button class="btn btn-s" style="width:100%;margin-bottom:8px" onclick="navTo('permessi')" data-i18n="txt_sicurezza_perm">🔐 Gestione permessi e visibilità →</button>
     <div class="bsp"></div>
   </div>
 
   <!-- SPESE -->
   <div class="scr" id="scr-spese">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">Spese & Documenti</div>
+      <div class="sec" style="margin:0" data-i18n="sec_spese_docs">Spese & Documenti</div>
       <button class="btn-icon btn-sm" onclick="openModalSpesa(null)" data-i18n="btn_aggiungi">➕ Aggiungi</button>
     </div>
     <div class="row2" style="margin-bottom:12px">
@@ -874,8 +874,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- REGIA -->
   <div class="scr" id="scr-regia">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0">Lavori a Regia</div>
-      <button class="btn-icon btn-sm" onclick="openModalRegia(null)">➕ Aggiungi</button>
+      <div class="sec" style="margin:0" data-i18n="sec_lavori_regia">Lavori a Regia</div>
+      <button class="btn-icon btn-sm" onclick="openModalRegia(null)" data-i18n="btn_aggiungi">➕ Aggiungi</button>
     </div>
     <div class="row2" style="margin-bottom:12px">
       <select class="fs" id="reg-cantiere" onchange="renderRegia()"><option value="">Tutti i cantieri</option></select>
@@ -883,7 +883,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
     <div id="reg-totali" style="margin-bottom:12px"></div>
     <div id="regia-list"></div>
-    <div style="margin-top:12px"><button class="btn btn-s" onclick="exportRegia()">⬇️ Esporta regia per fattura</button></div>
+    <div style="margin-top:12px"><button class="btn btn-s" onclick="exportRegia()" data-i18n="btn_esporta_regia">⬇️ Esporta regia per fattura</button></div>
     <div class="bsp"></div>
   </div>
 
@@ -1032,21 +1032,21 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="display:flex;gap:6px">
         <button class="btn-icon btn-sm" onclick="apriSchermoPiano()" title="Proietta su schermo">📺</button>
         <button class="btn-icon btn-sm" onclick="apriInvioNotifica()">📢</button>
-        <button onclick="openModal('mod-piano-ass')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">➕ Assegna operaio</button>
+        <button onclick="openModal('mod-piano-ass')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px" data-i18n="btn_assegna_op">➕ Assegna operaio</button>
       </div>
     </div>
     <div id="piano-data-label" style="font-size:12px;color:var(--t2);margin-bottom:12px;text-align:center"></div>
     <div id="piano-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
 
     <div class="sec" style="margin-top:20px" data-i18n="sec_piano_mezzi">🚗 Mezzi aziendali</div>
-    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModal('mod-mezzo')">➕ Nuovo mezzo</button>
+    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModal('mod-mezzo')" data-i18n="btn_nuovo">➕ Nuovo mezzo</button>
     <div id="mezzi-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <div class="sec" style="margin-top:24px" data-i18n="sec_veicolo">🔍 Chi ha guidato il veicolo?</div>
     <div class="row2" style="margin-bottom:8px">
       <select class="fs" id="veicolo-sel"><option value="">Seleziona targa...</option></select>
       <input type="date" class="fi" id="veicolo-dal" placeholder="Da (opzionale)">
     </div>
-    <button class="btn btn-s" style="width:100%;margin-bottom:10px" onclick="cercaChiHaGuidato()">🔍 Cerca</button>
+    <button class="btn btn-s" style="width:100%;margin-bottom:10px" onclick="cercaChiHaGuidato()" data-i18n="btn_cerca">🔍 Cerca</button>
     <div id="veicolo-risultati"></div>
     <div class="bsp"></div>
   </div>
@@ -1078,7 +1078,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- MATERIALI CANTIERE -->
   <div class="scr" id="scr-mat-cantiere">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0" id="mat-cant-title">Materiali cantiere</div>
+      <div class="sec" style="margin:0" id="mat-cant-title" data-i18n="sec_mat_cantiere">Materiali cantiere</div>
       <button class="btn-icon btn-sm" onclick="openModalMateriale(null)">+ Aggiungi</button>
     </div>
     <div id="mat-cantiere-list"></div>
@@ -1129,7 +1129,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-gru">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-gru-t">Nuovo tiro gru</div>
+    <div class="mod-t" id="mod-gru-t" data-i18n="modal_nuovo_gru">Nuovo tiro gru</div>
     <div class="fg"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
       <select class="fs" id="gru-tipo-op">
         <option value="paghiamo">CT paga — ditta esterna fa i tiri</option>
@@ -1140,12 +1140,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="gru-data"></div>
       <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="gru-cant-sel"><option value="">Nessuno</option></select></div>
     </div>
-    <div class="fg"><label class="fl">Ditta esterna</label><input type="text" class="fi" id="gru-ditta" placeholder="Nome azienda"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_ditta_esterna">Ditta esterna</label><input type="text" class="fi" id="gru-ditta" placeholder="Nome azienda"></div>
     <div class="row2">
-      <div class="fg"><label class="fl">N. tiri</label><input type="number" class="fi" id="gru-ntiri" placeholder="0" min="1" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_n_tiri">N. tiri</label><input type="number" class="fi" id="gru-ntiri" placeholder="0" min="1" style="font-family:'DM Mono',monospace"></div>
       <div class="fg"><label class="fl">Importo CHF <span style="font-weight:400;color:var(--t2)">(opzionale)</span></label><input type="number" class="fi" id="gru-importo" placeholder="Da definire..." step="0.01" style="font-family:'DM Mono',monospace"></div>
     </div>
-    <div class="fg"><label class="fl">Foto bollettino / documento</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_foto_doc">Foto bollettino / documento</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
         <div class="foto-drop" onclick="document.getElementById('gru-foto-cam').click()" style="padding:12px">
           <div style="font-size:22px">📷</div>
@@ -1164,7 +1164,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-gru')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="salvaGru()" id="btn-salva-gru">Salva</button>
+      <button class="btn btn-g" onclick="salvaGru()" id="btn-salva-gru" data-i18n="btn_salva">Salva</button>
     </div>
     <div id="del-gru-w" style="margin-top:10px"></div>
   </div>
@@ -1174,23 +1174,23 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="mod">
     <div class="mod-h"></div>
     <div id="mod-cant-log-content"></div>
-    <button class="btn btn-s" onclick="closeModal('mod-cant-log')" style="margin-top:14px">Chiudi</button>
+    <button class="btn btn-s" onclick="closeModal('mod-cant-log')" style="margin-top:14px" data-i18n="btn_chiudi">Chiudi</button>
   </div>
 </div>
 
 <div class="ov" id="mod-import">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">📥 Importa voci dal preventivo</div>
+    <div class="mod-t" data-i18n="modal_importa_prev">📥 Importa voci dal preventivo</div>
     <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Carica il file <strong>CT_Preventivatore_v3_GRANDE.xlsx</strong>. Le voci del foglio OFFERTA diventano automaticamente le lavorazioni selezionabili per questo cantiere.</p>
     <div class="import-box" onclick="document.getElementById('xlsx-inp').click()">
       <div style="font-size:36px">📊</div>
-      <p>Tocca per selezionare il file Excel del preventivo</p>
+      <p data-i18n="txt_importa_drop">Tocca per selezionare il file Excel del preventivo</p>
     </div>
     <input type="file" id="xlsx-inp" accept=".xlsx,.xls" style="display:none" onchange="importPreventivo(event)">
     <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--t2)"></div>
     <hr>
-    <button class="btn btn-s" onclick="closeModal('mod-import')">Chiudi</button>
+    <button class="btn btn-s" onclick="closeModal('mod-import')" data-i18n="btn_chiudi">Chiudi</button>
   </div>
 </div>
 
@@ -1198,28 +1198,28 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="mod">
     <div class="mod-h"></div>
     <div id="mod-analisi-content"></div>
-    <button class="btn btn-s" onclick="closeModal('mod-analisi')" style="margin-top:14px">Chiudi</button>
+    <button class="btn btn-s" onclick="closeModal('mod-analisi')" style="margin-top:14px" data-i18n="btn_chiudi">Chiudi</button>
   </div>
 </div>
 
 <div class="ov" id="mod-cant">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-cant-t">Nuovo cantiere</div>
-    <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="c-nome"></div>
-    <div class="fg"><label class="fl">Luogo (breve)</label><input type="text" class="fi" id="c-luogo" placeholder="es. San Nazzaro"></div>
-    <div class="fg"><label class="fl">Via / Indirizzo</label><input type="text" class="fi" id="c-via" placeholder="es. Via Lugano 12"></div>
+    <div class="mod-t" id="mod-cant-t" data-i18n="modal_nuovo_cantiere">Nuovo cantiere</div>
+    <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="c-nome"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_luogo_breve">Luogo (breve)</label><input type="text" class="fi" id="c-luogo" placeholder="es. San Nazzaro"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_via_indirizzo">Via / Indirizzo</label><input type="text" class="fi" id="c-via" placeholder="es. Via Lugano 12"></div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_cap">CAP</label><input type="text" class="fi" id="c-cap" placeholder="6500" style="font-family:'DM Mono',monospace"></div>
       <div class="fg"><label class="fl" data-i18n="lbl_citta">Città</label><input type="text" class="fi" id="c-citta" placeholder="Bellinzona"></div>
     </div>
-    <div class="fg"><label class="fl">Paese</label><select class="fs" id="c-paese"><option value="CH">🇨🇭 CH — Svizzera</option><option value="IT">🇮🇹 IT — Italia</option><option value="DE">🇩🇪 DE — Germania</option><option value="AT">🇦🇹 AT — Austria</option><option value="FR">🇫🇷 FR — Francia</option><option value="ES">🇪🇸 ES — Spagna</option></select></div>
-    <div class="fg"><label class="fl">Committente (nome)</label><input type="text" class="fi" id="c-comm"></div>
-    <div class="fg"><label class="fl">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_paese">Paese</label><select class="fs" id="c-paese"><option value="CH">🇨🇭 CH — Svizzera</option><option value="IT">🇮🇹 IT — Italia</option><option value="DE">🇩🇪 DE — Germania</option><option value="AT">🇦🇹 AT — Austria</option><option value="FR">🇫🇷 FR — Francia</option><option value="ES">🇪🇸 ES — Spagna</option></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_committente_lbl">Committente (nome)</label><input type="text" class="fi" id="c-comm"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_stato">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-cant')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="saveCant()">Salva</button>
+      <button class="btn btn-g" onclick="saveCant()" data-i18n="btn_salva_cant">Salva</button>
     </div>
     <div id="del-cant-w" style="margin-top:10px"></div>
   </div>
@@ -1228,10 +1228,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-op">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-op-t">Nuovo operaio</div>
+    <div class="mod-t" id="mod-op-t" data-i18n="modal_nuovo_op">Nuovo operaio</div>
     <div class="row2">
-      <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="o-nome"></div>
-      <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="o-nome"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_cognome">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
     </div>
     <div class="fg"><label class="fl">Ruolo <span style="font-weight:400;font-size:10px;color:var(--t2)">(seleziona o scrivi liberamente)</span></label>
       <input class="fi" id="o-ruolo" list="ruoli-list" placeholder="es. Carpentiere, Elettricista..." autocomplete="off">
@@ -1252,24 +1252,24 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="Tecnico di cantiere">
         <option value="Ditta esterna">
       </datalist></div>
-    <div class="fg"><label class="fl">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" placeholder="es. +41 79 123 45 67"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" placeholder="es. Patente gru, specializzazioni..."></div>
-    <div class="fg"><label class="fl">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
     <div class="toggle-wrap" style="margin-bottom:8px">
-      <div><div class="toggle-lbl">Collaboratore di agenzia (interinale)</div><div class="toggle-sub">Mostra badge AGZ, filtrabile nel report</div></div>
+      <div><div class="toggle-lbl" data-i18n="txt_collab_agenzia">Collaboratore di agenzia (interinale)</div><div class="toggle-sub" data-i18n="txt_collab_agenzia_sub">Mostra badge AGZ, filtrabile nel report</div></div>
       <label class="toggle"><input type="checkbox" id="o-agenzia" onchange="document.getElementById('o-agenzia-wrap').style.display=this.checked?'block':'none'"><span class="toggle-sl"></span></label>
     </div>
     <div id="o-agenzia-wrap" style="display:none;margin-bottom:12px">
-      <div class="fg" style="margin-bottom:0"><label class="fl">Nome agenzia</label><input type="text" class="fi" id="o-nome-agenzia" placeholder="es. Manpower, Adecco, Randstad..."></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_nome_agenzia">Nome agenzia</label><input type="text" class="fi" id="o-nome-agenzia" placeholder="es. Manpower, Adecco, Randstad..."></div>
     </div>
     <div id="op-docs-section" style="display:none">
       <hr style="margin:14px 0">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 Documenti e scadenze</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px" data-i18n="sec_docs_scadenze">📋 Documenti e scadenze</div>
       <div id="op-docs-list" style="min-height:20px;margin-bottom:10px"></div>
       <div style="background:var(--s2);border-radius:var(--rsm);padding:12px">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px;font-weight:700">Aggiungi documento</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px;font-weight:700" data-i18n="txt_aggiungi_doc_sec">Aggiungi documento</div>
         <div class="row2" style="margin-bottom:8px">
           <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
             <select class="fs" id="doc-tipo">
@@ -1279,18 +1279,18 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
               <option value="Altro">📄 Altro</option>
             </select>
           </div>
-          <div class="fg" style="margin-bottom:0"><label class="fl">Scadenza</label>
+          <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_scadenza">Scadenza</label>
             <input type="date" class="fi" id="doc-scad" style="font-family:'DM Mono',monospace;font-size:13px">
           </div>
         </div>
-        <div class="fg"><label class="fl">Note (opzionale)</label><input type="text" class="fi" id="doc-note" placeholder="es. Patente B+E, n° 123456..."></div>
-        <button class="btn btn-g" style="margin-top:4px;padding:8px 16px;font-size:13px" onclick="addDocumentoOp()">➕ Aggiungi documento</button>
+        <div class="fg"><label class="fl" data-i18n="lbl_note_opz">Note (opzionale)</label><input type="text" class="fi" id="doc-note" placeholder="es. Patente B+E, n° 123456..."></div>
+        <button class="btn btn-g" style="margin-top:4px;padding:8px 16px;font-size:13px" onclick="addDocumentoOp()" data-i18n="btn_aggiungi_doc">➕ Aggiungi documento</button>
       </div>
     </div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="saveOp()">Salva</button>
+      <button class="btn btn-g" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
     </div>
     <div id="del-op-w" style="margin-top:10px"></div>
   </div>
@@ -1301,12 +1301,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-spesa-view">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="spv-titolo">Dettaglio spesa</div>
+    <div class="mod-t" id="spv-titolo" data-i18n="modal_det_spesa">Dettaglio spesa</div>
     <div id="spv-content"></div>
     <hr style="margin:14px 0">
     <div class="row2">
-      <button class="btn btn-s" onclick="closeModal('mod-spesa-view')">Chiudi</button>
-      <button class="btn btn-g" id="spv-btn-modifica">✏️ Modifica</button>
+      <button class="btn btn-s" onclick="closeModal('mod-spesa-view')" data-i18n="btn_chiudi">Chiudi</button>
+      <button class="btn btn-g" id="spv-btn-modifica" data-i18n="btn_modifica">✏️ Modifica</button>
     </div>
     <div id="spv-btn-cantiere-wrap" style="margin-top:10px"></div>
   </div>
@@ -1315,34 +1315,34 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-spesa">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-spesa-t">Nuova spesa / documento</div>
+    <div class="mod-t" id="mod-spesa-t" data-i18n="modal_nuova_spesa">Nuova spesa / documento</div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="sp-cant-sel"></select></div>
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="sp-data"></div>
     </div>
-    <div class="fg"><label class="fl">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
-    <div class="fg"><label class="fl">Pagato da</label><select class="fs" id="sp-pagato-da"></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_op_spesa">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_pagato_da">Pagato da</label><select class="fs" id="sp-pagato-da"></select></div>
     <div class="row2">
-      <div class="fg"><label class="fl">Tipo documento</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_tipo_doc">Tipo documento</label>
         <select class="fs" id="sp-tipo-doc"><option>Scontrino</option><option>Bolla di consegna</option><option>Fattura fornitore</option><option>Altro</option></select>
       </div>
-      <div class="fg"><label class="fl">Tipo spesa</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_tipo_spesa">Tipo spesa</label>
         <select class="fs" id="sp-tipo-spesa"><option>Materiale</option><option>Gasolio</option><option>Autostrada</option><option>Pranzo</option><option>Regia</option><option>Trasporto</option><option>Altro</option></select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Descrizione</label><input type="text" class="fi" id="sp-desc" placeholder="es. Gasolio cantiere, Flumroc fattura n.123..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_desc_spesa">Descrizione</label><input type="text" class="fi" id="sp-desc" placeholder="es. Gasolio cantiere, Flumroc fattura n.123..."></div>
     <div class="row3">
-      <div class="fg"><label class="fl">Importo</label><input type="number" class="fi" id="sp-importo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Valuta</label><select class="fs" id="sp-valuta"><option>CHF</option><option>EUR</option></select></div>
-      <div class="fg"><label class="fl">Stato</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_importo">Importo</label><input type="number" class="fi" id="sp-importo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_valuta">Valuta</label><select class="fs" id="sp-valuta"><option>CHF</option><option>EUR</option></select></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_stato">Stato</label>
         <select class="fs" id="sp-stato-pag" onchange="toggleMetodoPag(this)"><option>Da pagare</option><option>Pagato</option></select>
       </div>
     </div>
     <div class="fg" id="sp-metodo-wrap">
-      <label class="fl">Chi ha pagato / come</label>
+      <label class="fl" data-i18n="lbl_chi_pag_come">Chi ha pagato / come</label>
       <select class="fs" id="sp-metodo"><option>Carta aziendale</option><option>Carta privata operaio</option><option>Contanti</option></select>
     </div>
-    <div class="fg"><label class="fl">Foto scontrino / bolla / fattura</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_foto_sp">Foto scontrino / bolla / fattura</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
         <div class="foto-drop" onclick="document.getElementById('sp-foto-inp-cam').click()" style="padding:14px">
           <div style="font-size:24px">📷</div>
@@ -1350,7 +1350,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <div class="foto-drop" onclick="document.getElementById('sp-foto-inp').click()" style="padding:14px">
           <div style="font-size:24px">🖼️</div>
-          <p style="font-size:11px;color:var(--t2);margin-top:4px">Galleria / PDF</p>
+          <p style="font-size:11px;color:var(--t2);margin-top:4px" data-i18n="lbl_galleria_pdf">Galleria / PDF</p>
         </div>
       </div>
       <input type="file" id="sp-foto-inp" accept="image/*,application/pdf" style="display:none" onchange="addFotoSpesa(event)">
@@ -1370,12 +1370,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-regia-view">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="rgv-titolo">Dettaglio regia</div>
+    <div class="mod-t" id="rgv-titolo" data-i18n="modal_det_regia">Dettaglio regia</div>
     <div id="rgv-content"></div>
     <hr style="margin:14px 0">
     <div class="row2">
-      <button class="btn btn-s" onclick="closeModal('mod-regia-view')">Chiudi</button>
-      <button class="btn btn-g" id="rgv-btn-modifica">✏️ Modifica</button>
+      <button class="btn btn-s" onclick="closeModal('mod-regia-view')" data-i18n="btn_chiudi">Chiudi</button>
+      <button class="btn btn-g" id="rgv-btn-modifica" data-i18n="btn_modifica">✏️ Modifica</button>
     </div>
   </div>
 </div>
@@ -1383,7 +1383,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-regia">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-regia-t">Nuovo lavoro a regia</div>
+    <div class="mod-t" id="mod-regia-t" data-i18n="modal_nuova_regia">Nuovo lavoro a regia</div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="reg-cant-sel"></select></div>
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="reg-data"></div>
@@ -1392,17 +1392,17 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
       <select class="fs" id="reg-tipo"><option>Ore</option><option>Materiale</option><option>Trasferta</option><option>Nolo attrezzatura</option><option>Altro</option></select>
     </div>
-    <div class="fg"><label class="fl">Descrizione</label><input type="text" class="fi" id="reg-desc" placeholder="es. Posa extra gronda nord, Materiale aggiuntivo BSH..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_desc">Descrizione</label><input type="text" class="fi" id="reg-desc" placeholder="es. Posa extra gronda nord, Materiale aggiuntivo BSH..."></div>
     <div class="row3">
-      <div class="fg"><label class="fl">Quantità</label><input type="number" class="fi" id="reg-qty" placeholder="0" step="0.25" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">UM</label><input type="text" class="fi" id="reg-um" placeholder="h / ml / m²" value="h"></div>
-      <div class="fg"><label class="fl">Fatturato?</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_quantita">Quantità</label><input type="number" class="fi" id="reg-qty" placeholder="0" step="0.25" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_um">UM</label><input type="text" class="fi" id="reg-um" placeholder="h / ml / m²" value="h"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_fatturato">Fatturato?</label>
         <select class="fs" id="reg-fatt"><option value="false">No — da fatturare</option><option value="true">Sì — già fatturato</option></select>
       </div>
     </div>
     <div class="row2">
-      <div class="fg"><label class="fl">Costo CT (CHF/um)</label><input type="number" class="fi" id="reg-costo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Prezzo cliente (CHF/um)</label><input type="number" class="fi" id="reg-prezzo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_costo_ct">Costo CT (CHF/um)</label><input type="number" class="fi" id="reg-costo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_prezzo_cliente">Prezzo cliente (CHF/um)</label><input type="number" class="fi" id="reg-prezzo" placeholder="0.00" step="0.01" style="font-family:'DM Mono',monospace"></div>
     </div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><textarea class="ft" id="reg-note" style="min-height:50px" placeholder="Descrizione dettagliata per la fattura..."></textarea></div>
     <hr>
@@ -1417,11 +1417,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-assenza">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-ass-t">Registra assenza</div>
+    <div class="mod-t" id="mod-ass-t" data-i18n="modal_ass_titolo">Registra assenza</div>
     <div class="fg"><label class="fl" data-i18n="lbl_operaio">Operaio</label><select class="fs" id="ass-op-sel"></select></div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="ass-data"></div>
-      <div class="fg"><label class="fl">Giorni</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_giorni">Giorni</label>
         <select class="fs" id="ass-giorni">
           <option value="1">1 giorno intero</option>
           <option value="0.5">½ giornata (mattino)</option>
@@ -1429,10 +1429,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Motivo</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_motivo">Motivo</label>
       <select class="fs" id="ass-motivo"><option>Malattia</option><option>Ferie</option><option>Agenzia — operaio temporaneo</option><option>Infortunio</option><option>Permesso</option><option>Altro</option></select>
     </div>
-    <div class="fg"><label class="fl">Cantiere (facoltativo)</label><select class="fs" id="ass-cant-sel"><option value="">Nessuno</option></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_cant_fac">Cantiere (facoltativo)</label><select class="fs" id="ass-cant-sel"><option value="">Nessuno</option></select></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><textarea class="ft" id="ass-note" style="min-height:50px"></textarea></div>
     <hr>
     <div class="row2">
@@ -1446,7 +1446,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-figura">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-fig-t">Aggiungi figura</div>
+    <div class="mod-t" id="mod-fig-t" data-i18n="modal_fig_titolo">Aggiungi figura</div>
     <div class="fg"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
       <select class="fs" id="fig-ruolo">
         <option value="DL">Direttore Lavori (DL)</option><option value="Geometra">Geometra</option>
@@ -1456,11 +1456,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </select>
     </div>
     <div class="row2">
-      <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="fig-nome"></div>
-      <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="fig-cogn"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="fig-nome"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_cognome">Cognome</label><input type="text" class="fi" id="fig-cogn"></div>
     </div>
-    <div class="fg"><label class="fl">Nome impresa</label><input type="text" class="fi" id="fig-nome-impresa" placeholder="es. Studio Arch. Rossi SA"></div>
-    <div class="fg"><label class="fl">Nome referente</label><input type="text" class="fi" id="fig-nome-referente" placeholder="es. Ing. Bianchi"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_nome_impresa">Nome impresa</label><input type="text" class="fi" id="fig-nome-impresa" placeholder="es. Studio Arch. Rossi SA"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_nome_referente">Nome referente</label><input type="text" class="fi" id="fig-nome-referente" placeholder="es. Ing. Bianchi"></div>
     <div class="fg"><label class="fl">Azienda / Studio <span style="font-size:10px;color:var(--t2)">(descrizione libera)</span></label><input type="text" class="fi" id="fig-azienda" placeholder="es. Studio Arch. Rossi"></div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="fig-tel" placeholder="+41 79 ..."></div>
@@ -1479,7 +1479,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-modifica-g">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">✏️ Modifica giornata</div>
+    <div class="mod-t" data-i18n="modal_modifica_g">✏️ Modifica giornata</div>
     <div id="modifica-g-info" style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--t2)"></div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_ora_inizio">Ora inizio</label><input type="time" class="fi" id="mg-ini" oninput="calcOreModifica()"></div>
@@ -1688,9 +1688,9 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-mezzo">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-mezzo-t">Nuovo mezzo</div>
+    <div class="mod-t" id="mod-mezzo-t" data-i18n="modal_nuovo_mezzo">Nuovo mezzo</div>
     <div class="row2">
-      <div class="fg"><label class="fl">Targa</label><input type="text" class="fi" id="mz-targa" placeholder="es. TI 123456" style="text-transform:uppercase"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_targa">Targa</label><input type="text" class="fi" id="mz-targa" placeholder="es. TI 123456" style="text-transform:uppercase"></div>
       <div class="fg"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
         <select class="fs" id="mz-tipo">
           <option>Furgone</option><option>Camion</option><option>Auto</option>
@@ -1698,17 +1698,17 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Descrizione / Marca modello</label><input type="text" class="fi" id="mz-desc" placeholder="es. Ford Transit bianco, Iveco 35s14..."></div>
-    <div class="fg"><label class="fl">Assegnato di default a</label><select class="fs" id="mz-operaio"><option value="">— Nessuno —</option></select></div>
-    <div class="fg"><label class="fl">Stato mezzo</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_desc_mezzo">Descrizione / Marca modello</label><input type="text" class="fi" id="mz-desc" placeholder="es. Ford Transit bianco, Iveco 35s14..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_assegnato_a">Assegnato di default a</label><select class="fs" id="mz-operaio"><option value="">— Nessuno —</option></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_stato_mezzo">Stato mezzo</label>
       <select class="fs" id="mz-stato">
         <option value="disponibile">🟢 Disponibile</option>
         <option value="manutenzione">🔧 In manutenzione</option>
         <option value="fuori_uso">🔴 Fuori uso</option>
       </select>
     </div>
-    <div class="fg"><label class="fl">Note stato</label><input type="text" class="fi" id="mz-stato-note" placeholder="es. Dal meccanico fino al 15/05..."></div>
-    <div class="fg"><label class="fl">Data dismissione</label><input type="date" class="fi" id="mz-dismissione" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_note_stato">Note stato</label><input type="text" class="fi" id="mz-stato-note" placeholder="es. Dal meccanico fino al 15/05..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_data_dismissione">Data dismissione</label><input type="date" class="fi" id="mz-dismissione" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-mezzo')" data-i18n="btn_annulla">Annulla</button>
@@ -1721,7 +1721,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-pagamento">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-pag-t">Registra pagamento</div>
+    <div class="mod-t" id="mod-pag-t" data-i18n="modal_reg_pag">Registra pagamento</div>
     <div id="pag-alert-uff" style="background:rgba(224,136,64,.15);border:2px solid var(--orange);border-radius:var(--rsm);padding:14px;margin-bottom:14px">
       <div style="font-size:16px;font-weight:900;color:var(--orange);text-align:center;margin-bottom:8px">⚠️ ATTENZIONE</div>
       <div style="font-size:var(--fs-lg);font-weight:700;text-align:center;color:var(--text);margin-bottom:8px">Registra solo i pagamenti ufficiali</div>
@@ -1734,13 +1734,13 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="pag-cant-sel"></select></div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="pag-data" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Importo</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_importo">Importo</label>
         <div class="row2">
           <input type="number" class="fi" id="pag-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace">
           <select class="fs" id="pag-valuta"><option value="CHF">CHF</option><option value="EUR">EUR</option></select>
         </div></div>
     </div>
-    <div class="fg"><label class="fl">Metodo di pagamento</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_metodo_pag">Metodo di pagamento</label>
       <select class="fs" id="pag-metodo">
         <option value="Bonifico">Bonifico bancario</option>
         <option value="Contanti">Contanti</option>
@@ -1749,12 +1749,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="Altro">Altro</option>
       </select>
     </div>
-    <div class="fg"><label class="fl">Riferimento (fattura n.)</label><input type="text" class="fi" id="pag-rif" placeholder="es. Fattura 2024/003 — SAL 2"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_rif_fattura">Riferimento (fattura n.)</label><input type="text" class="fi" id="pag-rif" placeholder="es. Fattura 2024/003 — SAL 2"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><textarea class="ft" id="pag-note" style="min-height:50px"></textarea></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-pagamento')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" id="btn-salva-pag" onclick="salvaPagamento()">💾 Registra</button>
+      <button class="btn btn-g" id="btn-salva-pag" onclick="salvaPagamento()" data-i18n="btn_registra">💾 Registra</button>
     </div>
     <div id="del-pag-w" style="margin-top:10px"></div>
   </div>
@@ -1763,19 +1763,19 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-bolla">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-bol-t">Nuova bolla di consegna</div>
+    <div class="mod-t" id="mod-bol-t" data-i18n="modal_nuova_bolla">Nuova bolla di consegna</div>
     <div class="row2">
       <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="bol-cant-sel"></select></div>
       <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="bol-data" style="font-family:'DM Mono',monospace"></div>
     </div>
-    <div class="fg"><label class="fl">Ora</label><input type="time" class="fi" id="bol-ora" style="font-family:'DM Mono',monospace;font-size:14px"></div>
-    <div class="fg"><label class="fl">Fornitore</label><input type="text" class="fi" id="bol-fornitore" placeholder="es. Würth SA, Flumroc AG..."></div>
-    <div class="fg"><label class="fl">Descrizione materiali</label><textarea class="ft" id="bol-desc" style="min-height:60px" placeholder="es. BSH 200ml, viti 10 scatole..."></textarea></div>
-    <div class="fg"><label class="fl">Stato</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_ora">Ora</label><input type="time" class="fi" id="bol-ora" style="font-family:'DM Mono',monospace;font-size:14px"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_fornitore">Fornitore</label><input type="text" class="fi" id="bol-fornitore" placeholder="es. Würth SA, Flumroc AG..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_desc_mat">Descrizione materiali</label><textarea class="ft" id="bol-desc" style="min-height:60px" placeholder="es. BSH 200ml, viti 10 scatole..."></textarea></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_stato">Stato</label>
       <select class="fs" id="bol-stato-op"><option value="ricevuta">Ricevuta ✓</option><option value="mancante">Mancante / In attesa ⏳</option></select>
     </div>
-    <div class="fg"><label class="fl">Operaio che ha ricevuto</label><select class="fs" id="bol-op-sel"></select></div>
-    <div class="fg"><label class="fl">📷 Foto bolla</label>
+    <div class="fg"><label class="fl" data-i18n="lbl_op_ricevuto">Operaio che ha ricevuto</label><select class="fs" id="bol-op-sel"></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_foto_bolla">📷 Foto bolla</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
         <div class="foto-drop" onclick="document.getElementById('bol-foto-cam').click()" style="padding:12px;text-align:center;cursor:pointer"><div style="font-size:22px">📷</div><p style="font-size:11px;color:var(--t2);margin-top:4px" data-i18n="fotocamera_lbl">Fotocamera</p></div>
         <div class="foto-drop" onclick="document.getElementById('bol-foto-inp').click()" style="padding:12px;text-align:center;cursor:pointer"><div style="font-size:22px">🖼️</div><p style="font-size:11px;color:var(--t2);margin-top:4px" data-i18n="galleria_lbl">Galleria</p></div>
@@ -1797,7 +1797,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-sal">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-sal-t">Registra pagamento SAL</div>
+    <div class="mod-t" id="mod-sal-t" data-i18n="modal_sal_titolo">Registra pagamento SAL</div>
     <p style="font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.6">Inserisci importi <strong>fatturati E già incassati</strong> dal cliente.</p>
     <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="sal-cant-sel"></select></div>
     <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="sal-data" style="font-family:'DM Mono',monospace"></div>
@@ -1810,8 +1810,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="altro">Altro pagamento</option>
       </select>
     </div>
-    <div class="fg"><label class="fl">Importo CHF</label><input type="number" class="fi" id="sal-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace"></div>
-    <div class="fg"><label class="fl">Riferimento (fattura n.)</label><input type="text" class="fi" id="sal-rif" placeholder="es. Fattura n.2024/003"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_importo_chf">Importo CHF</label><input type="number" class="fi" id="sal-importo" placeholder="0.00" step="0.01" min="0" style="font-family:'DM Mono',monospace"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_rif_fattura">Riferimento (fattura n.)</label><input type="text" class="fi" id="sal-rif" placeholder="es. Fattura n.2024/003"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><textarea class="ft" id="sal-note" style="min-height:40px"></textarea></div>
     <hr>
     <div class="row2">
@@ -1825,8 +1825,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-richiesta-ass">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">📋 Richiesta assenza / permesso</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:14px">La richiesta verrà inviata al titolare per approvazione.</p>
+    <div class="mod-t" data-i18n="modal_richiesta_ass">📋 Richiesta assenza / permesso</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:14px" data-i18n="txt_richiesta_ass_sub">La richiesta verrà inviata al titolare per approvazione.</p>
     <div class="fg"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
       <select class="fs" id="rich-tipo">
         <option value="ferie">🏖️ Ferie</option>
@@ -1837,14 +1837,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </select>
     </div>
     <div class="row2">
-      <div class="fg"><label class="fl">Dal giorno</label><input type="date" class="fi" id="rich-dal" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl">Al giorno</label><input type="date" class="fi" id="rich-al" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_dal_giorno">Dal giorno</label><input type="date" class="fi" id="rich-dal" style="font-family:'DM Mono',monospace"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_al_giorno">Al giorno</label><input type="date" class="fi" id="rich-al" style="font-family:'DM Mono',monospace"></div>
     </div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><textarea class="ft" id="rich-note" style="min-height:60px" placeholder="Spiega brevemente il motivo..."></textarea></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-richiesta-ass')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" id="btn-invia-rich" onclick="inviaRichiestaAssenza()">📤 Invia richiesta</button>
+      <button class="btn btn-g" id="btn-invia-rich" onclick="inviaRichiestaAssenza()" data-i18n="btn_invia_richiesta">📤 Invia richiesta</button>
     </div>
   </div>
 </div>
@@ -1852,9 +1852,9 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-pwd-permessi">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">🔐 Conferma identità</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Per modificare i permessi inserisci la tua password.</p>
-    <div class="fg"><label class="fl">Password titolare</label>
+    <div class="mod-t" data-i18n="modal_conf_id">🔐 Conferma identità</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:14px" data-i18n="txt_conf_id_sub">Per modificare i permessi inserisci la tua password.</p>
+    <div class="fg"><label class="fl" data-i18n="lbl_pwd_titolare">Password titolare</label>
       <div style="position:relative">
         <input type="password" class="fi" id="pwd-perm-inp" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
         <button type="button" onclick="togglePwd('pwd-perm-inp',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:16px">👁</button>
@@ -1863,7 +1863,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-pwd-permessi')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" id="btn-perm-conf" onclick="confermaPwdPermessi()">Conferma</button>
+      <button class="btn btn-g" id="btn-perm-conf" onclick="confermaPwdPermessi()" data-i18n="btn_conf">Conferma</button>
     </div>
   </div>
 </div>
@@ -1871,24 +1871,24 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 <div class="ov" id="mod-tema">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t">🎨 Tema colore</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:16px">Scegli il colore preferito. Salvato su questo dispositivo.</p>
+    <div class="mod-t" data-i18n="modal_tema">🎨 Tema colore</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px" data-i18n="txt_tema_sub">Scegli il colore preferito. Salvato su questo dispositivo.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px" id="tema-griglia"></div>
     <div id="tema-attuale" style="font-size:12px;color:var(--t2);text-align:center;margin-bottom:10px"></div>
-    <button class="btn btn-s" style="width:100%" onclick="closeModal('mod-tema')">Chiudi</button>
+    <button class="btn btn-s" style="width:100%" onclick="closeModal('mod-tema')" data-i18n="btn_chiudi">Chiudi</button>
   </div>
 </div>
 
 <div class="ov" id="mod-lav-multi">
   <div class="mod" style="max-height:90vh;overflow-y:auto">
     <div class="mod-h"></div>
-    <div class="mod-t">Seleziona lavorazioni</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Seleziona una o più lavorazioni svolte.</p>
+    <div class="mod-t" data-i18n="modal_sel_lav">Seleziona lavorazioni</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px" data-i18n="txt_sel_lav_sub">Seleziona una o più lavorazioni svolte.</p>
     <input type="text" class="fi" id="lav-multi-search" placeholder="🔍 Cerca lavorazione..." oninput="filtraLavMulti()" style="margin-bottom:10px">
     <div id="lav-multi-lista" style="margin-bottom:14px;max-height:45vh;overflow-y:auto"></div>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-lav-multi')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="confermaSelezioneMulti()">✓ Aggiungi selezionate</button>
+      <button class="btn btn-g" onclick="confermaSelezioneMulti()" data-i18n="btn_aggiungi_sel">✓ Aggiungi selezionate</button>
     </div>
   </div>
 </div>
@@ -2014,6 +2014,117 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Cambia password →',
     txt_rep_avanzato_btn:'📊 Report avanzato →',
     lbl_abilita_pasti:'Abilita modulo pasti',
+    modal_nuovo_cantiere:'Nuovo cantiere',modal_modifica_cant:'Modifica cantiere',
+    modal_nuovo_op:'Nuovo operaio',modal_modifica_op:'Modifica collaboratore',
+    modal_nuovo_mezzo:'Nuovo mezzo',modal_modifica_mezzo:'Modifica mezzo',
+    modal_nuova_spesa:'Nuova spesa / documento',modal_modifica_spesa:'Modifica spesa',
+    modal_det_spesa:'Dettaglio spesa',
+    modal_nuova_regia:'Nuovo lavoro a regia',modal_modifica_regia:'Modifica regia',
+    modal_det_regia:'Dettaglio regia',
+    modal_ass_titolo:'Registra assenza',modal_modifica_ass:'Modifica assenza',
+    modal_fig_titolo:'Aggiungi figura',modal_modifica_fig:'Modifica figura',
+    modal_modifica_g:'✏️ Modifica giornata',
+    modal_reg_pag:'Registra pagamento',modal_modifica_pag:'Modifica pagamento',
+    modal_nuova_bolla:'Nuova bolla di consegna',modal_modifica_bolla:'Modifica bolla',
+    modal_sal_titolo:'Registra pagamento SAL',
+    modal_richiesta_ass:'📋 Richiesta assenza / permesso',
+    modal_conf_id:'🔐 Conferma identita',
+    modal_tema:'🎨 Tema colore',modal_sel_lav:'Seleziona lavorazioni',
+    modal_importa_prev:'📥 Importa voci dal preventivo',
+    modal_timb_manuale:'📋 Inserimento manuale',
+    modal_nuovo_gru:'Nuovo tiro gru',modal_modifica_gru:'Modifica tiro gru',
+    lbl_nome:'Nome',lbl_cognome:'Cognome',lbl_desc:'Descrizione',
+    lbl_quantita:'Quantita',lbl_um:'UM',lbl_importo:'Importo',
+    lbl_valuta:'Valuta',lbl_stato:'Stato',lbl_targa:'Targa',
+    lbl_luogo_breve:'Luogo (breve)',lbl_via_indirizzo:'Via / Indirizzo',
+    lbl_paese:'Paese',lbl_committente_lbl:'Committente (nome)',
+    lbl_committente_hdr:'Committente',
+    lbl_email_app:'Email (per accesso app)',lbl_fine_rapporto:'Fine rapporto',
+    lbl_nome_agenzia:'Nome agenzia',lbl_scadenza:'Scadenza',
+    lbl_note_opz:'Note (opzionale)',lbl_giorni:'Giorni',lbl_motivo:'Motivo',
+    lbl_cant_fac:'Cantiere (facoltativo)',
+    lbl_nome_impresa:'Nome impresa',lbl_nome_referente:'Nome referente',
+    lbl_az_studio:'Azienda / Studio',
+    lbl_ditta_esterna:'Ditta esterna',lbl_n_tiri:'N. tiri',
+    lbl_foto_doc:'Foto bollettino / documento',
+    lbl_op_spesa:'Operaio / Chi ha sostenuto la spesa',
+    lbl_pagato_da:'Pagato da',lbl_tipo_doc:'Tipo documento',
+    lbl_tipo_spesa:'Tipo spesa',lbl_desc_spesa:'Descrizione',
+    lbl_chi_pag_come:'Chi ha pagato / come',
+    lbl_foto_sp:'Foto scontrino / bolla / fattura',
+    lbl_galleria_pdf:'Galleria / PDF',
+    lbl_fatturato:'Fatturato?',lbl_costo_ct:'Costo CT (CHF/um)',
+    lbl_prezzo_cliente:'Prezzo cliente (CHF/um)',
+    lbl_ora:'Ora',lbl_fornitore:'Fornitore',lbl_desc_mat:'Descrizione materiali',
+    lbl_op_ricevuto:'Operaio che ha ricevuto',lbl_foto_bolla:'📷 Foto bolla',
+    lbl_metodo_pag:'Metodo di pagamento',lbl_rif_fattura:'Riferimento (fattura n.)',
+    lbl_stato_mezzo:'Stato mezzo',lbl_note_stato:'Note stato',
+    lbl_data_dismissione:'Data dismissione',
+    lbl_assegnato_a:'Assegnato di default a',
+    lbl_desc_mezzo:'Descrizione / Marca modello',
+    lbl_imp_pasto_carp:'Importo pasto Carpentiere (CHF/giorno)',
+    lbl_imp_pasto_latt:'Importo pasto Lattoniere (CHF/giorno)',
+    lbl_imp_pasto_altri:'Importo pasto altri (CHF/giorno)',
+    lbl_solo_tit_pasti:'Solo titolare puo assegnare pasti',
+    lbl_solo_tit_pasti_sub:'Gli operai non vedranno il checkbox nel form giornata',
+    lbl_offset_glob:'Offset globale (min) per tutti',
+    lbl_dal_giorno:'Dal giorno',lbl_al_giorno:'Al giorno',
+    lbl_pwd_titolare:'Password titolare',lbl_importo_chf:'Importo CHF',
+    sec_personale_admin:'Personale',sec_utenti_admin:'Utenti',
+    sec_perm_visib:'🔐 Permessi e visibilita',
+    sec_sicurezza_acc:'Sicurezza e accessi',
+    sec_spese_docs:'Spese & Documenti',sec_lavori_regia:'Lavori a Regia',
+    sec_mat_cantiere:'Materiali cantiere',
+    sec_docs_scadenze:'📋 Documenti e scadenze',
+    sec_spese_cat:'Spese per categoria',
+    sec_andamento_sett:'Andamento settimanale',
+    sec_ore_op_cant:'Ore per operaio totale cantiere',
+    sec_cronologia_cant:'Cronologia cantiere tutte le attivita',
+    btn_gestisci_personale:'👷 Gestisci personale →',
+    btn_invita_collab:'✉️ Invita nuovo collaboratore',
+    btn_perm_vis_admin:'🔐 Permessi e visibilita →',
+    btn_imp_admin:'⚙️ Impostazioni →',
+    btn_invia_richiesta:'📤 Invia richiesta',
+    btn_conf:'Conferma',btn_modifica:'✏️ Modifica',
+    btn_registra:'💾 Registra',
+    btn_aggiungi_doc:'➕ Aggiungi documento',
+    btn_assegna_op:'➕ Assegna operaio',
+    btn_cerca:'🔍 Cerca',
+    btn_esporta_regia:'⬇️ Esporta regia per fattura',
+    btn_aggiungi_sel:'✓ Aggiungi selezionate',
+    btn_esporta_dati:'⬇️ Esporta dati',
+    btn_carica_prev:'Carica preventivo',
+    btn_aggiorna_prev:'Aggiorna preventivo',
+    btn_lavorazioni:'📐 Lavorazioni',
+    btn_figure_cant:'👥 Figure cantiere',
+    btn_foto_cantiere:'📷 Foto cantiere',
+    btn_materiali:'📦 Materiali',
+    btn_contabilita_cant:'💰 Contabilita cantiere',
+    btn_budget_reale:'📊 Budget vs Reale',
+    btn_pdf_cant:'📄 PDF cantiere completo',
+    btn_regia_cant:'🔧 Regia',btn_spese_cant:'🧾 Spese',
+    btn_aggiungi_op_giorno:'➕ Aggiungi operaio a questo giorno',
+    btn_modifica_giornata:'✏️ Modifica questa giornata',
+    btn_salva_cant:'Salva',
+    txt_tema_sub:'Scegli il colore preferito. Salvato su questo dispositivo.',
+    txt_perm_desc:'Gestisci chi puo vedere cosa. Le modifiche ai permessi richiedono password.',
+    txt_conf_id_sub:'Per modificare i permessi inserisci la tua password.',
+    txt_richiesta_ass_sub:'La richiesta verra inviata al titolare per approvazione.',
+    txt_sel_lav_sub:'Seleziona una o piu lavorazioni svolte.',
+    txt_collab_agenzia:'Collaboratore di agenzia (interinale)',
+    txt_collab_agenzia_sub:'Mostra badge AGZ, filtrabile nel report',
+    txt_aggiungi_doc_sec:'Aggiungi documento',
+    th_operaio:'Operaio',th_ore_totali:t('kpi_ore_tot'),th_chf_est:'CHF est.',
+    th_lavorazione:'Lavorazione',th_ore:'Ore',th_quantita:'Quantita',
+    th_categoria:'Categoria',th_importo_chf:'Importo CHF',
+    lbl_margine_stimato:'Margine stimato',
+    kpi_manodopera:'CHF Manodopera',kpi_spese:'CHF Spese',
+    kpi_costo_tot:t('kpi_costo_tot'),kpi_ricavi:t('kpi_ricavi'),
+    kpi_ore_tot:t('kpi_ore_tot'),kpi_giornate:t('kpi_giornate'),kpi_tariffa:t('kpi_tariffa'),
+    log_nessuna_foto:'Nessuna foto caricata',
+    log_foto_hdr:'📷 Foto',log_caricamento:'⏳ Caricamento foto...',
+    log_note_hdr:'Note',
+    fs_piccolo:'Piccolo',fs_normale:'Normale',fs_grande:'Grande',
   },
   EN:{
     nav_cantieri:'Sites',nav_giornata:'Day',nav_spese:'Expenses',
@@ -2118,6 +2229,117 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Change password →',
     txt_rep_avanzato_btn:'📊 Advanced report →',
     lbl_abilita_pasti:'Enable meal module',
+    modal_nuovo_cantiere:'New site',modal_modifica_cant:'Edit site',
+    modal_nuovo_op:'New worker',modal_modifica_op:'Edit worker',
+    modal_nuovo_mezzo:'New vehicle',modal_modifica_mezzo:'Edit vehicle',
+    modal_nuova_spesa:'New expense / document',modal_modifica_spesa:'Edit expense',
+    modal_det_spesa:'Expense detail',
+    modal_nuova_regia:'New extra work',modal_modifica_regia:'Edit extra work',
+    modal_det_regia:'Extra work detail',
+    modal_ass_titolo:'Record absence',modal_modifica_ass:'Edit absence',
+    modal_fig_titolo:'Add figure',modal_modifica_fig:'Edit figure',
+    modal_modifica_g:'✏️ Edit day',
+    modal_reg_pag:'Record payment',modal_modifica_pag:'Edit payment',
+    modal_nuova_bolla:'New delivery note',modal_modifica_bolla:'Edit delivery note',
+    modal_sal_titolo:'Record SAL payment',
+    modal_richiesta_ass:'📋 Leave request',
+    modal_conf_id:'🔐 Confirm identity',
+    modal_tema:'🎨 Color theme',modal_sel_lav:'Select works',
+    modal_importa_prev:'📥 Import from estimate',
+    modal_timb_manuale:'📋 Manual entry',
+    modal_nuovo_gru:'New crane lift',modal_modifica_gru:'Edit crane lift',
+    lbl_nome:'Name',lbl_cognome:'Surname',lbl_desc:'Description',
+    lbl_quantita:'Quantity',lbl_um:'Unit',lbl_importo:'Amount',
+    lbl_valuta:'Currency',lbl_stato:'Status',lbl_targa:'Plate',
+    lbl_luogo_breve:'Location (brief)',lbl_via_indirizzo:'Street / Address',
+    lbl_paese:'Country',lbl_committente_lbl:'Client (name)',
+    lbl_committente_hdr:'Client',
+    lbl_email_app:'Email (app access)',lbl_fine_rapporto:'End of contract',
+    lbl_nome_agenzia:'Agency name',lbl_scadenza:'Expiry',
+    lbl_note_opz:'Notes (optional)',lbl_giorni:'Days',lbl_motivo:'Reason',
+    lbl_cant_fac:'Site (optional)',
+    lbl_nome_impresa:'Company name',lbl_nome_referente:'Contact name',
+    lbl_az_studio:'Company / Studio',
+    lbl_ditta_esterna:'External firm',lbl_n_tiri:'No. lifts',
+    lbl_foto_doc:'Photo receipt / document',
+    lbl_op_spesa:'Worker / who paid the expense',
+    lbl_pagato_da:'Paid by',lbl_tipo_doc:'Document type',
+    lbl_tipo_spesa:'Expense type',lbl_desc_spesa:'Description',
+    lbl_chi_pag_come:'Who paid / how',
+    lbl_foto_sp:'Photo receipt / invoice',
+    lbl_galleria_pdf:'Gallery / PDF',
+    lbl_fatturato:'Invoiced?',lbl_costo_ct:'CT cost (CHF/unit)',
+    lbl_prezzo_cliente:'Client price (CHF/unit)',
+    lbl_ora:'Time',lbl_fornitore:'Supplier',lbl_desc_mat:'Materials description',
+    lbl_op_ricevuto:'Worker who received',lbl_foto_bolla:'📷 Delivery photo',
+    lbl_metodo_pag:'Payment method',lbl_rif_fattura:'Reference (invoice no.)',
+    lbl_stato_mezzo:'Vehicle status',lbl_note_stato:'Status notes',
+    lbl_data_dismissione:'Disposal date',
+    lbl_assegnato_a:'Default assigned to',
+    lbl_desc_mezzo:'Description / Make model',
+    lbl_imp_pasto_carp:'Carpenter meal (CHF/day)',
+    lbl_imp_pasto_latt:'Plumber meal (CHF/day)',
+    lbl_imp_pasto_altri:'Others meal (CHF/day)',
+    lbl_solo_tit_pasti:'Only owner assigns meals',
+    lbl_solo_tit_pasti_sub:'Workers will not see the meal checkbox',
+    lbl_offset_glob:'Global offset (min) for all',
+    lbl_dal_giorno:'From date',lbl_al_giorno:'To date',
+    lbl_pwd_titolare:'Owner password',lbl_importo_chf:'Amount CHF',
+    sec_personale_admin:'Staff',sec_utenti_admin:'Users',
+    sec_perm_visib:'🔐 Permissions & visibility',
+    sec_sicurezza_acc:'Security & access',
+    sec_spese_docs:'Expenses & Documents',sec_lavori_regia:'Extra works',
+    sec_mat_cantiere:'Site materials',
+    sec_docs_scadenze:'📋 Documents & deadlines',
+    sec_spese_cat:'Expenses by category',
+    sec_andamento_sett:'Weekly trend',
+    sec_ore_op_cant:'Hours per worker site total',
+    sec_cronologia_cant:'Site timeline all activities',
+    btn_gestisci_personale:'👷 Manage staff →',
+    btn_invita_collab:'✉️ Invite collaborator',
+    btn_perm_vis_admin:'🔐 Permissions & visibility →',
+    btn_imp_admin:'⚙️ Settings →',
+    btn_invia_richiesta:'📤 Send request',
+    btn_conf:'Confirm',btn_modifica:'✏️ Edit',
+    btn_registra:'💾 Record',
+    btn_aggiungi_doc:'➕ Add document',
+    btn_assegna_op:'➕ Assign worker',
+    btn_cerca:'🔍 Search',
+    btn_esporta_regia:'⬇️ Export extra works',
+    btn_aggiungi_sel:'✓ Add selected',
+    btn_esporta_dati:'⬇️ Export data',
+    btn_carica_prev:'Load estimate',
+    btn_aggiorna_prev:'Update estimate',
+    btn_lavorazioni:'📐 Works',
+    btn_figure_cant:'👥 Site figures',
+    btn_foto_cantiere:'📷 Site photos',
+    btn_materiali:'📦 Materials',
+    btn_contabilita_cant:'💰 Site accounting',
+    btn_budget_reale:'📊 Budget vs Actual',
+    btn_pdf_cant:'📄 Complete site PDF',
+    btn_regia_cant:'🔧 Extra',btn_spese_cant:'🧾 Expenses',
+    btn_aggiungi_op_giorno:'➕ Add worker to this day',
+    btn_modifica_giornata:'✏️ Edit this day',
+    btn_salva_cant:'Save',
+    txt_tema_sub:'Choose your preferred color. Saved on this device.',
+    txt_perm_desc:'Manage who can see what. Changes require your password.',
+    txt_conf_id_sub:'Enter your password to modify permissions.',
+    txt_richiesta_ass_sub:'Request will be sent to owner for approval.',
+    txt_sel_lav_sub:'Select one or more works done.',
+    txt_collab_agenzia:'Agency worker (temp)',
+    txt_collab_agenzia_sub:'Shows AGZ badge, filterable in report',
+    txt_aggiungi_doc_sec:'Add document',
+    th_operaio:'Worker',th_ore_totali:'Total hours',th_chf_est:'CHF est.',
+    th_lavorazione:'Work',th_ore:'Hours',th_quantita:'Quantity',
+    th_categoria:'Category',th_importo_chf:'Amount CHF',
+    lbl_margine_stimato:'Estimated margin',
+    kpi_manodopera:'CHF Manpower',kpi_spese:'CHF Expenses',
+    kpi_costo_tot:'CHF Total cost',kpi_ricavi:'CHF Total revenue',
+    kpi_ore_tot:'Total hours',kpi_giornate:'Days',kpi_tariffa:'CHF/h',
+    log_nessuna_foto:'No photos loaded',
+    log_foto_hdr:'📷 Photos',log_caricamento:'⏳ Loading photos...',
+    log_note_hdr:'Notes',
+    fs_piccolo:'Small',fs_normale:'Normal',fs_grande:'Large',
   },
   DE:{
     nav_cantieri:'Baustellen',nav_giornata:'Tag',nav_spese:'Ausgaben',
@@ -2222,6 +2444,117 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Passwort ändern →',
     txt_rep_avanzato_btn:'📊 Erweiterter Bericht →',
     lbl_abilita_pasti:'Mahlzeitenmodul aktivieren',
+    modal_nuovo_cantiere:'Neue Baustelle',modal_modifica_cant:'Baustelle bearbeiten',
+    modal_nuovo_op:'Neuer Arbeiter',modal_modifica_op:'Arbeiter bearbeiten',
+    modal_nuovo_mezzo:'Neues Fahrzeug',modal_modifica_mezzo:'Fahrzeug bearbeiten',
+    modal_nuova_spesa:'Neue Ausgabe / Dok.',modal_modifica_spesa:'Ausgabe bearbeiten',
+    modal_det_spesa:'Ausgabedetail',
+    modal_nuova_regia:'Neue Regiearbeit',modal_modifica_regia:'Regie bearbeiten',
+    modal_det_regia:'Regiedetail',
+    modal_ass_titolo:'Abwesenheit erfassen',modal_modifica_ass:'Abwesenheit bearbeiten',
+    modal_fig_titolo:'Person hinzufügen',modal_modifica_fig:'Person bearbeiten',
+    modal_modifica_g:'✏️ Tag bearbeiten',
+    modal_reg_pag:'Zahlung erfassen',modal_modifica_pag:'Zahlung bearbeiten',
+    modal_nuova_bolla:'Neuer Lieferschein',modal_modifica_bolla:'Lieferschein bearbeiten',
+    modal_sal_titolo:'SAL-Zahlung erfassen',
+    modal_richiesta_ass:'📋 Abwesenheitsantrag',
+    modal_conf_id:'🔐 Identität bestätigen',
+    modal_tema:'🎨 Farbthema',modal_sel_lav:'Arbeiten auswählen',
+    modal_importa_prev:'📥 Aus Angebot importieren',
+    modal_timb_manuale:'📋 Manuelle Eingabe',
+    modal_nuovo_gru:'Neuer Kranhub',modal_modifica_gru:'Kranhub bearbeiten',
+    lbl_nome:'Name',lbl_cognome:'Nachname',lbl_desc:'Beschreibung',
+    lbl_quantita:'Menge',lbl_um:'Einheit',lbl_importo:'Betrag',
+    lbl_valuta:'Währung',lbl_stato:'Status',lbl_targa:'Kennzeichen',
+    lbl_luogo_breve:'Ort (kurz)',lbl_via_indirizzo:'Straße / Adresse',
+    lbl_paese:'Land',lbl_committente_lbl:'Auftraggeber (Name)',
+    lbl_committente_hdr:'Auftraggeber',
+    lbl_email_app:'E-Mail (App-Zugang)',lbl_fine_rapporto:'Vertragsende',
+    lbl_nome_agenzia:'Agenturname',lbl_scadenza:'Ablaufdatum',
+    lbl_note_opz:'Notizen (optional)',lbl_giorni:'Tage',lbl_motivo:'Grund',
+    lbl_cant_fac:'Baustelle (optional)',
+    lbl_nome_impresa:'Firmenname',lbl_nome_referente:'Kontaktname',
+    lbl_az_studio:'Firma / Büro',
+    lbl_ditta_esterna:'Externe Firma',lbl_n_tiri:'Anz. Hübe',
+    lbl_foto_doc:'Foto Beleg / Dokument',
+    lbl_op_spesa:'Arbeiter / wer hat gezahlt',
+    lbl_pagato_da:'Bezahlt von',lbl_tipo_doc:'Dokumenttyp',
+    lbl_tipo_spesa:'Ausgabentyp',lbl_desc_spesa:'Beschreibung',
+    lbl_chi_pag_come:'Wer hat bezahlt / wie',
+    lbl_foto_sp:'Foto Quittung / Rechnung',
+    lbl_galleria_pdf:'Galerie / PDF',
+    lbl_fatturato:'Abgerechnet?',lbl_costo_ct:'CT-Kosten (CHF/Einh.)',
+    lbl_prezzo_cliente:'Kundenpreis (CHF/Einh.)',
+    lbl_ora:'Uhrzeit',lbl_fornitore:'Lieferant',lbl_desc_mat:'Materialbeschreibung',
+    lbl_op_ricevuto:'Empfangender Arbeiter',lbl_foto_bolla:'📷 Lieferscheinfoto',
+    lbl_metodo_pag:'Zahlungsmethode',lbl_rif_fattura:'Referenz (Rechnung Nr.)',
+    lbl_stato_mezzo:'Fahrzeugstatus',lbl_note_stato:'Statusnotizen',
+    lbl_data_dismissione:'Ausmusterungsdatum',
+    lbl_assegnato_a:'Standardmässig zugewiesen an',
+    lbl_desc_mezzo:'Beschreibung / Marke Modell',
+    lbl_imp_pasto_carp:'Zimmermann Mahlzeit (CHF/Tag)',
+    lbl_imp_pasto_latt:'Klempner Mahlzeit (CHF/Tag)',
+    lbl_imp_pasto_altri:'Andere Mahlzeit (CHF/Tag)',
+    lbl_solo_tit_pasti:'Nur Inhaber weist Mahlzeiten zu',
+    lbl_solo_tit_pasti_sub:'Arbeiter sehen kein Mahlzeiten-Checkbox',
+    lbl_offset_glob:'Globaler Versatz (Min.) für alle',
+    lbl_dal_giorno:'Vom Tag',lbl_al_giorno:'Bis Tag',
+    lbl_pwd_titolare:'Inhaber-Passwort',lbl_importo_chf:'Betrag CHF',
+    sec_personale_admin:'Personal',sec_utenti_admin:'Benutzer',
+    sec_perm_visib:'🔐 Berechtigungen & Sichtbarkeit',
+    sec_sicurezza_acc:'Sicherheit & Zugang',
+    sec_spese_docs:'Ausgaben & Dokumente',sec_lavori_regia:'Regiearbeiten',
+    sec_mat_cantiere:'Baumaterialien',
+    sec_docs_scadenze:'📋 Dokumente & Ablaufdaten',
+    sec_spese_cat:'Ausgaben nach Kategorie',
+    sec_andamento_sett:'Wöchentlicher Verlauf',
+    sec_ore_op_cant:'Stunden pro Arbeiter Baustelle gesamt',
+    sec_cronologia_cant:'Baustellenchronik alle Aktivitäten',
+    btn_gestisci_personale:'👷 Personal verwalten →',
+    btn_invita_collab:'✉️ Mitarbeiter einladen',
+    btn_perm_vis_admin:'🔐 Berechtigungen & Sichtbarkeit →',
+    btn_imp_admin:'⚙️ Einstellungen →',
+    btn_invia_richiesta:'📤 Antrag senden',
+    btn_conf:'Bestätigen',btn_modifica:'✏️ Bearbeiten',
+    btn_registra:'💾 Erfassen',
+    btn_aggiungi_doc:'➕ Dokument hinzufügen',
+    btn_assegna_op:'➕ Arbeiter zuweisen',
+    btn_cerca:'🔍 Suchen',
+    btn_esporta_regia:'⬇️ Regie exportieren',
+    btn_aggiungi_sel:'✓ Auswahl hinzufügen',
+    btn_esporta_dati:'⬇️ Daten exportieren',
+    btn_carica_prev:'Angebot laden',
+    btn_aggiorna_prev:'Angebot aktualisieren',
+    btn_lavorazioni:'📐 Arbeiten',
+    btn_figure_cant:'👥 Baustellen-Personal',
+    btn_foto_cantiere:'📷 Baustellenfotos',
+    btn_materiali:'📦 Materialien',
+    btn_contabilita_cant:'💰 Baustellenbuchhaltung',
+    btn_budget_reale:'📊 Budget vs Ist',
+    btn_pdf_cant:'📄 Vollständiges Baustellen-PDF',
+    btn_regia_cant:'🔧 Regie',btn_spese_cant:'🧾 Ausgaben',
+    btn_aggiungi_op_giorno:'➕ Arbeiter diesem Tag hinzufügen',
+    btn_modifica_giornata:'✏️ Diesen Tag bearbeiten',
+    btn_salva_cant:'Speichern',
+    txt_tema_sub:'Bevorzugte Farbe wählen. Auf diesem Gerät gespeichert.',
+    txt_perm_desc:'Verwalten Sie wer was sieht. Änderungen erfordern Passwort.',
+    txt_conf_id_sub:'Geben Sie Ihr Passwort ein um Berechtigungen zu ändern.',
+    txt_richiesta_ass_sub:'Antrag wird zur Genehmigung an den Inhaber gesendet.',
+    txt_sel_lav_sub:'Eine oder mehrere durchgeführte Arbeiten auswählen.',
+    txt_collab_agenzia:'Zeitarbeiter (Leiharbeit)',
+    txt_collab_agenzia_sub:'Zeigt AGZ-Badge, filterbar im Bericht',
+    txt_aggiungi_doc_sec:'Dokument hinzufügen',
+    th_operaio:'Arbeiter',th_ore_totali:'Gesamtstunden',th_chf_est:'CHF gesch.',
+    th_lavorazione:'Arbeit',th_ore:'Stunden',th_quantita:'Menge',
+    th_categoria:'Kategorie',th_importo_chf:'Betrag CHF',
+    lbl_margine_stimato:'Geschätzter Gewinn',
+    kpi_manodopera:'CHF Arbeitskraft',kpi_spese:'CHF Ausgaben',
+    kpi_costo_tot:'CHF Gesamtkosten',kpi_ricavi:'CHF Gesamteinnahmen',
+    kpi_ore_tot:'Gesamtstunden',kpi_giornate:'Arbeitstage',kpi_tariffa:'CHF/Std',
+    log_nessuna_foto:'Keine Fotos geladen',
+    log_foto_hdr:'📷 Fotos',log_caricamento:'⏳ Fotos werden geladen...',
+    log_note_hdr:'Notizen',
+    fs_piccolo:'Klein',fs_normale:'Normal',fs_grande:'Groß',
   },
   ES:{
     nav_cantieri:'Obras',nav_giornata:'Día',nav_spese:'Gastos',
@@ -2327,6 +2660,117 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Cambiar contraseña →',
     txt_rep_avanzato_btn:'📊 Informe avanzado →',
     lbl_abilita_pasti:'Activar módulo de comidas',
+    modal_nuovo_cantiere:'Nueva obra',modal_modifica_cant:'Editar obra',
+    modal_nuovo_op:'Nuevo obrero',modal_modifica_op:'Editar obrero',
+    modal_nuovo_mezzo:'Nuevo vehículo',modal_modifica_mezzo:'Editar vehículo',
+    modal_nuova_spesa:'Nuevo gasto / documento',modal_modifica_spesa:'Editar gasto',
+    modal_det_spesa:'Detalle gasto',
+    modal_nuova_regia:'Nuevo trabajo extra',modal_modifica_regia:'Editar trabajo extra',
+    modal_det_regia:'Detalle trabajo extra',
+    modal_ass_titolo:'Registrar ausencia',modal_modifica_ass:'Editar ausencia',
+    modal_fig_titolo:'Añadir figura',modal_modifica_fig:'Editar figura',
+    modal_modifica_g:'✏️ Editar día',
+    modal_reg_pag:'Registrar pago',modal_modifica_pag:'Editar pago',
+    modal_nuova_bolla:'Nuevo albarán',modal_modifica_bolla:'Editar albarán',
+    modal_sal_titolo:'Registrar pago SAL',
+    modal_richiesta_ass:'📋 Solicitud de ausencia',
+    modal_conf_id:'🔐 Confirmar identidad',
+    modal_tema:'🎨 Tema de color',modal_sel_lav:'Seleccionar trabajos',
+    modal_importa_prev:'📥 Importar del presupuesto',
+    modal_timb_manuale:'📋 Entrada manual',
+    modal_nuovo_gru:'Nueva izada grúa',modal_modifica_gru:'Editar izada grúa',
+    lbl_nome:'Nombre',lbl_cognome:'Apellido',lbl_desc:'Descripción',
+    lbl_quantita:'Cantidad',lbl_um:'Unidad',lbl_importo:'Importe',
+    lbl_valuta:'Moneda',lbl_stato:'Estado',lbl_targa:'Matrícula',
+    lbl_luogo_breve:'Lugar (breve)',lbl_via_indirizzo:'Calle / Dirección',
+    lbl_paese:'País',lbl_committente_lbl:'Cliente (nombre)',
+    lbl_committente_hdr:'Cliente',
+    lbl_email_app:'Email (acceso app)',lbl_fine_rapporto:'Fin de contrato',
+    lbl_nome_agenzia:'Nombre agencia',lbl_scadenza:'Vencimiento',
+    lbl_note_opz:'Notas (opcional)',lbl_giorni:'Días',lbl_motivo:'Motivo',
+    lbl_cant_fac:'Obra (opcional)',
+    lbl_nome_impresa:'Nombre empresa',lbl_nome_referente:'Nombre contacto',
+    lbl_az_studio:'Empresa / Estudio',
+    lbl_ditta_esterna:'Empresa externa',lbl_n_tiri:'Nº izadas',
+    lbl_foto_doc:'Foto albarán / documento',
+    lbl_op_spesa:'Obrero / quién pagó el gasto',
+    lbl_pagato_da:'Pagado por',lbl_tipo_doc:'Tipo documento',
+    lbl_tipo_spesa:'Tipo gasto',lbl_desc_spesa:'Descripción',
+    lbl_chi_pag_come:'Quién pagó / cómo',
+    lbl_foto_sp:'Foto recibo / factura',
+    lbl_galleria_pdf:'Galería / PDF',
+    lbl_fatturato:'¿Facturado?',lbl_costo_ct:'Coste CT (CHF/unid.)',
+    lbl_prezzo_cliente:'Precio cliente (CHF/unid.)',
+    lbl_ora:'Hora',lbl_fornitore:'Proveedor',lbl_desc_mat:'Descripción materiales',
+    lbl_op_ricevuto:'Obrero que recibió',lbl_foto_bolla:'📷 Foto albarán',
+    lbl_metodo_pag:'Método de pago',lbl_rif_fattura:'Referencia (factura nº)',
+    lbl_stato_mezzo:'Estado vehículo',lbl_note_stato:'Notas estado',
+    lbl_data_dismissione:'Fecha de baja',
+    lbl_assegnato_a:'Asignado por defecto a',
+    lbl_desc_mezzo:'Descripción / Marca modelo',
+    lbl_imp_pasto_carp:'Dieta carpintero (CHF/día)',
+    lbl_imp_pasto_latt:'Dieta fontanero (CHF/día)',
+    lbl_imp_pasto_altri:'Dieta otros (CHF/día)',
+    lbl_solo_tit_pasti:'Solo el titular asigna dietas',
+    lbl_solo_tit_pasti_sub:'Los obreros no verán el checkbox de dieta',
+    lbl_offset_glob:'Offset global (min) para todos',
+    lbl_dal_giorno:'Desde el día',lbl_al_giorno:'Hasta el día',
+    lbl_pwd_titolare:'Contraseña titular',lbl_importo_chf:'Importe CHF',
+    sec_personale_admin:'Personal',sec_utenti_admin:'Usuarios',
+    sec_perm_visib:'🔐 Permisos y visibilidad',
+    sec_sicurezza_acc:'Seguridad y acceso',
+    sec_spese_docs:'Gastos & Documentos',sec_lavori_regia:'Trabajos extra',
+    sec_mat_cantiere:'Materiales obra',
+    sec_docs_scadenze:'📋 Documentos y vencimientos',
+    sec_spese_cat:'Gastos por categoría',
+    sec_andamento_sett:'Tendencia semanal',
+    sec_ore_op_cant:'Horas por obrero total obra',
+    sec_cronologia_cant:'Cronología obra todas las actividades',
+    btn_gestisci_personale:'👷 Gestionar personal →',
+    btn_invita_collab:'✉️ Invitar colaborador',
+    btn_perm_vis_admin:'🔐 Permisos y visibilidad →',
+    btn_imp_admin:'⚙️ Ajustes →',
+    btn_invia_richiesta:'📤 Enviar solicitud',
+    btn_conf:'Confirmar',btn_modifica:'✏️ Editar',
+    btn_registra:'💾 Registrar',
+    btn_aggiungi_doc:'➕ Añadir documento',
+    btn_assegna_op:'➕ Asignar obrero',
+    btn_cerca:'🔍 Buscar',
+    btn_esporta_regia:'⬇️ Exportar trabajos extra',
+    btn_aggiungi_sel:'✓ Añadir seleccionados',
+    btn_esporta_dati:'⬇️ Exportar datos',
+    btn_carica_prev:'Cargar presupuesto',
+    btn_aggiorna_prev:'Actualizar presupuesto',
+    btn_lavorazioni:'📐 Trabajos',
+    btn_figure_cant:'👥 Figuras obra',
+    btn_foto_cantiere:'📷 Fotos obra',
+    btn_materiali:'📦 Materiales',
+    btn_contabilita_cant:'💰 Contabilidad obra',
+    btn_budget_reale:'📊 Presupuesto vs Real',
+    btn_pdf_cant:'📄 PDF completo obra',
+    btn_regia_cant:'🔧 Extra',btn_spese_cant:'🧾 Gastos',
+    btn_aggiungi_op_giorno:'➕ Añadir obrero a este día',
+    btn_modifica_giornata:'✏️ Editar este día',
+    btn_salva_cant:'Guardar',
+    txt_tema_sub:'Elige tu color preferido. Guardado en este dispositivo.',
+    txt_perm_desc:'Gestiona quién puede ver qué. Los cambios requieren contraseña.',
+    txt_conf_id_sub:'Introduce tu contraseña para modificar los permisos.',
+    txt_richiesta_ass_sub:'La solicitud se enviará al titular para aprobación.',
+    txt_sel_lav_sub:'Selecciona uno o más trabajos realizados.',
+    txt_collab_agenzia:'Obrero de agencia (temporal)',
+    txt_collab_agenzia_sub:'Muestra badge AGZ, filtrable en el informe',
+    txt_aggiungi_doc_sec:'Añadir documento',
+    th_operaio:'Obrero',th_ore_totali:'Horas totales',th_chf_est:'CHF est.',
+    th_lavorazione:'Trabajo',th_ore:'Horas',th_quantita:'Cantidad',
+    th_categoria:'Categoría',th_importo_chf:'Importe CHF',
+    lbl_margine_stimato:'Margen estimado',
+    kpi_manodopera:'CHF Mano de obra',kpi_spese:'CHF Gastos',
+    kpi_costo_tot:'CHF Coste total',kpi_ricavi:'CHF Ingresos totales',
+    kpi_ore_tot:'Horas totales',kpi_giornate:'Jornadas',kpi_tariffa:'CHF/h',
+    log_nessuna_foto:'No hay fotos cargadas',
+    log_foto_hdr:'📷 Fotos',log_caricamento:'⏳ Cargando fotos...',
+    log_note_hdr:'Notas',
+    fs_piccolo:'Pequeño',fs_normale:'Normal',fs_grande:'Grande',
   }
 };
 
@@ -2494,18 +2938,18 @@ async function renderContabilita(cantId){
 
       <!-- KPI PRINCIPALI -->
       <div class="cont-kpi">
-        <div class="kpi-box" onclick="navTo('report')" style="cursor:pointer" title="Vai al report"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">CHF Manodopera ↗</div></div>
-        <div class="kpi-box" onclick="navTo('spese')" style="cursor:pointer" title="Vai alle spese"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">CHF Spese ↗</div></div>
+        <div class="kpi-box" onclick="navTo('report')" style="cursor:pointer" title="Vai al report"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">${t('kpi_manodopera')} ↗</div></div>
+        <div class="kpi-box" onclick="navTo('spese')" style="cursor:pointer" title="Vai alle spese"><div class="kpi-val kpi-blue">${totSpeseAll.toFixed(0)}</div><div class="kpi-lbl">${t('kpi_spese')} ↗</div></div>
         ${totGruPaga>0?`<div class="kpi-box" onclick="navTo('gru')" style="cursor:pointer"><div class="kpi-val kpi-red">${totGruPaga.toFixed(0)}</div><div class="kpi-lbl">CHF Gru ↗</div></div>`:''}
         ${totGruIncassa>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totGruIncassa.toFixed(0)}</div><div class="kpi-lbl">CHF Gru da incassare</div></div>`:''}
-        <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">CHF Costo totale</div></div>
-        <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">CHF Ricavi totali</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-red">${costoTotale.toFixed(0)}</div><div class="kpi-lbl">${t('kpi_costo_tot')}</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-green">${ricaviTotali.toFixed(0)}</div><div class="kpi-lbl">${t('kpi_ricavi')}</div></div>
         ${totIncassi>0?`<div class="kpi-box"><div class="kpi-val kpi-green">${totIncassi.toFixed(0)}</div><div class="kpi-lbl">CHF Incassi registrati</div></div>`:''}
       </div>
 
       <!-- MARGINE -->
       <div style="background:${margine>=0?'rgba(76,175,125,.1)':'rgba(224,85,85,.1)'};border:2px solid ${margine>=0?'var(--green)':'var(--red)'};border-radius:var(--r);padding:16px;margin-bottom:16px;text-align:center">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${margine>=0?'var(--green)':'var(--red)'};margin-bottom:6px">Margine stimato</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${margine>=0?'var(--green)':'var(--red)'};margin-bottom:6px">${t('lbl_margine_stimato')}</div>
         <div style="font-family:'DM Mono',monospace;font-size:36px;font-weight:500;color:${margine>=0?'var(--green)':'var(--red)'}">CHF ${mpre}${margine.toFixed(0)}</div>
         ${ricaviTotali>0?`<div style="font-size:13px;color:var(--t2);margin-top:4px">${mpre}${marginePerc.toFixed(1)}% sui ricavi</div>`:'<div style="font-size:12px;color:var(--t2);margin-top:4px">⚠️ Nessun ricavo regia fatturato — inserisci i SAL in Regia</div>'}
       </div>
@@ -2519,17 +2963,17 @@ async function renderContabilita(cantId){
 
       <!-- ORE E GIORNATE -->
       <div class="cont-kpi3" style="margin-bottom:16px">
-        <div class="kpi-box"><div class="kpi-val kpi-gold">${totOre.toFixed(1)}</div><div class="kpi-lbl">Ore totali</div></div>
-        <div class="kpi-box"><div class="kpi-val" style="color:var(--text)">${(giornate||[]).length}</div><div class="kpi-lbl">Giornate</div></div>
-        <div class="kpi-box"><div class="kpi-val" style="color:var(--text)">${tariffa}</div><div class="kpi-lbl">CHF/ora</div></div>
+        <div class="kpi-box"><div class="kpi-val kpi-gold">${totOre.toFixed(1)}</div><div class="kpi-lbl">${t('kpi_ore_tot')}</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--text)">${(giornate||[]).length}</div><div class="kpi-lbl">${t('kpi_giornate')}</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--text)">${tariffa}</div><div class="kpi-lbl">${t('kpi_tariffa')}</div></div>
       </div>
 
       <!-- DETTAGLIO SPESE PER TIPO -->
       ${Object.keys(tipiSpese).length?`
-      <div class="sec">Spese per categoria</div>
+      <div class="sec">${t('sec_spese_cat')}</div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px">
         <table class="rtable">
-          <thead><tr><th>Categoria</th><th>Importo CHF</th><th>%</th></tr></thead>
+          <thead><tr><th>${t('th_categoria')}</th><th>${t('th_importo_chf')}</th><th>%</th></tr></thead>
           <tbody>
           ${Object.entries(tipiSpese).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`
             <tr>
@@ -2547,7 +2991,7 @@ async function renderContabilita(cantId){
       </div>`:''}
 
       <!-- ANDAMENTO SETTIMANALE -->
-      <div class="sec">Andamento settimanale — ultimi ${Math.min(settArr.length,8)} periodi</div>
+      <div class="sec">${t('sec_andamento_sett')} — ${Math.min(settArr.length,8)}</div>
       ${settArr.slice(0,8).map(s=>{
         const dal=new Date(s.dal+'T12:00');
         const al=new Date(dal);al.setDate(al.getDate()+6);
@@ -3316,25 +3760,25 @@ async function renderCantiere(){
       ${totRegiaDaFatt>0?`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:var(--gold);margin-bottom:8px;cursor:pointer" onclick="apriRegiaCantiere()">🔧 Regia da fatturare: <strong>${totRegiaDaFatt.toFixed(2)} CHF</strong> → tocca per vedere</div>`:''}
       ${utenteHaAccesso(PROF,'committente',null)&&curCant.committente?`
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Committente</div>
+        <div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${t('lbl_committente_hdr')}</div>
         <div style="font-size:14px;font-weight:700">👤 ${escHtml(curCant.committente)}</div>
       </div>`:''}
-      <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">➕ Nuova giornata</button>
+      <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">${t('btn_nuova_giornata')}</button>
       <div class="row2" style="margin-bottom:8px">
-        <button class="btn btn-s" onclick="openModalImport()">📊 ${prev?'Aggiorna preventivo':'Carica preventivo'}</button>
-        <button class="btn btn-s" onclick="exportCantiere()">⬇️ Esporta dati</button>
+        <button class="btn btn-s" onclick="openModalImport()">📊 ${prev?t('btn_aggiorna_prev'):t('btn_carica_prev')}</button>
+        <button class="btn btn-s" onclick="exportCantiere()">${t('btn_esporta_dati')}</button>
       </div>
       <div class="row2" style="margin-bottom:8px">
-        <button class="btn btn-s" onclick="apriRegiaCantiere()">🔧 Regia ${regia?.length?'('+regia.length+')':''}</button>
-        <button class="btn btn-s" onclick="apriSpeseCantiere()">🧾 Spese ${spese?.length?'('+spese.length+')':''}</button>
+        <button class="btn btn-s" onclick="apriRegiaCantiere()">${t('btn_regia_cant')} ${regia?.length?'('+regia.length+')':''}</button>
+        <button class="btn btn-s" onclick="apriSpeseCantiere()">${t('btn_spese_cant')} ${spese?.length?'('+spese.length+')':''}</button>
       </div>
       <div class="row2" style="margin-bottom:8px">
-        <button class="btn btn-s" onclick="apriLavoriCantiere()">📐 Lavorazioni</button>
-        <button class="btn btn-s" onclick="apriAnagraficaCantiere()">👥 Figure cantiere</button>
+        <button class="btn btn-s" onclick="apriLavoriCantiere()">${t('btn_lavorazioni')}</button>
+        <button class="btn btn-s" onclick="apriAnagraficaCantiere()">${t('btn_figure_cant')}</button>
       </div>
       <div class="row2" style="margin-bottom:8px">
-        <button class="btn btn-s" onclick="apriFotoCantiere()">📷 Foto cantiere</button>
-        <button class="btn btn-s" onclick="apriMaterialiCantiere()">📦 Materiali</button>
+        <button class="btn btn-s" onclick="apriFotoCantiere()">${t('btn_foto_cantiere')}</button>
+        <button class="btn btn-s" onclick="apriMaterialiCantiere()">${t('btn_materiali')}</button>
       </div>
       ${['titolare','responsabile','caposquadra'].includes(PROF?.ruolo)?`
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px">
@@ -3357,20 +3801,20 @@ async function renderCantiere(){
         `}
       </div>`:''}
       <div style="margin-bottom:16px">
-        <button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42)" onclick="apriContabilita()">💰 Contabilità cantiere</button>
-        <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a);margin-top:8px" onclick="apriBudget()">📊 Budget vs Reale</button>
-        <button class="btn btn-g" style="background:linear-gradient(135deg,#3a2a1b,#7a5a2a);margin-top:8px" onclick="exportPdfCantiere(curCant.id)">📄 PDF cantiere completo</button>
+        <button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42)" onclick="apriContabilita()">${t('btn_contabilita_cant')}</button>
+        <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a);margin-top:8px" onclick="apriBudget()">${t('btn_budget_reale')}</button>
+        <button class="btn btn-g" style="background:linear-gradient(135deg,#3a2a1b,#7a5a2a);margin-top:8px" onclick="exportPdfCantiere(curCant.id)">${t('btn_pdf_cant')}</button>
       </div>
       ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
       ${Object.values(byOp).length?`
-      <div class="sec">Ore per operaio — totale cantiere</div>
+      <div class="sec">${t('sec_ore_op_cant')}</div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
-        <table class="rtable"><thead><tr><th>Operaio</th><th>Ore totali</th><th>CHF est.</th></tr></thead>
+        <table class="rtable"><thead><tr><th>${t('th_operaio')}</th><th>${t('th_ore_totali')}</th><th>${t('th_chf_est')}</th></tr></thead>
         <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore})=>
           `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td><td style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${(ore*tariffa).toFixed(0)}</td></tr>`
         ).join('')}</tbody></table>
       </div>`:''}
-      <div class="sec">Cronologia cantiere — tutte le attività</div>
+      <div class="sec">${t('sec_cronologia_cant')}</div>
       ${giornatePerData.slice(0,15).map(({data,operai,totOre:tO})=>{
         const speseGiorno=(spese||[]).filter(s=>s.data===data);
         const regiaGiorno=(regia||[]).filter(r=>r.data===data);
@@ -3713,13 +4157,13 @@ async function renderAnagrafica(){
 function openModalFigura(id){
   editFigId=id;
   if(!id){
-    document.getElementById('mod-fig-t').textContent='Aggiungi figura';
+    document.getElementById('mod-fig-t').textContent=t('modal_fig_titolo');
     ['fig-nome','fig-cogn','fig-nome-impresa','fig-nome-referente','fig-azienda','fig-tel','fig-email','fig-note'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('del-fig-w').innerHTML='';
   }else{
     sb.from('cantiere_figure').select('*').eq('id',id).single().then(({data:f})=>{
       if(!f)return;
-      document.getElementById('mod-fig-t').textContent='Modifica figura';
+      document.getElementById('mod-fig-t').textContent=t('modal_modifica_fig');
       document.getElementById('fig-ruolo').value=f.ruolo||'Altro';
       document.getElementById('fig-nome').value=f.nome||'';
       document.getElementById('fig-cogn').value=f.cognome||'';
@@ -3984,21 +4428,21 @@ async function openCantLog(gid){
       <div style="font-family:'DM Mono';font-size:24px;color:var(--gold);margin-top:6px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
       <div style="font-size:12px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti||60}min pausa</div>
     </div>
-    ${vociHtml?`<div class="sec">Lavori svolti</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>Lavorazione</th><th>Ore</th><th>Quantità</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
-    ${(mats||[]).length?`<div class="sec">Materiali ricevuti</div><div style="font-size:13px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
-    ${g.note?`<div class="sec">Note</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.note}</div>`:''}
-    ${g.materiale_giorno?`<div class="sec">🧱 Materiale utilizzato</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.materiale_giorno}</div>`:''}
-    ${g.attrezzatura_giorno?`<div class="sec">🔧 Attrezzatura / Macchinari</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.attrezzatura_giorno}</div>`:''}
-    <div class="sec">📷 Foto (${(foto||[]).length})</div>
+    ${vociHtml?`<div class="sec">${t('lbl_lavori_svolti')}</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>${t('th_lavorazione')}</th><th>${t('th_ore')}</th><th>${t('th_quantita')}</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
+    ${(mats||[]).length?`<div class="sec">${t('lbl_materiali')}</div><div style="font-size:13px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
+    ${g.note?`<div class="sec">${t('log_note_hdr')}</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.note}</div>`:''}
+    ${g.materiale_giorno?`<div class="sec">${t('lbl_materiale_ut')}</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.materiale_giorno}</div>`:''}
+    ${g.attrezzatura_giorno?`<div class="sec">${t('lbl_attrezzatura')}</div><div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:14px;white-space:pre-line">${g.attrezzatura_giorno}</div>`:''}
+    <div class="sec">${t('log_foto_hdr')} (${(foto||[]).length})</div>
     <div id="cantlog-foto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
-      ${!(foto||[]).length?'<div style="font-size:13px;color:var(--t2);grid-column:span 2">Nessuna foto caricata</div>':'<div style="grid-column:span 2;font-size:12px;color:var(--t2)">⏳ Caricamento foto...</div>'}
+      ${!(foto||[]).length?'<div style="font-size:13px;color:var(--t2);grid-column:span 2">'+t('log_nessuna_foto')+'</div>':'<div style="grid-column:span 2;font-size:12px;color:var(--t2)">'+t('log_caricamento')+'</div>'}
     </div>
     <hr>
     <div class="row2" style="margin-top:4px">
-      <button class="btn btn-s" onclick="closeModal('mod-cant-log')">Chiudi</button>
-      <button class="btn btn-g" onclick="aggiungiOperaioAData('${g.data}','${g.cantiere_id}')">➕ Aggiungi operaio a questo giorno</button>
+      <button class="btn btn-s" onclick="closeModal('mod-cant-log')" data-i18n="btn_chiudi">Chiudi</button>
+      <button class="btn btn-g" onclick="aggiungiOperaioAData('${g.data}','${g.cantiere_id}')">${t('btn_aggiungi_op_giorno')}</button>
     </div>
-    <button class="btn" style="width:100%;margin-top:8px;background:var(--s2);color:var(--t2)" onclick="apriModificaGiornata('${gid}');closeModal('mod-cant-log')">✏️ Modifica questa giornata</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:var(--s2);color:var(--t2)" onclick="apriModificaGiornata('${gid}');closeModal('mod-cant-log')">${t('btn_modifica_giornata')}</button>
     `;
   openModal('mod-cant-log');
   if((foto||[]).length){
@@ -4450,13 +4894,13 @@ async function exportCantiere(){
   if(!curCant){showToast('Seleziona un cantiere','e');return;}
   const {data:giornate}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), voci_lavoro(*, lavorazioni(nome))').eq('cantiere_id',curCant.id).order('data');
   if(!giornate?.length){showToast('Nessun dato da esportare','e');return;}
-  const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)','Ore totali','Lavorazione','Ore lavoro','Quantità','UM','Note']];
+  const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)',t('kpi_ore_tot'),'Lavorazione','Ore lavoro','Quantità','UM','Note']];
   giornate.forEach(g=>{
     const opNome=(g.operai?.nome||'')+' '+(g.operai?.cognome||'');
     if(!(g.voci_lavoro||[]).length)rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2),'','','','',g.note||'']);
     else g.voci_lavoro.forEach((v,i)=>rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,i===0?parseFloat(g.ore_totali||0).toFixed(2):'',v.lavorazioni?.nome||v.lavorazione_nome||'',parseFloat(v.ore||0).toFixed(2),v.quantita||'',v.um||'',i===0?g.note||'':'']));
   });
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Giornate');
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),t('kpi_giornate'));
   XLSX.writeFile(wb,`CT_${curCant.nome.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
   showToast('Excel scaricato ✓');
 }
@@ -4495,7 +4939,7 @@ async function exportExcel(){
   const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome), voci_lavoro(ore,lavorazione_nome,lavorazioni(nome))').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('data');
   if(!data?.length){showToast('Nessun dato','e');return;}
   const wb=XLSX.utils.book_new();
-  const rstip=[['Operaio','Ruolo','Giorni lavorati','Ore totali']];
+  const rstip=[['Operaio','Ruolo','Giorni lavorati',t('kpi_ore_tot')]];
   const byOp={};data.forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:new Set(),ore:0};byOp[g.operaio_id].giorni.add(g.data);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);});
   Object.values(byOp).sort((a,b)=>(a.op?.cognome||'').localeCompare(b.op?.cognome||'')).forEach(({op,giorni,ore})=>rstip.push([`${op?.nome||''} ${op?.cognome||''}`,op?.ruolo||'',giorni.size,ore.toFixed(2)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rstip),'Stipendi');
@@ -4605,7 +5049,7 @@ async function renderAdmin(){
 function aggiornaTariffa(){const val=parseFloat(document.getElementById('imp-tariffa').value);if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}IMPOSTAZIONI.tariffa_ora=val;saveImpostazioni();}
 function openModalCantiere(id){
   editCid=id;const c=id?CANTIERI.find(x=>x.id===id):null;
-  document.getElementById('mod-cant-t').textContent=c?'Modifica cantiere':'Nuovo cantiere';
+  document.getElementById('mod-cant-t').textContent=c?t('modal_modifica_cant'):t('modal_nuovo_cantiere');
   document.getElementById('c-nome').value=c?.nome||'';
   document.getElementById('c-luogo').value=c?.luogo||'';
   document.getElementById('c-via').value=c?.via||'';
@@ -4632,7 +5076,7 @@ function openModalOp(id){
   editOid=id;
   // Cerca in OPERAI_TUTTI (include ex-operai) così il titolare può modificarli
   const o=id?(OPERAI_TUTTI||OPERAI||[]).find(x=>x.id===id):null;
-  document.getElementById('mod-op-t').textContent=o?'Modifica collaboratore':'Nuovo collaboratore';
+  document.getElementById('mod-op-t').textContent=o?t('modal_modifica_op'):t('modal_nuovo_op');
   document.getElementById('o-nome').value=o?.nome||'';
   document.getElementById('o-cogn').value=o?.cognome||'';
   document.getElementById('o-ruolo').value=o?.ruolo||'Carpentiere';
@@ -5882,7 +6326,7 @@ function openModalSpesa(id){
   document.getElementById('sp-foto-prv').innerHTML='';
   populateSpeseSel();
   if(!id){
-    document.getElementById('mod-spesa-t').textContent='Nuova spesa / documento';
+    document.getElementById('mod-spesa-t').textContent=t('modal_nuova_spesa');
     document.getElementById('sp-data').value=new Date().toISOString().split('T')[0];
     document.getElementById('sp-importo').value='';document.getElementById('sp-desc').value='';document.getElementById('sp-note').value='';
     document.getElementById('sp-stato-pag').value='Da pagare';document.getElementById('sp-metodo-wrap').style.display='none';
@@ -5891,7 +6335,7 @@ function openModalSpesa(id){
   }else{
     sb.from('spese').select('*').eq('id',id).single().then(({data:s})=>{
       if(!s)return;
-      document.getElementById('mod-spesa-t').textContent='Modifica spesa';
+      document.getElementById('mod-spesa-t').textContent=t('modal_modifica_spesa');
       document.getElementById('sp-cant-sel').value=s.cantiere_id||'';document.getElementById('sp-op-sel').value=s.operaio_id||'';
       document.getElementById('sp-data').value=s.data||'';document.getElementById('sp-tipo-doc').value=s.tipo_doc||'Scontrino';
       document.getElementById('sp-tipo-spesa').value=s.tipo_spesa||'Materiale';document.getElementById('sp-desc').value=s.descrizione||'';
@@ -5964,14 +6408,14 @@ async function renderRegia(){
 function openModalRegia(id){
   editRegId=id;
   if(!id){
-    document.getElementById('mod-regia-t').textContent='Nuovo lavoro a regia';
+    document.getElementById('mod-regia-t').textContent=t('modal_nuova_regia');
     document.getElementById('reg-data').value=new Date().toISOString().split('T')[0];
     ['reg-desc','reg-qty','reg-costo','reg-prezzo','reg-note'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('reg-um').value='h';document.getElementById('reg-fatt').value='false';
     document.getElementById('del-reg-w').innerHTML='';
   }else{
     sb.from('regia').select('*').eq('id',id).single().then(({data:r})=>{
-      if(!r)return;document.getElementById('mod-regia-t').textContent='Modifica regia';
+      if(!r)return;document.getElementById('mod-regia-t').textContent=t('modal_modifica_regia');
       document.getElementById('reg-cant-sel').value=r.cantiere_id||'';document.getElementById('reg-op-sel').value=r.operaio_id||'';
       document.getElementById('reg-data').value=r.data||'';document.getElementById('reg-tipo').value=r.tipo||'Ore';
       document.getElementById('reg-desc').value=r.descrizione||'';document.getElementById('reg-qty').value=r.quantita||'';
@@ -6127,13 +6571,13 @@ async function renderAssenzeOLD(){
 function openModalAssenza(id){
   editAssId=id;
   if(!id){
-    document.getElementById('mod-ass-t').textContent='Registra assenza';
+    document.getElementById('mod-ass-t').textContent=t('modal_ass_titolo');
     document.getElementById('ass-data').value=new Date().toISOString().split('T')[0];
     document.getElementById('ass-giorni').value='1';document.getElementById('ass-note').value='';
     document.getElementById('del-ass-w').innerHTML='';
   }else{
     sb.from('assenze').select('*').eq('id',id).single().then(({data:a})=>{
-      if(!a)return;document.getElementById('mod-ass-t').textContent='Modifica assenza';
+      if(!a)return;document.getElementById('mod-ass-t').textContent=t('modal_modifica_ass');
       document.getElementById('ass-op-sel').value=a.operaio_id||'';document.getElementById('ass-data').value=a.data||'';
       document.getElementById('ass-giorni').value=a.giorni||'1';document.getElementById('ass-motivo').value=a.motivo||'Malattia';
       document.getElementById('ass-cant-sel').value=a.cantiere_id||'';document.getElementById('ass-note').value=a.note||'';
@@ -6518,7 +6962,7 @@ function apriSchermoPiano(){
 // ══════════════════════════════════════════════════
 function openModalMezzo(){
   editMzId=null;
-  document.getElementById('mod-mezzo-t').textContent='Nuovo mezzo';
+  document.getElementById('mod-mezzo-t').textContent=t('modal_nuovo_mezzo');
   ['mz-targa','mz-desc','mz-dismissione'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('mz-tipo').value='Furgone';
   const so=document.getElementById('mz-operaio');
@@ -6529,7 +6973,7 @@ function openModalMezzo(){
 
 async function apriModificaMezzo(id){
   editMzId=id;
-  document.getElementById('mod-mezzo-t').textContent='Modifica mezzo';
+  document.getElementById('mod-mezzo-t').textContent=t('modal_modifica_mezzo');
   const so=document.getElementById('mz-operaio');
   if(so)so.innerHTML='<option value="">— Nessuno —</option>'+OPERAI.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
   try{
@@ -6786,7 +7230,7 @@ let _permSessionUnlocked=false; // sessione sbloccata — no ripetere pwd
 
 function apriModalPagamento(id){
   editPagId=id;
-  document.getElementById('mod-pag-t').textContent=id?'Modifica pagamento':'Registra pagamento';
+  document.getElementById('mod-pag-t').textContent=id?t('modal_modifica_pag'):t('modal_reg_pag');
   document.getElementById('del-pag-w').innerHTML='';
   // Popola cantieri
   const sc=document.getElementById('pag-cant-sel');
@@ -7485,7 +7929,7 @@ let editBolId=null;
 
 function openModalBolla(id){
   editBolId=id;bolleFotoFile=null;
-  document.getElementById('mod-bol-t').textContent=id?'Modifica bolla':'Nuova bolla di consegna';
+  document.getElementById('mod-bol-t').textContent=id?t('modal_modifica_bolla'):t('modal_nuova_bolla');
   document.getElementById('bol-foto-prv').innerHTML='';
   document.getElementById('del-bol-w').innerHTML='';
   const sc=document.getElementById('bol-cant-sel');
@@ -8406,7 +8850,7 @@ function addFotoGru(e){
 function openModalGru(id){
   editGruId=id;
   gruFotoFile=null;
-  document.getElementById('mod-gru-t').textContent=id?'Modifica tiro gru':'Nuovo tiro gru';
+  document.getElementById('mod-gru-t').textContent=id?t('modal_modifica_gru'):t('modal_nuovo_gru');
   document.getElementById('gru-data').value=new Date().toISOString().slice(0,10);
   document.getElementById('gru-tipo-op').value='paghiamo';
   document.getElementById('gru-ditta').value='';
