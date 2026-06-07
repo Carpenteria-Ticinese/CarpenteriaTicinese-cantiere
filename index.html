@@ -757,7 +757,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <!-- Categorie Materiali (P-B) -->
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)" data-i18n="sett_cat_materiali">📦 Categorie materiali</div>
-      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">Categorie disponibili nel form materiali cantiere. Il titolare può aggiungerne di personalizzate.</p>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6" data-i18n="lbl_cat_desc">Categorie disponibili nel form materiali cantiere. Il titolare può aggiungerne di personalizzate.</p>
       <div id="imp-cat-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px">
         <input type="text" class="fi" id="imp-cat-new" placeholder="Nuova categoria..." style="flex:1;font-size:13px">
@@ -769,8 +769,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <!-- Alert Archivio Foto (PE) -->
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)" data-i18n="sett_foto">📷 Archivio foto cantiere</div>
-      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6">Alert settimanale per archiviare le foto (>75 gg). Le foto vengono compresse automaticamente a max 800 KB al caricamento.</p>
-      <div class="fg"><label class="fl">Giorno alert settimanale</label>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.6" data-i18n="lbl_alert_foto_desc">Alert settimanale per archiviare le foto (>75 gg). Le foto vengono compresse automaticamente a max 800 KB al caricamento.</p>
+      <div class="fg"><label class="fl" data-i18n="lbl_giorno_alert">Giorno alert settimanale</label>
         <select class="fs" id="foto-alert-giorno">
           <option value="lun">Lunedì</option>
           <option value="mar">Martedì</option>
@@ -781,7 +781,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
           <option value="dom">Domenica</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">Responsabile archivio foto</label>
+      <div class="fg"><label class="fl" data-i18n="lbl_resp_archivio">Responsabile archivio foto</label>
         <select class="fs" id="foto-alert-resp">
           <option value="">— Tutti —</option>
         </select>
@@ -803,19 +803,19 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <hr style="margin:14px 0;border-color:var(--border)">
       <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--t2)">Impostazioni timbratura</div>
       <div class="row2">
-        <div class="fg"><label class="fl">Arrotondamento</label>
+        <div class="fg"><label class="fl" data-i18n="lbl_arrotondamento">Arrotondamento</label>
           <select class="fs" id="timb-set-arr">
             <option value="5">5 minuti</option>
             <option value="10">10 minuti</option>
             <option value="15">15 minuti</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">Pausa default (min)</label>
+        <div class="fg"><label class="fl" data-i18n="lbl_pausa_default">Pausa default (min)</label>
           <input type="number" class="fi" id="timb-set-pausa" value="60" min="0" max="180" step="5" style="font-family:'DM Mono',monospace">
         </div>
       </div>
       <div style="margin-top:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Offset entrata (min preparazione)</div>
+        <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em" data-i18n="lbl_offset_entrata_hdr">Offset entrata (min preparazione)</div>
         <div class="fg">
           <label class="fl" data-i18n="lbl_offset_glob">Offset globale (min) — per tutti</label>
           <input type="number" class="fi" id="timb-offset-globale" value="0" min="0" max="60" step="1" style="font-family:'DM Mono',monospace">
@@ -2014,6 +2014,17 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Cambia password →',
     txt_rep_avanzato_btn:'📊 Report avanzato →',
     lbl_abilita_pasti:'Abilita modulo pasti',
+    lbl_arrotondamento:'Arrotondamento',
+    lbl_pausa_default:'Pausa default (min)',
+    lbl_offset_entrata_hdr:'Offset entrata (min preparazione)',
+    lbl_offset_per_ruolo:'Offset per ruolo (sovrascrive globale se ≥ 0)',
+    lbl_cat_desc:'Categorie disponibili nel form materiali cantiere. Il titolare puo aggiungerne di personalizzate.',
+    lbl_alert_foto_desc:'Alert settimanale per archiviare le foto (>75 gg). Le foto vengono compresse automaticamente a max 800 KB al caricamento.',
+    lbl_giorno_alert:'Giorno alert settimanale',
+    lbl_resp_archivio:'Responsabile archivio foto',
+    lbl_capitolato:'📋 Capitolato',
+    lbl_nessun_capitolato:'Nessun capitolato caricato.',
+    btn_carica_capitolato:'📎 Carica capitolato (PDF / Excel)',
     modal_nuovo_cantiere:'Nuovo cantiere',modal_modifica_cant:'Modifica cantiere',
     modal_nuovo_op:'Nuovo operaio',modal_modifica_op:'Modifica collaboratore',
     modal_nuovo_mezzo:'Nuovo mezzo',modal_modifica_mezzo:'Modifica mezzo',
@@ -2229,6 +2240,17 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Change password →',
     txt_rep_avanzato_btn:'📊 Advanced report →',
     lbl_abilita_pasti:'Enable meal module',
+    lbl_arrotondamento:'Rounding',
+    lbl_pausa_default:'Default break (min)',
+    lbl_offset_entrata_hdr:'Entry offset (prep min)',
+    lbl_offset_per_ruolo:'Offset by role (overrides global if ≥ 0)',
+    lbl_cat_desc:'Categories available in site materials form. Owner can add custom ones.',
+    lbl_alert_foto_desc:'Weekly alert to archive photos (>75 days). Photos are automatically compressed to max 800 KB on upload.',
+    lbl_giorno_alert:'Weekly alert day',
+    lbl_resp_archivio:'Photo archive manager',
+    lbl_capitolato:'📋 Contract spec.',
+    lbl_nessun_capitolato:'No contract spec loaded.',
+    btn_carica_capitolato:'📎 Upload spec (PDF / Excel)',
     modal_nuovo_cantiere:'New site',modal_modifica_cant:'Edit site',
     modal_nuovo_op:'New worker',modal_modifica_op:'Edit worker',
     modal_nuovo_mezzo:'New vehicle',modal_modifica_mezzo:'Edit vehicle',
@@ -2444,6 +2466,17 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Passwort ändern →',
     txt_rep_avanzato_btn:'📊 Erweiterter Bericht →',
     lbl_abilita_pasti:'Mahlzeitenmodul aktivieren',
+    lbl_arrotondamento:'Rundung',
+    lbl_pausa_default:'Standardpause (Min)',
+    lbl_offset_entrata_hdr:'Eingangsversatz (Vorbereitungsmin.)',
+    lbl_offset_per_ruolo:'Versatz je Rolle (überschreibt globalen wenn ≥ 0)',
+    lbl_cat_desc:'Kategorien im Baumaterialformular. Der Inhaber kann eigene hinzufügen.',
+    lbl_alert_foto_desc:'Wöchentliche Erinnerung zum Archivieren von Fotos (>75 Tage). Fotos werden beim Upload auf max. 800 KB komprimiert.',
+    lbl_giorno_alert:'Wöchentlicher Erinnerungstag',
+    lbl_resp_archivio:'Fotoarchiv-Verantwortlicher',
+    lbl_capitolato:'📋 Leistungsverzeichnis',
+    lbl_nessun_capitolato:'Kein Leistungsverzeichnis geladen.',
+    btn_carica_capitolato:'📎 LV hochladen (PDF / Excel)',
     modal_nuovo_cantiere:'Neue Baustelle',modal_modifica_cant:'Baustelle bearbeiten',
     modal_nuovo_op:'Neuer Arbeiter',modal_modifica_op:'Arbeiter bearbeiten',
     modal_nuovo_mezzo:'Neues Fahrzeug',modal_modifica_mezzo:'Fahrzeug bearbeiten',
@@ -2660,6 +2693,17 @@ const TRADUZIONI = {
     txt_sicurezza_pwd:'🔑 Cambiar contraseña →',
     txt_rep_avanzato_btn:'📊 Informe avanzado →',
     lbl_abilita_pasti:'Activar módulo de comidas',
+    lbl_arrotondamento:'Redondeo',
+    lbl_pausa_default:'Pausa predeterminada (min)',
+    lbl_offset_entrata_hdr:'Offset entrada (min preparación)',
+    lbl_offset_per_ruolo:'Offset por función (anula global si ≥ 0)',
+    lbl_cat_desc:'Categorías disponibles en el formulario de materiales. El titular puede añadir personalizadas.',
+    lbl_alert_foto_desc:'Alerta semanal para archivar fotos (>75 días). Las fotos se comprimen automáticamente a máx. 800 KB al subirse.',
+    lbl_giorno_alert:'Día de alerta semanal',
+    lbl_resp_archivio:'Responsable archivo fotos',
+    lbl_capitolato:'📋 Pliego',
+    lbl_nessun_capitolato:'No hay pliego cargado.',
+    btn_carica_capitolato:'📎 Subir pliego (PDF / Excel)',
     modal_nuovo_cantiere:'Nueva obra',modal_modifica_cant:'Editar obra',
     modal_nuovo_op:'Nuevo obrero',modal_modifica_op:'Editar obrero',
     modal_nuovo_mezzo:'Nuevo vehículo',modal_modifica_mezzo:'Editar vehículo',
@@ -3782,7 +3826,7 @@ async function renderCantiere(){
       </div>
       ${['titolare','responsabile','caposquadra'].includes(PROF?.ruolo)?`
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px">
-        <div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Capitolato</div>
+        <div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${t('lbl_capitolato')}</div>
         ${prev?.file_path?`
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <div style="flex:1;min-width:0">
@@ -3796,8 +3840,8 @@ async function renderCantiere(){
             `:''}
           </div>
         `:`
-          <div style="font-size:13px;color:var(--t2);margin-bottom:8px">Nessun capitolato caricato.</div>
-          ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="uploadCapitolato('${curCant.id}')" class="btn btn-s" style="font-size:13px">📎 Carica capitolato (PDF / Excel)</button>`:''}
+          <div style="font-size:13px;color:var(--t2);margin-bottom:8px">${t('lbl_nessun_capitolato')}</div>
+          ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="uploadCapitolato('${curCant.id}')" class="btn btn-s" style="font-size:13px">${t('btn_carica_capitolato')}</button>`:''}
         `}
       </div>`:''}
       <div style="margin-bottom:16px">
@@ -5556,7 +5600,7 @@ async function renderOffsetRuoli(){
   if(!wrap)return;
   const roles=[...new Set((OPERAI||[]).map(o=>o.ruolo).filter(Boolean))].sort();
   if(!roles.length){wrap.innerHTML='';return;}
-  wrap.innerHTML='<div style="font-size:11px;color:var(--t2);margin-bottom:6px">Offset per ruolo (sovrascrive globale se ≥ 0)</div>'+
+  wrap.innerHTML='<div style="font-size:11px;color:var(--t2);margin-bottom:6px">'+t('lbl_offset_per_ruolo')+'</div>'+
     roles.map(r=>{
       const key='offset_entrata_'+r.replace(/\s+/g,'_');
       const val=IMPOSTAZIONI[key]??'';
