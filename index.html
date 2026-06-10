@@ -10190,28 +10190,60 @@ async function renderOre(){
   }
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    const{data:giornate}=await sb.from('giornate').select('data,ore_totali')
-      .eq('operaio_id',opId).gte('data',`${annoSel}-01-01`).lte('data',`${annoSel}-12-31`);
-    const{data:eccezione}=opId?(await sb.from('ore_contrattuali').select('ore_annuali').eq('operaio_id',opId).eq('anno',annoSel).maybeSingle()):{data:null};
+    // Carica giornate, eccezione ore e data_assunzione in parallelo
+    const[{data:giornate},{data:eccezione},assunzioneRes]=await Promise.all([
+      sb.from('giornate').select('data,ore_totali').eq('operaio_id',opId).gte('data',`${annoSel}-01-01`).lte('data',`${annoSel}-12-31`),
+      opId?sb.from('ore_contrattuali').select('ore_annuali').eq('operaio_id',opId).eq('anno',annoSel).maybeSingle():Promise.resolve({data:null}),
+      opId?sb.from('operai').select('data_assunzione').eq('id',opId).maybeSingle().catch(()=>({data:null})):Promise.resolve({data:null}),
+    ]);
+    const operaioInfo=assunzioneRes?.data||null;
+
     const oreLunGio=parseFloat(IMPOSTAZIONI.ore_lun_gio||9.25);
     const oreVen=parseFloat(IMPOSTAZIONI.ore_ven||8.25);
     const festivi=new Set(['01-01','08-01','12-25','12-26']);
+
+    // Mesi in cui l'operaio ha almeno una giornata registrata
+    const mesiConGiornate=new Set((giornate||[]).map(g=>new Date(g.data+'T12:00').getMonth()));
+
+    // Primo mese attivo: da data_assunzione se disponibile, altrimenti dai mesi con giornate
+    let primoMeseAttivo=-1; // -1 = usa mesiConGiornate o anno intero
+    if(operaioInfo?.data_assunzione){
+      const da=new Date(operaioInfo.data_assunzione+'T12:00');
+      if(da.getFullYear()===annoSel) primoMeseAttivo=da.getMonth();
+      else if(da.getFullYear()<annoSel) primoMeseAttivo=0; // assunto anno precedente: anno intero
+      else primoMeseAttivo=12; // assunto anno futuro: nessun mese
+    }
+
     const mesi=[];
     for(let m=0;m<12;m++){
+      // Determina se contare le ore teoriche per questo mese
+      let includiMese;
+      if(primoMeseAttivo>=0){
+        includiMese=m>=primoMeseAttivo; // da data_assunzione in poi
+      } else if(mesiConGiornate.size>0){
+        includiMese=mesiConGiornate.has(m); // solo mesi con giornate registrate
+      } else {
+        includiMese=true; // nessun dato: usa anno intero
+      }
+
       let teoriche=0;
-      const daysInMonth=new Date(annoSel,m+1,0).getDate();
-      for(let d=1;d<=daysInMonth;d++){
-        const date=new Date(annoSel,m,d);const dow=date.getDay();
-        if(dow===0||dow===6)continue;
-        const mmdd=`${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        if(festivi.has(mmdd))continue;
-        teoriche+=dow===5?oreVen:oreLunGio;
+      if(includiMese){
+        const daysInMonth=new Date(annoSel,m+1,0).getDate();
+        for(let d=1;d<=daysInMonth;d++){
+          const date=new Date(annoSel,m,d);const dow=date.getDay();
+          if(dow===0||dow===6)continue;
+          const mmdd=`${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          if(festivi.has(mmdd))continue;
+          teoriche+=dow===5?oreVen:oreLunGio;
+        }
       }
       const effettive=(giornate||[]).filter(g=>{const gd=new Date(g.data+'T12:00');return gd.getFullYear()===annoSel&&gd.getMonth()===m;}).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
       mesi.push({m,teoriche,effettive});
     }
+
     const totTeoriche=mesi.reduce((s,x)=>s+x.teoriche,0);
     const totEffettive=mesi.reduce((s,x)=>s+x.effettive,0);
+    const totDiff=totEffettive-totTeoriche;
     const oreAnnuali=eccezione?.ore_annuali||parseFloat(IMPOSTAZIONI.ore_annuali_default||2190);
     const now=new Date();const meseCorr=now.getMonth();const annoCorr=now.getFullYear();
     const kpiMese=annoSel===annoCorr?mesi[meseCorr]:{teoriche:0,effettive:0};
@@ -10219,6 +10251,12 @@ async function renderOre(){
     const nomiMesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     let opSel='';
     if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:13px">${(OPERAI_TUTTI||[]).map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${o.nome||''} ${o.cognome||''}</option>`).join('')}</select>`;}
+
+    // Nota sul periodo considerato
+    let notaPeriodo='';
+    if(operaioInfo?.data_assunzione&&primoMeseAttivo>0){notaPeriodo=` · Assunto da ${nomiMesi[primoMeseAttivo]} ${annoSel}`;}
+    else if(primoMeseAttivo<0&&mesiConGiornate.size>0&&mesiConGiornate.size<12){notaPeriodo=` · Teoriche calcolate su ${mesiConGiornate.size} mesi attivi`;}
+
     el.innerHTML=`<div style="padding:16px 0">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <select id="ore-anno" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:13px;font-weight:700">${[annoSel-1,annoSel,annoSel+1].map(y=>`<option value="${y}"${y===annoSel?' selected':''}>${y}</option>`).join('')}</select>${opSel}
@@ -10236,12 +10274,18 @@ async function renderOre(){
             <th style="padding:10px 12px;text-align:right;font-weight:600">Effettive</th>
             <th style="padding:10px 12px;text-align:right;font-weight:600">Diff</th>
           </tr></thead>
-          <tbody>${mesi.map(x=>{const diff=x.effettive-x.teoriche;const col=diff>=0?'var(--green)':'var(--red)';return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 12px">${nomiMesi[x.m]}</td><td style="padding:10px 12px;text-align:right">${x.teoriche.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right">${x.effettive.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right;color:${col};font-weight:700">${(diff>=0?'+':'')+diff.toFixed(1)}h</td></tr>`;}).join('')}
-          <tr style="border-top:2px solid var(--border);font-weight:700"><td style="padding:10px 12px">Totale ${annoSel}</td><td style="padding:10px 12px;text-align:right">${totTeoriche.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right">${totEffettive.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right;color:${totEffettive-totTeoriche>=0?'var(--green)':'var(--red)'};font-weight:700">${(totEffettive-totTeoriche>=0?'+':'')+((totEffettive-totTeoriche).toFixed(1))}h</td></tr>
+          <tbody>
+            ${mesi.map(x=>{const diff=x.effettive-x.teoriche;const col=diff>=0?'var(--green)':'var(--red)';const dimmed=x.teoriche===0&&x.effettive===0?'opacity:.4;':'';return `<tr style="border-bottom:1px solid var(--border);${dimmed}"><td style="padding:10px 12px">${nomiMesi[x.m]}</td><td style="padding:10px 12px;text-align:right">${x.teoriche>0?x.teoriche.toFixed(1)+'h':'—'}</td><td style="padding:10px 12px;text-align:right">${x.effettive>0?x.effettive.toFixed(1)+'h':'—'}</td><td style="padding:10px 12px;text-align:right;color:${x.teoriche>0||x.effettive>0?col:'var(--t3)'};font-weight:700">${x.teoriche>0||x.effettive>0?(diff>=0?'+':'')+diff.toFixed(1)+'h':'—'}</td></tr>`;}).join('')}
+            <tr style="background:var(--gdim);border-top:2px solid rgba(200,168,75,.4);font-weight:700;color:var(--gold)">
+              <td style="padding:12px 12px;font-size:14px">⭐ Totale ${annoSel}</td>
+              <td style="padding:12px 12px;text-align:right;font-family:'DM Mono',monospace">${totTeoriche.toFixed(1)}h</td>
+              <td style="padding:12px 12px;text-align:right;font-family:'DM Mono',monospace">${totEffettive.toFixed(1)}h</td>
+              <td style="padding:12px 12px;text-align:right;font-family:'DM Mono',monospace;color:${totDiff>=0?'var(--green)':'var(--red)'};font-size:15px">${(totDiff>=0?'+':'')+totDiff.toFixed(1)}h</td>
+            </tr>
           </tbody>
         </table>
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h${notaPeriodo}</div>
     </div>`;
   }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
