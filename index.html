@@ -307,7 +307,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div id="home-foto-banner" style="display:none"></div>
     <!-- GRIGLIA NAVIGAZIONE RAPIDA -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-      <button onclick="navTo('giornata-1')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Bricolage Grotesque',sans-serif">
+      <button onclick="navTo('nuova')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Bricolage Grotesque',sans-serif">
         <span style="font-size:28px">➕</span><span data-i18n="btn_nuova_giornata">Nuova giornata</span>
       </button>
       <button onclick="navTo('piano')" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
@@ -880,6 +880,20 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </label>
     </div>
 
+    <!-- SEZIONE ORE E CALENDARIO — PUNTO_59 -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)" data-i18n="sett_ore_calendario">⏱ Ore e calendario</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:12px;color:var(--t2);display:block;margin-bottom:4px" data-i18n="lbl_ore_lun_gio">Ore lun-gio (h)</label><input id="imp-ore-lun-gio" type="number" step="0.25" min="1" max="12" value="9.25" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px;color:var(--t1);font-size:13px"></div>
+        <div><label style="font-size:12px;color:var(--t2);display:block;margin-bottom:4px" data-i18n="lbl_ore_ven">Ore venerdì (h)</label><input id="imp-ore-ven" type="number" step="0.25" min="1" max="12" value="8.25" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px;color:var(--t1);font-size:13px"></div>
+        <div><label style="font-size:12px;color:var(--t2);display:block;margin-bottom:4px" data-i18n="lbl_ore_annuali">Ore annuali contratto</label><input id="imp-ore-annuali" type="number" step="10" min="100" max="3000" value="2190" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px;color:var(--t1);font-size:13px"></div>
+        <div><label style="font-size:12px;color:var(--t2);display:block;margin-bottom:4px" data-i18n="lbl_calendario_anno">Anno di riferimento</label><input id="imp-ore-anno" type="number" step="1" min="2020" max="2040" value="2026" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px;color:var(--t1);font-size:13px"></div>
+      </div>
+      <button class="btn btn-g btn-sm" style="width:100%;margin-bottom:12px" onclick="salvaOreCalendario()" data-i18n="btn_salva_ore">💾 Salva ore</button>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:8px" data-i18n="lbl_eccezioni_ore">Eccezioni ore operai</div>
+      <div id="ore-eccezioni-list"><div class="empty" style="padding:8px 0;font-size:12px">Caricamento...</div></div>
+    </div>
+
     <!-- SEZIONE LINGUA — PUNTO_52 -->
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--gold)" data-i18n="sett_lingua">🌐 Lingua</div>
@@ -893,6 +907,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
 
     <div class="bsp"></div>
+  </div>
+
+  <!-- LE MIE ORE — PUNTO_59 -->
+  <div class="scr" id="scr-ore">
+    <div id="ore-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
   </div>
 
   <!-- PERMESSI VISIBILITÀ -->
@@ -1176,6 +1195,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="nb-icon" style="position:relative">📦<span id="mag-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;display:none;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
       <div class="nb-label" data-i18n="nav_magazzino">Magazzino</div>
     </div>
+    <div class="nb" id="nb-ore" onclick="navTo('ore')"><div class="nb-icon">⏱</div><div class="nb-label" data-i18n="nav_ore">Le mie ore</div></div>
   </div>
 </div>
 
@@ -2288,6 +2308,7 @@ const TRADUZIONI = {
     sett_rapportino_firma:'📄 Rapportino — Mostra riga firma',
     top_ricerca:'Ricerca giornate',ph_cerca_giornate:'🔍 Cerca cantiere, operaio, lavorazione...',
     empty_ricerca:'Nessun risultato trovato.',lbl_risultati_trovati:'risultati trovati',
+    sett_ore_calendario:'⏱ Ore e calendario',lbl_ore_lun_gio:'Ore lun-gio (h)',lbl_ore_ven:'Ore venerdì (h)',lbl_ore_annuali:'Ore annuali contratto',lbl_eccezioni_ore:'Eccezioni ore operai',nav_ore:'Le mie ore',top_ore:'Le mie ore',lbl_calendario_anno:'Anno di riferimento',btn_salva_ore:'💾 Salva ore',
   },
   EN:{
     nav_cantieri:'Sites',nav_giornata:'Day',nav_spese:'Expenses',
@@ -2611,6 +2632,7 @@ const TRADUZIONI = {
     sett_rapportino_firma:'📄 Report — Show signature line',
     top_ricerca:'Search days',ph_cerca_giornate:'🔍 Search site, worker, work...',
     empty_ricerca:'No results found.',lbl_risultati_trovati:'results found',
+    sett_ore_calendario:'⏱ Hours & calendar',lbl_ore_lun_gio:'Mon-Thu hours (h)',lbl_ore_ven:'Friday hours (h)',lbl_ore_annuali:'Annual contract hours',lbl_eccezioni_ore:'Worker hour exceptions',nav_ore:'My hours',top_ore:'My hours',lbl_calendario_anno:'Reference year',btn_salva_ore:'💾 Save hours',
   },
   DE:{
     nav_cantieri:'Baustellen',nav_giornata:'Tag',nav_spese:'Ausgaben',
@@ -2934,6 +2956,7 @@ const TRADUZIONI = {
     sett_rapportino_firma:'📄 Bericht — Unterschriftszeile anzeigen',
     top_ricerca:'Suche Tage',ph_cerca_giornate:'🔍 Suche Baustelle, Arbeiter...',
     empty_ricerca:'Keine Ergebnisse.',lbl_risultati_trovati:'Ergebnisse gefunden',
+    sett_ore_calendario:'⏱ Stunden & Kalender',lbl_ore_lun_gio:'Mo-Do Stunden (h)',lbl_ore_ven:'Freitag Stunden (h)',lbl_ore_annuali:'Jahresstunden Vertrag',lbl_eccezioni_ore:'Arbeiterstunden-Ausnahmen',nav_ore:'Meine Stunden',top_ore:'Meine Stunden',lbl_calendario_anno:'Bezugsjahr',btn_salva_ore:'💾 Stunden speichern',
   },
   ES:{
     nav_cantieri:'Obras',nav_giornata:'Día',nav_spese:'Gastos',
@@ -3258,6 +3281,7 @@ const TRADUZIONI = {
     sett_rapportino_firma:'📄 Parte — Mostrar línea de firma',
     top_ricerca:'Buscar jornadas',ph_cerca_giornate:'🔍 Buscar obra, operario...',
     empty_ricerca:'Sin resultados.',lbl_risultati_trovati:'resultados encontrados',
+    sett_ore_calendario:'⏱ Horas y calendario',lbl_ore_lun_gio:'Horas lun-jue (h)',lbl_ore_ven:'Horas viernes (h)',lbl_ore_annuali:'Horas anuales contrato',lbl_eccezioni_ore:'Excepciones horas operarios',nav_ore:'Mis horas',top_ore:'Mis horas',lbl_calendario_anno:'Año de referencia',btn_salva_ore:'💾 Guardar horas',
   }
 };
 
@@ -3940,6 +3964,12 @@ async function afterLogin(){
     else{controllaTimbraturaSerale();}
     // PE: alert settimanale foto archivio
     controllaAlertFoto();
+    // PUNTO_59: verifica tabella ore_contrattuali e alert dicembre
+    verificaOreContrattuali();
+    const _dicNow=new Date();
+    if(_dicNow.getMonth()===11&&_dicNow.getDate()>=1&&_dicNow.getDate()<=20){
+      setTimeout(()=>showToast('📅 Dicembre: verifica ore annuali e ferie operai prima delle festività','w'),1500);
+    }
   }catch(e){showToast('Errore: '+e.message,'e');showLogin();}
 }
 function togglePwd(id, btn){
@@ -4089,6 +4119,17 @@ async function verificaColonneGiornate(){
     console.log('%cEsegui queste istruzioni SQL nel Supabase SQL Editor:','color:#888');
     console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS materiale_giorno text;');
     console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS attrezzatura_giorno text;');
+    console.groupEnd();
+  }
+}
+async function verificaOreContrattuali(){
+  const{error}=await sb.from('ore_contrattuali').select('id').limit(1);
+  if(error){
+    console.group('%c⚠️ CantiereMaster — tabella ore_contrattuali mancante','color:#e05555;font-weight:bold;font-size:14px');
+    console.log('%cEsegui queste istruzioni SQL nel Supabase SQL Editor:','color:#888');
+    console.log('CREATE TABLE IF NOT EXISTS ore_contrattuali (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), operaio_id uuid REFERENCES operai(id) ON DELETE CASCADE, anno integer NOT NULL, ore_annuali numeric(8,2) NOT NULL, created_at timestamptz DEFAULT now());');
+    console.log('ALTER TABLE ore_contrattuali ENABLE ROW LEVEL SECURITY;');
+    console.log("CREATE POLICY accesso_ore ON ore_contrattuali FOR ALL USING (EXISTS (SELECT 1 FROM profili WHERE id = auth.uid() AND ruolo IN ('titolare','responsabile')));");
     console.groupEnd();
   }
 }
@@ -5298,6 +5339,7 @@ function addVoce2(lavId='',ore='',qty='',um=''){
   const div=document.createElement('div');div.className='voce-row';
   div.innerHTML=`<div class="voce-top"><select class="voce-sel" onchange="onChangeVoce(this)">${opts}</select><button class="voce-del" onclick="this.closest('.voce-row').remove();checkVociWarn()">✕</button></div><div class="nuova-voce-wrap" style="display:none;margin-bottom:8px"><input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px"></div><div class="voce-nums"><div><span class="vlbl">Ore lavorate</span><input type="number" class="vnum voce-ore-inp" placeholder="0.00" min="0" max="16" step="0.25" value="${ore||''}" oninput="checkVociWarn()"></div><div><span class="vlbl">Quantità (facoltativo)</span><div style="display:flex;gap:4px"><input type="number" class="vnum qty voce-qty-inp" placeholder="—" min="0" step="0.01" value="${qty||''}" style="flex:1"><input type="text" class="vnum voce-um-inp" placeholder="um" value="${um||''}" style="width:44px;font-size:11px"></div></div></div>`;
   const sel=div.querySelector('.voce-sel');if(lavId)sel.value=lavId;
+  if(lavId==='__nuova__'){const wrap=div.querySelector('.nuova-voce-wrap');if(wrap)wrap.style.display='block';}
   document.getElementById('g2-voci').appendChild(div);
 }
 function onChangeVoce(sel){
@@ -6550,6 +6592,7 @@ function navTo(dest){
   else if(dest==='magazzino'){pushNav('magazzino');showScr('magazzino');document.getElementById('top-title').textContent=t('top_magazzino');setBread([{label:'Magazzino'}]);renderMagazzino();}
   else if(dest==='notifiche'){pushNav('notifiche');showScr('notifiche');document.getElementById('top-title').textContent='Notifiche';setBread([{label:'Notifiche'}]);renderNotifiche();}
   else if(dest==='ricerca'){pushNav('ricerca');showScr('ricerca');document.getElementById('top-title').textContent=t('top_ricerca');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ricerca')}]);initRicerca();}
+  else if(dest==='ore'){pushNav('ore');showScr('ore');document.getElementById('top-title').textContent=t('top_ore');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ore')}]);renderOre();}
 }
 
 // ── SITUAZIONE ──
@@ -9727,6 +9770,16 @@ async function caricaImpostazioniSchermata(){
     // Rapportino firma
     const cbFirma=document.getElementById('rapp-firma-cb');
     if(cbFirma)cbFirma.checked=map.rapportino_firma==='1';
+    // Ore e calendario — PUNTO_59
+    const oreEl=document.getElementById('imp-ore-lun-gio');
+    const oreVenEl=document.getElementById('imp-ore-ven');
+    const oreAnnEl=document.getElementById('imp-ore-annuali');
+    const oreAnnoEl=document.getElementById('imp-ore-anno');
+    if(oreEl)oreEl.value=map.ore_lun_gio||'9.25';
+    if(oreVenEl)oreVenEl.value=map.ore_ven||'8.25';
+    if(oreAnnEl)oreAnnEl.value=map.ore_annuali_default||'2190';
+    if(oreAnnoEl)oreAnnoEl.value=map.calendario_anno||String(new Date().getFullYear());
+    await renderEccezioniOre();
   }catch(e){console.warn('caricaImpostazioni:',e.message);}
 }
 
@@ -10123,6 +10176,101 @@ async function logAzione(tabella, record_id, azione, dati={}){
 // ════════════════════════════════════════════════════════════════
 // END PUNTI 25-30
 // ════════════════════════════════════════════════════════════════
+
+// ── LE MIE ORE — PUNTO_59 ──
+async function renderOre(){
+  const el=document.getElementById('ore-content');
+  if(!el)return;
+  const isAdmin=['titolare','responsabile'].includes(PROF?.ruolo);
+  const annoSel=parseInt(document.getElementById('ore-anno')?.value||new Date().getFullYear());
+  let opId=document.getElementById('ore-operaio')?.value||null;
+  if(!opId){
+    const{data:op}=await sb.from('operai').select('id').ilike('email',USER.email).maybeSingle();
+    opId=op?.id||null;
+  }
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    const{data:giornate}=await sb.from('giornate').select('data,ore_totali')
+      .eq('operaio_id',opId).gte('data',`${annoSel}-01-01`).lte('data',`${annoSel}-12-31`);
+    const{data:eccezione}=opId?(await sb.from('ore_contrattuali').select('ore_annuali').eq('operaio_id',opId).eq('anno',annoSel).maybeSingle()):{data:null};
+    const oreLunGio=parseFloat(IMPOSTAZIONI.ore_lun_gio||9.25);
+    const oreVen=parseFloat(IMPOSTAZIONI.ore_ven||8.25);
+    const festivi=new Set(['01-01','08-01','12-25','12-26']);
+    const mesi=[];
+    for(let m=0;m<12;m++){
+      let teoriche=0;
+      const daysInMonth=new Date(annoSel,m+1,0).getDate();
+      for(let d=1;d<=daysInMonth;d++){
+        const date=new Date(annoSel,m,d);const dow=date.getDay();
+        if(dow===0||dow===6)continue;
+        const mmdd=`${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        if(festivi.has(mmdd))continue;
+        teoriche+=dow===5?oreVen:oreLunGio;
+      }
+      const effettive=(giornate||[]).filter(g=>{const gd=new Date(g.data+'T12:00');return gd.getFullYear()===annoSel&&gd.getMonth()===m;}).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
+      mesi.push({m,teoriche,effettive});
+    }
+    const totTeoriche=mesi.reduce((s,x)=>s+x.teoriche,0);
+    const totEffettive=mesi.reduce((s,x)=>s+x.effettive,0);
+    const oreAnnuali=eccezione?.ore_annuali||parseFloat(IMPOSTAZIONI.ore_annuali_default||2190);
+    const now=new Date();const meseCorr=now.getMonth();const annoCorr=now.getFullYear();
+    const kpiMese=annoSel===annoCorr?mesi[meseCorr]:{teoriche:0,effettive:0};
+    const kpiDiff=kpiMese.effettive-kpiMese.teoriche;
+    const nomiMesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    let opSel='';
+    if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:13px">${(OPERAI_TUTTI||[]).map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${o.nome||''} ${o.cognome||''}</option>`).join('')}</select>`;}
+    el.innerHTML=`<div style="padding:16px 0">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <select id="ore-anno" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:13px;font-weight:700">${[annoSel-1,annoSel,annoSel+1].map(y=>`<option value="${y}"${y===annoSel?' selected':''}>${y}</option>`).join('')}</select>${opSel}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        <div class="kpi-box"><div class="kpi-val">${kpiMese.effettive.toFixed(1)}h</div><div class="kpi-lbl">Ore fatte (mese)</div></div>
+        <div class="kpi-box"><div class="kpi-val">${kpiMese.teoriche.toFixed(1)}h</div><div class="kpi-lbl">Ore teoriche (mese)</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:${kpiDiff>=0?'var(--green)':'var(--red)'}">${(kpiDiff>=0?'+':'')+kpiDiff.toFixed(1)}h</div><div class="kpi-lbl">Diff. mese</div></div>
+      </div>
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="color:var(--t2);border-bottom:1px solid var(--border)">
+            <th style="padding:10px 12px;text-align:left;font-weight:600">Mese</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:600">Teoriche</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:600">Effettive</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:600">Diff</th>
+          </tr></thead>
+          <tbody>${mesi.map(x=>{const diff=x.effettive-x.teoriche;const col=diff>=0?'var(--green)':'var(--red)';return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 12px">${nomiMesi[x.m]}</td><td style="padding:10px 12px;text-align:right">${x.teoriche.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right">${x.effettive.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right;color:${col};font-weight:700">${(diff>=0?'+':'')+diff.toFixed(1)}h</td></tr>`;}).join('')}
+          <tr style="border-top:2px solid var(--border);font-weight:700"><td style="padding:10px 12px">Totale ${annoSel}</td><td style="padding:10px 12px;text-align:right">${totTeoriche.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right">${totEffettive.toFixed(1)}h</td><td style="padding:10px 12px;text-align:right;color:${totEffettive-totTeoriche>=0?'var(--green)':'var(--red)'};font-weight:700">${(totEffettive-totTeoriche>=0?'+':'')+((totEffettive-totTeoriche).toFixed(1))}h</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h</div>
+    </div>`;
+  }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
+}
+async function salvaOreCalendario(){
+  try{
+    const lun=document.getElementById('imp-ore-lun-gio')?.value||'9.25';
+    const ven=document.getElementById('imp-ore-ven')?.value||'8.25';
+    const ann=document.getElementById('imp-ore-annuali')?.value||'2190';
+    const anno=document.getElementById('imp-ore-anno')?.value||String(new Date().getFullYear());
+    await Promise.all([
+      sb.from('impostazioni').upsert({chiave:'ore_lun_gio',valore:lun},{onConflict:'chiave'}),
+      sb.from('impostazioni').upsert({chiave:'ore_ven',valore:ven},{onConflict:'chiave'}),
+      sb.from('impostazioni').upsert({chiave:'ore_annuali_default',valore:ann},{onConflict:'chiave'}),
+      sb.from('impostazioni').upsert({chiave:'calendario_anno',valore:anno},{onConflict:'chiave'}),
+    ]);
+    IMPOSTAZIONI.ore_lun_gio=lun;IMPOSTAZIONI.ore_ven=ven;IMPOSTAZIONI.ore_annuali_default=ann;IMPOSTAZIONI.calendario_anno=anno;
+    showToast('Ore e calendario salvati ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+async function renderEccezioniOre(){
+  const el=document.getElementById('ore-eccezioni-list');
+  if(!el)return;
+  try{
+    const anno=document.getElementById('imp-ore-anno')?.value||String(new Date().getFullYear());
+    const{data}=await sb.from('ore_contrattuali').select('id,operaio_id,ore_annuali,operai(nome,cognome)').eq('anno',parseInt(anno));
+    if(!data||!data.length){el.innerHTML='<div style="font-size:12px;color:var(--t3);padding:4px 0">Nessuna eccezione impostata</div>';return;}
+    el.innerHTML=data.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>${r.operai?.nome||''} ${r.operai?.cognome||''}</span><span style="color:var(--gold);font-weight:700">${r.ore_annuali}h</span></div>`).join('');
+  }catch(e){el.innerHTML='<div style="font-size:12px;color:var(--t3);padding:4px 0">Tabella ore_contrattuali non ancora creata</div>';}
+}
 </script>
 </body>
 </html>
