@@ -1195,7 +1195,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="nb-icon" style="position:relative">📦<span id="mag-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;display:none;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
       <div class="nb-label" data-i18n="nav_magazzino">Magazzino</div>
     </div>
-    <div class="nb" id="nb-ore" onclick="navTo('ore')"><div class="nb-icon">⏱</div><div class="nb-label" data-i18n="nav_ore">Le mie ore</div></div>
+    <div class="nb" id="nb-ore" onclick="navTo('ore')"><div class="nb-icon" style="color:var(--gold)">🕐</div><div class="nb-label" data-i18n="nav_ore">Le mie ore</div></div>
   </div>
 </div>
 
@@ -10198,9 +10198,27 @@ async function renderOre(){
     ]);
     const operaioInfo=assunzioneRes?.data||null;
 
-    const oreLunGio=parseFloat(IMPOSTAZIONI.ore_lun_gio||9.25);
-    const oreVen=parseFloat(IMPOSTAZIONI.ore_ven||8.25);
     const festivi=new Set(['01-01','08-01','12-25','12-26']);
+
+    // Ore annuali contratto (valore fisso di riferimento)
+    const oreAnnuali=parseFloat(eccezione?.ore_annuali||IMPOSTAZIONI.ore_annuali_default||2190);
+
+    // Conta giorni lavorativi per mese e totale anno (usati come pesi per la distribuzione proporzionale)
+    const giorniLavPerMese=[];
+    let totGiorniLavAnno=0;
+    for(let m=0;m<12;m++){
+      let gg=0;
+      const dim=new Date(annoSel,m+1,0).getDate();
+      for(let d=1;d<=dim;d++){
+        const dow=new Date(annoSel,m,d).getDay();
+        if(dow===0||dow===6)continue;
+        const mmdd=`${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        if(festivi.has(mmdd))continue;
+        gg++;
+      }
+      giorniLavPerMese.push(gg);
+      totGiorniLavAnno+=gg;
+    }
 
     // Mesi in cui l'operaio ha almeno una giornata registrata
     const mesiConGiornate=new Set((giornate||[]).map(g=>new Date(g.data+'T12:00').getMonth()));
@@ -10210,33 +10228,24 @@ async function renderOre(){
     if(operaioInfo?.data_assunzione){
       const da=new Date(operaioInfo.data_assunzione+'T12:00');
       if(da.getFullYear()===annoSel) primoMeseAttivo=da.getMonth();
-      else if(da.getFullYear()<annoSel) primoMeseAttivo=0; // assunto anno precedente: anno intero
-      else primoMeseAttivo=12; // assunto anno futuro: nessun mese
+      else if(da.getFullYear()<annoSel) primoMeseAttivo=0;
+      else primoMeseAttivo=12;
     }
 
     const mesi=[];
     for(let m=0;m<12;m++){
-      // Determina se contare le ore teoriche per questo mese
       let includiMese;
       if(primoMeseAttivo>=0){
-        includiMese=m>=primoMeseAttivo; // da data_assunzione in poi
+        includiMese=m>=primoMeseAttivo;
       } else if(mesiConGiornate.size>0){
-        includiMese=mesiConGiornate.has(m); // solo mesi con giornate registrate
+        includiMese=mesiConGiornate.has(m);
       } else {
-        includiMese=true; // nessun dato: usa anno intero
+        includiMese=true;
       }
-
-      let teoriche=0;
-      if(includiMese){
-        const daysInMonth=new Date(annoSel,m+1,0).getDate();
-        for(let d=1;d<=daysInMonth;d++){
-          const date=new Date(annoSel,m,d);const dow=date.getDay();
-          if(dow===0||dow===6)continue;
-          const mmdd=`${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          if(festivi.has(mmdd))continue;
-          teoriche+=dow===5?oreVen:oreLunGio;
-        }
-      }
+      // Ore teoriche mese = oreAnnuali × (giorni_lav_mese / totale_giorni_lav_anno)
+      const teoriche=(includiMese&&totGiorniLavAnno>0)
+        ? oreAnnuali*(giorniLavPerMese[m]/totGiorniLavAnno)
+        : 0;
       const effettive=(giornate||[]).filter(g=>{const gd=new Date(g.data+'T12:00');return gd.getFullYear()===annoSel&&gd.getMonth()===m;}).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
       mesi.push({m,teoriche,effettive});
     }
@@ -10244,7 +10253,6 @@ async function renderOre(){
     const totTeoriche=mesi.reduce((s,x)=>s+x.teoriche,0);
     const totEffettive=mesi.reduce((s,x)=>s+x.effettive,0);
     const totDiff=totEffettive-totTeoriche;
-    const oreAnnuali=eccezione?.ore_annuali||parseFloat(IMPOSTAZIONI.ore_annuali_default||2190);
     const now=new Date();const meseCorr=now.getMonth();const annoCorr=now.getFullYear();
     const kpiMese=annoSel===annoCorr?mesi[meseCorr]:{teoriche:0,effettive:0};
     const kpiDiff=kpiMese.effettive-kpiMese.teoriche;
