@@ -10190,13 +10190,14 @@ async function renderOre(){
   }
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    // Carica giornate, eccezione ore e data_assunzione in parallelo
-    const[{data:giornate},{data:eccezione},assunzioneRes]=await Promise.all([
+    // Carica giornate ed eccezione ore in parallelo
+    const[{data:giornate},{data:eccezione}]=await Promise.all([
       sb.from('giornate').select('data,ore_totali').eq('operaio_id',opId).gte('data',`${annoSel}-01-01`).lte('data',`${annoSel}-12-31`),
       opId?sb.from('ore_contrattuali').select('ore_annuali').eq('operaio_id',opId).eq('anno',annoSel).maybeSingle():Promise.resolve({data:null}),
-      opId?sb.from('operai').select('data_assunzione').eq('id',opId).maybeSingle().catch(()=>({data:null})):Promise.resolve({data:null}),
     ]);
-    const operaioInfo=assunzioneRes?.data||null;
+    // data_assunzione separata per gestire errore colonna mancante
+    let operaioInfo=null;
+    if(opId){try{const{data:_da}=await sb.from('operai').select('data_assunzione').eq('id',opId).maybeSingle();operaioInfo=_da||null;}catch(e){operaioInfo=null;}}
 
     const festivi=new Set(['01-01','08-01','12-25','12-26']);
 
