@@ -1094,6 +1094,18 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="bsp"></div>
   </div>
 
+  <!-- CONFERMA ORE CAPOSQUADRA -->
+  <div class="scr" id="scr-conferma-ore">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <label class="fl" style="margin:0;white-space:nowrap">Data:</label>
+      <input type="date" id="conferma-ore-data" class="fi" style="flex:1" onchange="renderConfermaOre()">
+    </div>
+    <div id="conferma-ore-content">
+      <div class="empty"><div class="spin" style="margin:0 auto"></div></div>
+    </div>
+    <div class="bsp"></div>
+  </div>
+
   <!-- PIANO DEL GIORNO -->
   <div class="scr" id="scr-piano">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -1179,7 +1191,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label" data-i18n="nav_report">Report</div></div>
     <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label" data-i18n="nav_contabilita">Contabilità</div></div>
-    <div class="nb" id="nb-mio-giorno" onclick="navTo('mio-giorno')"><div class="nb-icon">📅</div><div class="nb-label" data-i18n="nav_mio_giorno">Il mio giorno</div></div>
+    <div class="nb" id="nb-mio-giorno" onclick="navTo('mio-giorno')"><div class="nb-icon" style="position:relative">📅<span id="mio-giorno-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_mio_giorno">Il mio giorno</div></div>
+    <div class="nb" id="nb-conferma-ore" onclick="navTo('conferma-ore')" style="display:none"><div class="nb-icon">✅</div><div class="nb-label" data-i18n="nav_conferma_ore">Conf. ore</div></div>
     <div class="nb" id="nb-bolle" onclick="navTo('bolle')"><div class="nb-icon">📦</div><div class="nb-label" data-i18n="nav_bolle">Bolle</div></div>
     <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label" data-i18n="nav_piano">Piano del g.</div></div>
     <div class="nb" id="nb-personale" onclick="navTo('personale')" style="display:none"><div class="nb-icon">👷</div><div class="nb-label" data-i18n="nav_personale">Personale</div></div>
@@ -1703,6 +1716,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <hr>
     <div class="fg"><label class="fl" style="color:var(--gold)">⭐ Note caposquadra</label><textarea class="ft" id="pa-note-cs" style="min-height:54px" placeholder="Visibili a tutti gli operai del cantiere oggi..."></textarea></div>
     <div style="font-size:11px;color:var(--t2);margin:-6px 0 10px">Visibile a tutti gli assegnati al cantiere in questa data.</div>
+    <div class="fg"><label class="fl" data-i18n="lbl_nota_titolare">📋 Nota titolare (visibile all'operaio)</label><textarea class="ft" id="pa-nota-titolare" style="min-height:54px;border-color:rgba(224,85,85,.4)" placeholder="Nota urgente per questo operaio..."></textarea></div>
     <div class="fg"><label class="fl">🏨 Hotel (nome)</label><input type="text" class="fi" id="pa-hotel-nome" placeholder="es. Hotel Zurigo, Ostello..."></div>
     <div class="fg"><label class="fl">🏨 Hotel (indirizzo)</label><input type="text" class="fi" id="pa-hotel-ind" placeholder="es. Via Stazione 12, Bellinzona"></div>
     <div style="font-size:11px;color:var(--t2);margin:-6px 0 10px">L'hotel verrà copiato su tutti gli operai assegnati a questo cantiere in questa data.</div>
@@ -2309,6 +2323,13 @@ const TRADUZIONI = {
     top_ricerca:'Ricerca giornate',ph_cerca_giornate:'🔍 Cerca cantiere, operaio, lavorazione...',
     empty_ricerca:'Nessun risultato trovato.',lbl_risultati_trovati:'risultati trovati',
     sett_ore_calendario:'⏱ Ore e calendario',lbl_ore_lun_gio:'Ore lun-gio (h)',lbl_ore_ven:'Ore venerdì (h)',lbl_ore_annuali:'Ore annuali contratto',lbl_eccezioni_ore:'Eccezioni ore operai',nav_ore:'Le mie ore',top_ore:'Le mie ore',lbl_calendario_anno:'Anno di riferimento',btn_salva_ore:'💾 Salva ore',
+    nav_conferma_ore:'Conf. ore',top_conferma_ore:'Conferma ore caposquadra',btn_conferma_ore:'✅ Conferma',
+    badge_confermato:'✅ Confermato',badge_da_confermare:'⏳ Da confermare',
+    lbl_nota_titolare:'📋 Nota titolare (visibile all\'operaio)',btn_ho_letto:'✓ Ho letto',lbl_note_da_leggere:'Note non lette',
+    sec_cosa_manca:'📦 Cosa manca domani?',ph_cosa_manca:'es. silicone, viti 5x60, listoni 3x5...',btn_segnala:'💾 Segnala',
+    txt_foto_scadenza:'Queste foto hanno più di 75 giorni. Se non le hai ancora salvate sul tuo PC, scaricale prima di eliminarle.',
+    btn_conserva_ancora:'⏳ Conserva ancora 30 giorni',btn_elimina_foto:'🗑️ Elimina foto',
+    txt_conferma_elimina_foto:'Hai già scaricato queste foto? Se le elimini non potrai recuperarle.',
   },
   EN:{
     nav_cantieri:'Sites',nav_giornata:'Day',nav_spese:'Expenses',
@@ -2633,6 +2654,13 @@ const TRADUZIONI = {
     top_ricerca:'Search days',ph_cerca_giornate:'🔍 Search site, worker, work...',
     empty_ricerca:'No results found.',lbl_risultati_trovati:'results found',
     sett_ore_calendario:'⏱ Hours & calendar',lbl_ore_lun_gio:'Mon-Thu hours (h)',lbl_ore_ven:'Friday hours (h)',lbl_ore_annuali:'Annual contract hours',lbl_eccezioni_ore:'Worker hour exceptions',nav_ore:'My hours',top_ore:'My hours',lbl_calendario_anno:'Reference year',btn_salva_ore:'💾 Save hours',
+    nav_conferma_ore:'Conf. hours',top_conferma_ore:'Confirm hours',btn_conferma_ore:'✅ Confirm',
+    badge_confermato:'✅ Confirmed',badge_da_confermare:'⏳ To confirm',
+    lbl_nota_titolare:'📋 Owner note (visible to worker)',btn_ho_letto:'✓ Read',lbl_note_da_leggere:'Unread notes',
+    sec_cosa_manca:'📦 What\'s missing tomorrow?',ph_cosa_manca:'e.g. silicone, screws, planks...',btn_segnala:'💾 Report',
+    txt_foto_scadenza:'These photos are over 75 days old. If you haven\'t saved them yet, download them before deleting.',
+    btn_conserva_ancora:'⏳ Keep for 30 more days',btn_elimina_foto:'🗑️ Delete photos',
+    txt_conferma_elimina_foto:'Have you already downloaded these photos? Deleting them is irreversible.',
   },
   DE:{
     nav_cantieri:'Baustellen',nav_giornata:'Tag',nav_spese:'Ausgaben',
@@ -3944,10 +3972,15 @@ async function afterLogin(){
       navTo('magazzino');
       return;
     }
-    aggiornaBadgeMagazzino();aggiornaBadgeNotifiche();
+    aggiornaBadgeMagazzino();aggiornaBadgeNotifiche();aggiornaBadgeMioGiorno();
     // Caposquadra: nascondi sezioni economiche
     if(ruolo==='caposquadra'){
       document.getElementById('app').classList.add('is-capo');
+    }
+    // Caposquadra e responsabile: mostra conferma ore
+    if(['caposquadra','responsabile'].includes(ruolo)){
+      const nbConfOre=document.getElementById('nb-conferma-ore');
+      if(nbConfOre)nbConfOre.style.display='flex';
     }
     document.getElementById('loading').style.display='none';
     document.getElementById('login').classList.remove('on');
@@ -4121,6 +4154,17 @@ async function verificaColonneGiornate(){
     console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS attrezzatura_giorno text;');
     console.groupEnd();
   }
+  // PUNTO_61: colonne conferma ore caposquadra
+  console.group('%c📋 PUNTO_61 — SQL da eseguire su Supabase (se non ancora fatto)','color:#c8a84b;font-weight:bold;font-size:13px');
+  console.log('-- Colonne conferma ore caposquadra:');
+  console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ore_confermate numeric;');
+  console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS ore_originali numeric;');
+  console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS confermato_da uuid;');
+  console.log('ALTER TABLE giornate ADD COLUMN IF NOT EXISTS data_conferma timestamptz;');
+  console.log('-- Colonne nota titolare in piano_giorno:');
+  console.log('ALTER TABLE piano_giorno ADD COLUMN IF NOT EXISTS nota_titolare text;');
+  console.log('ALTER TABLE piano_giorno ADD COLUMN IF NOT EXISTS nota_titolare_letta boolean DEFAULT false;');
+  console.groupEnd();
 }
 async function verificaOreContrattuali(){
   const{error}=await sb.from('ore_contrattuali').select('id').limit(1);
@@ -4363,7 +4407,7 @@ async function renderCantiere(){
                 ${g.meteo?`<span style="font-size:12px;margin-left:8px">${g.meteo.split(' ')[0]}</span>`:''}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h</span>
+                ${g.ore_originali?`<span style="font-family:'DM Mono';font-size:11px;color:var(--t3);text-decoration:line-through">${parseFloat(g.ore_originali).toFixed(2)}h</span><span style="font-family:'DM Mono';font-size:12px;color:var(--green)">${parseFloat(g.ore_totali||0).toFixed(2)}h ✅</span>`:`<span style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h</span>`}
                 <button onclick="apriModificaGiornata('${g.id}')" style="background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--t2);font-size:11px;padding:3px 8px;cursor:pointer">✏️</button>
               </div>
             </div>`).join('')}
@@ -6475,10 +6519,11 @@ async function controllaAlertFoto(){
     banner.style.display='block';
     banner.innerHTML='<div style="background:'+col+'22;border:1px solid '+col+';border-radius:var(--r);padding:12px 14px;margin-bottom:14px">'
       +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+icona+' '+foto.length+' foto da archiviare (>'+maxGg+' gg)</div>'
-      +'<div style="font-size:12px;color:var(--t2);margin-bottom:10px">Scarica lo ZIP e archivia le foto per liberare spazio.</div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      +'<button class="btn btn-s btn-sm" onclick="scaricaZipFoto()">⬇️ Scarica ZIP</button>'
-      +'<button class="btn btn-g btn-sm" onclick="archiviaFotoVecchie()">✅ Ho scaricato, archivia</button>'
+      +'<div style="font-size:12px;color:var(--t2);margin-bottom:10px">'+t('txt_foto_scadenza')+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px">'
+      +'<button class="btn btn-s btn-sm" style="width:100%;text-align:left;justify-content:flex-start" onclick="scaricaZipFoto()">⬇️ Scarica ora — salva le foto sul tuo PC</button>'
+      +'<button class="btn btn-s btn-sm" style="width:100%;text-align:left;justify-content:flex-start" onclick="conservaFoto30Giorni()">'+t('btn_conserva_ancora')+' — l\'alert non apparirà per 30 giorni</button>'
+      +'<button class="btn btn-d btn-sm" style="width:100%;text-align:left;justify-content:flex-start" onclick="eliminaFotoVecchie()">'+t('btn_elimina_foto')+' — elimina definitivamente</button>'
       +'</div></div>';
   }catch(e){console.warn('controllaAlertFoto:',e.message);}
 }
@@ -6515,6 +6560,36 @@ async function archiviaFotoVecchie(){
     const banner=document.getElementById('home-foto-banner');
     if(banner)banner.style.display='none';
     showToast('Foto archiviate ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function conservaFoto30Giorni(){
+  if(!_fotoDaArchiviare||!_fotoDaArchiviare.length)return;
+  try{
+    const nuovaData=new Date();nuovaData.setDate(nuovaData.getDate()-45); // sposta indietro di 45gg così threshold 75gg non scatta per altri 30gg
+    const ids=_fotoDaArchiviare.map(f=>f.id);
+    await sb.from('foto').update({data_foto:nuovaData.toISOString()}).in('id',ids);
+    _fotoDaArchiviare=[];
+    const banner=document.getElementById('home-foto-banner');
+    if(banner)banner.style.display='none';
+    showToast('⏳ Alert posticipato di 30 giorni ✓');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function eliminaFotoVecchie(){
+  if(!_fotoDaArchiviare||!_fotoDaArchiviare.length)return;
+  if(!confirm(t('txt_conferma_elimina_foto')))return;
+  try{
+    showToast('⏳ Eliminazione in corso...','i');
+    for(const f of _fotoDaArchiviare){
+      try{await sb.storage.from('cantiere-foto').remove([f.storage_path]);}catch(e2){}
+    }
+    const ids=_fotoDaArchiviare.map(f=>f.id);
+    await sb.from('foto').delete().in('id',ids);
+    _fotoDaArchiviare=[];
+    const banner=document.getElementById('home-foto-banner');
+    if(banner)banner.style.display='none';
+    showToast('🗑️ Foto eliminate ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
@@ -6557,7 +6632,7 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa','conferma-ore':'nb-conferma-ore'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else apriScegliCantiere();}
@@ -6593,6 +6668,16 @@ function navTo(dest){
   else if(dest==='notifiche'){pushNav('notifiche');showScr('notifiche');document.getElementById('top-title').textContent='Notifiche';setBread([{label:'Notifiche'}]);renderNotifiche();}
   else if(dest==='ricerca'){pushNav('ricerca');showScr('ricerca');document.getElementById('top-title').textContent=t('top_ricerca');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ricerca')}]);initRicerca();}
   else if(dest==='ore'){pushNav('ore');showScr('ore');document.getElementById('top-title').textContent=t('top_ore');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ore')}]);renderOre();}
+  else if(dest==='conferma-ore'){
+    const ruoloU=PROF?.ruolo||'caposquadra';
+    if(!['caposquadra','responsabile'].includes(ruoloU)){showToast('Accesso non autorizzato','e');return;}
+    pushNav('conferma-ore');showScr('conferma-ore');
+    document.getElementById('top-title').textContent=t('top_conferma_ore');
+    setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_conferma_ore')}]);
+    const dInput=document.getElementById('conferma-ore-data');
+    if(dInput&&!dInput.value)dInput.value=nowZurich().date;
+    renderConfermaOre();
+  }
 }
 
 // ── SITUAZIONE ──
@@ -6726,6 +6811,23 @@ async function renderSituazione(){
         elGru.innerHTML=hg;
       }
     }catch(e){elGru.innerHTML=`<div class="empty" style="color:var(--red)">Errore: ${e.message}</div>`;}
+  }
+  // ── PUNTO_61: giornate ieri senza conferma (caposquadra/responsabile) ──
+  if(['caposquadra','responsabile'].includes(PROF?.ruolo)){
+    try{
+      const ieri=new Date();ieri.setDate(ieri.getDate()-1);
+      const ieriStr=ieri.toISOString().split('T')[0];
+      const{data:gNonConf}=await sb.from('giornate').select('id',{count:'exact'}).eq('data',ieriStr).is('ore_confermate',null);
+      const nNonConf=gNonConf?.length||0;
+      if(nNonConf>0){
+        const elSitBanner=document.getElementById('sit-spese-content');
+        const banner=document.createElement('div');
+        banner.style.cssText='background:rgba(224,136,64,.1);border:1px solid rgba(224,136,64,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--orange);cursor:pointer';
+        banner.innerHTML='⏳ <strong>'+nNonConf+' giornate di ieri senza conferma ore</strong> → <span style="text-decoration:underline">Vai a confermare</span>';
+        banner.addEventListener('click',function(){navTo('conferma-ore');});
+        if(elSitBanner)elSitBanner.parentNode.insertBefore(banner,elSitBanner);
+      }
+    }catch(e){}
   }
 }
 async function segnaSpesaPagata(id){
@@ -7534,6 +7636,7 @@ async function apriModificaAssegnazione(id){
     document.getElementById('pa-note').value=r.annotazioni||'';
     document.getElementById('pa-ordine').value=r.ordine||0;
     document.getElementById('pa-note-cs').value=r.note_caposquadra||'';
+    const paNT=document.getElementById('pa-nota-titolare');if(paNT)paNT.value=r.nota_titolare||'';
     document.getElementById('pa-hotel-nome').value=r.hotel_nome||'';
     document.getElementById('pa-hotel-ind').value=r.hotel_indirizzo||'';
     const btn=document.createElement('button');btn.className='btn btn-d';btn.textContent='🗑️ Elimina';
@@ -7553,6 +7656,7 @@ async function salvaAssegnazione(){
     const hotelNome=document.getElementById('pa-hotel-nome').value.trim()||null;
     const hotelInd=document.getElementById('pa-hotel-ind').value.trim()||null;
     const noteCs=document.getElementById('pa-note-cs').value.trim()||null;
+    const notaTitolare=document.getElementById('pa-nota-titolare')?.value.trim()||null;
     const payload={
       data:dataPiano,
       operaio_id:opId,
@@ -7564,6 +7668,8 @@ async function salvaAssegnazione(){
       ordine:parseInt(document.getElementById('pa-ordine').value)||0,
       created_by:USER.id,
       note_caposquadra:noteCs,
+      nota_titolare:notaTitolare,
+      nota_titolare_letta:notaTitolare?false:null,
       hotel_nome:hotelNome,
       hotel_indirizzo:hotelInd
     };
@@ -9228,6 +9334,33 @@ async function renderMioGiorno(){
     btnAss.addEventListener('click',function(){apriRichiestaAssenza();});
     el.appendChild(btnAss);
 
+    // ── SEZIONE: Cosa manca domani? ──
+    if(oggi_ass.length&&oggi_ass[0].cantiere_id){
+      const cantId=oggi_ass[0].cantiere_id;
+      const cosaMancaDiv=document.createElement('div');
+      cosaMancaDiv.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:20px';
+      cosaMancaDiv.innerHTML='<div class="sec" style="margin:0 0 10px">'+t('sec_cosa_manca')+'</div>'
+        +'<textarea id="cosa-manca-txt" class="ft" style="min-height:60px;margin-bottom:8px" placeholder="'+t('ph_cosa_manca')+'"></textarea>'
+        +'<button class="btn btn-g" style="font-size:14px;padding:10px" onclick="segnalaCosaManca(\''+cantId+'\')">'+t('btn_segnala')+'</button>'
+        +'<div id="cosa-manca-lista" style="margin-top:12px"></div>';
+      el.appendChild(cosaMancaDiv);
+      // Carica lista già segnalata per domani
+      const domaniStr2=new Date(domani).toISOString().split('T')[0];
+      sb.from('materiali_cantiere').select('*').eq('cantiere_id',cantId).eq('fatto',false)
+        .gte('created_at',domaniStr2+'T00:00:00').order('created_at',{ascending:false})
+        .then(function(res){
+          const lista=document.getElementById('cosa-manca-lista');
+          if(!lista)return;
+          const items=res.data||[];
+          if(!items.length){lista.innerHTML='<div style="font-size:12px;color:var(--t3)">Nessuna segnalazione per domani</div>';return;}
+          lista.innerHTML='<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Già segnalato:</div>'
+            +items.map(function(m){return '<div style="font-size:13px;display:flex;align-items:center;gap:6px;padding:3px 0"><span>📦</span><span>'+escHtml(m.nome)+'</span></div>';}).join('');
+        });
+    }
+
+    // Aggiorna badge note non lette
+    aggiornaBadgeMioGiorno();
+
   }catch(e){
     el.innerHTML='<div class="empty"><div class="empty-i">⚠️</div><p>Errore: '+e.message+'</p><p style="font-size:12px;color:var(--t2);margin-top:8px">Contatta il titolare</p></div>';
   }
@@ -9262,8 +9395,13 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
   });
 
   card.innerHTML=
+    // Nota caposquadra in cima prominente (se presente)
+    (a.note_caposquadra?'<div style="background:rgba(224,136,64,.12);border:2px solid rgba(224,136,64,.5);border-radius:var(--rsm);padding:10px 12px;margin-bottom:12px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">⚠️ Nota importante</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--orange)">🔴 '+escHtml(a.note_caposquadra)+'</div>'
+      +'</div>':'')
     // Cantiere (grande, ben visibile)
-    '<div style="font-size:20px;font-weight:900;margin-bottom:6px">📍 '+cantNome+'</div>'
+    +'<div style="font-size:20px;font-weight:900;margin-bottom:6px">📍 '+cantNome+'</div>'
     +(cantLuogo?'<div style="font-size:14px;color:var(--t2);margin-bottom:4px">'+cantLuogo+(cantPaese&&cantPaese!=='CH'?' '+(_PFLAGS[cantPaese]||'')+' ('+cantPaese+')':'')+'</div>':'')
     +(cantIndirizzo
       ?'<div style="font-size:12px;color:var(--t2);margin-bottom:12px">'+cantIndirizzo
@@ -9290,11 +9428,8 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
       +'</div>'
       :'')
 
-    // Note caposquadra
-    +(a.note_caposquadra?'<div style="background:var(--gdim);border-left:4px solid var(--gold);padding:10px 12px;border-radius:0 var(--rsm) var(--rsm) 0;margin-bottom:8px">'
-      +'<div style="font-size:12px;color:var(--t2);margin-bottom:2px">Nota del caposquadra</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--gold)">⭐ '+a.note_caposquadra+'</div>'
-      +'</div>':'')
+    // [nota_caposquadra ora mostrata in cima alla card]
+    +''
 
     // Hotel
     +(a.hotel_nome?(()=>{
@@ -9309,6 +9444,16 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
 
     // Annotazioni (evidenziate)
     +(hasNote?'<div style="background:rgba(200,168,75,.2);border-left:4px solid var(--gold);padding:10px 12px;border-radius:0 var(--rsm) var(--rsm) 0;font-size:var(--fs-lg);font-weight:700;color:var(--gold);margin-top:4px">⚠️ '+a.annotazioni+'</div>':'');
+
+  // Nota titolare: prepend in cima dopo aver settato innerHTML
+  if(a.nota_titolare&&!a.nota_titolare_letta){
+    const notaDiv=document.createElement('div');
+    notaDiv.style.cssText='background:rgba(224,85,85,.15);border:2px solid rgba(224,85,85,.6);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px';
+    notaDiv.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">🔴 '+t('lbl_nota_titolare')+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--red)">'+escHtml(a.nota_titolare)+'</div>'
+      +'<button style="margin-top:10px;background:rgba(76,175,125,.15);border:1px solid rgba(76,175,125,.3);border-radius:var(--rsm);color:var(--green);font-size:13px;font-weight:700;padding:8px 16px;cursor:pointer;width:100%" data-pid="'+a.id+'" onclick="segnaNotaTitolareLetta(this)">'+t('btn_ho_letto')+'</button>';
+    card.prepend(notaDiv);
+  }
 
   // Carica materiali cantiere async
   if(a.cantiere_id){
@@ -9332,6 +9477,129 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
   }
 
   return card;
+}
+
+// ══════════════════════════════════════════════════
+// PUNTO_61 — FUNZIONI NUOVE
+// ══════════════════════════════════════════════════
+async function segnalaCosaManca(cantId){
+  const txt=document.getElementById('cosa-manca-txt');
+  if(!txt||!txt.value.trim()){showToast('Scrivi cosa manca','e');return;}
+  const domani=new Date();domani.setDate(domani.getDate()+1);
+  try{
+    await sb.from('materiali_cantiere').insert({
+      cantiere_id:cantId,
+      nome:txt.value.trim(),
+      fatto:false,
+      inserito_da:USER.id,
+      created_at:domani.toISOString()
+    });
+    txt.value='';
+    showToast(t('btn_segnala')+' ✓');
+    // Aggiorna lista
+    const lista=document.getElementById('cosa-manca-lista');
+    if(lista){
+      const domaniStr=domani.toISOString().split('T')[0];
+      const{data}=await sb.from('materiali_cantiere').select('*').eq('cantiere_id',cantId).eq('fatto',false)
+        .gte('created_at',domaniStr+'T00:00:00').order('created_at',{ascending:false});
+      const items=data||[];
+      lista.innerHTML='<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Già segnalato:</div>'
+        +items.map(function(m){return '<div style="font-size:13px;display:flex;align-items:center;gap:6px;padding:3px 0"><span>📦</span><span>'+escHtml(m.nome)+'</span></div>';}).join('');
+    }
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function segnaNotaTitolareLetta(btn){
+  const pid=btn.dataset.pid;if(!pid)return;
+  try{
+    await sb.from('piano_giorno').update({nota_titolare_letta:true}).eq('id',pid);
+    const notaDiv=btn.parentNode;
+    if(notaDiv)notaDiv.style.display='none';
+    showToast(t('btn_ho_letto')+' ✓');
+    aggiornaBadgeMioGiorno();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
+
+async function aggiornaBadgeMioGiorno(){
+  try{
+    const oggi=nowZurich().date;
+    // Cerca assegnazioni con nota_titolare non letta per questo utente oggi
+    let q=sb.from('piano_giorno').select('id').eq('data',oggi).eq('nota_titolare_letta',false).not('nota_titolare','is',null);
+    const{data}=await q;
+    const badge=document.getElementById('mio-giorno-badge');if(!badge)return;
+    const n=data?.length||0;
+    if(n>0){badge.textContent=n>9?'9+':n;badge.style.display='inline-flex';}else badge.style.display='none';
+  }catch(e){}
+}
+
+async function renderConfermaOre(){
+  const el=document.getElementById('conferma-ore-content');
+  if(!el)return;
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const dataInput=document.getElementById('conferma-ore-data');
+  const data=dataInput?.value||nowZurich().date;
+  try{
+    // Carica cantieri assegnati al caposquadra in piano_giorno per questa data
+    const{data:piani}=await sb.from('piano_giorno').select('cantiere_id,cantieri(nome)').eq('data',data);
+    const cantIds=[...new Set((piani||[]).map(p=>p.cantiere_id).filter(Boolean))];
+    if(!cantIds.length){
+      el.innerHTML='<div class="empty"><div class="empty-i">📋</div><p>Nessun cantiere assegnato per questa data</p></div>';return;
+    }
+    // Carica giornate di questi cantieri per questa data
+    const{data:giornate,error}=await sb.from('giornate')
+      .select('id,ore_totali,ore_originali,ore_confermate,confermato_da,data_conferma,operai(nome,cognome)')
+      .eq('data',data).in('cantiere_id',cantIds).order('created_at');
+    if(error)throw error;
+    if(!giornate?.length){
+      el.innerHTML='<div class="empty"><div class="empty-i">📋</div><p>Nessuna giornata registrata per questa data</p></div>';return;
+    }
+    el.innerHTML='';
+    giornate.forEach(function(g){
+      const isConf=!!g.ore_confermate;
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--s1);border:1px solid '+(isConf?'rgba(76,175,125,.4)':'rgba(224,136,64,.4)')+';border-radius:var(--r);padding:14px;margin-bottom:10px';
+      const nomeOp=((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:'')).trim()||'Operaio';
+      const badgeHtml=isConf
+        ?'<span style="background:rgba(76,175,125,.15);color:var(--green);font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">'+t('badge_confermato')+'</span>'
+        :'<span style="background:rgba(224,136,64,.15);color:var(--orange);font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">'+t('badge_da_confermare')+'</span>';
+      card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<div style="font-size:15px;font-weight:700">👷 '+escHtml(nomeOp)+'</div>'
+        +badgeHtml+'</div>'
+        +(g.ore_originali?'<div style="font-size:12px;color:var(--t3);margin-bottom:4px">Ore originali: <span style="text-decoration:line-through">'+parseFloat(g.ore_originali).toFixed(2)+'h</span></div>':'')
+        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">'
+        +'<label style="font-size:13px;color:var(--t2);white-space:nowrap">Ore da confermare:</label>'
+        +'<input type="number" step="0.25" min="0" max="24" value="'+parseFloat(g.ore_totali||0).toFixed(2)+'" id="conf-ore-'+g.id+'" style="width:90px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--gold);font-family:DM Mono,monospace;font-size:14px;padding:6px 10px;text-align:center">'
+        +'</div>'
+        +(isConf?''
+          :'<button class="btn btn-g" style="font-size:14px;padding:10px" data-gid="'+g.id+'" data-ore="'+parseFloat(g.ore_totali||0).toFixed(2)+'" onclick="confermaOreGiornata(this)">'+t('btn_conferma_ore')+'</button>');
+      el.appendChild(card);
+    });
+  }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+escHtml(e.message)+'</div>';}
+}
+
+async function confermaOreGiornata(btn){
+  const gid=btn.dataset.gid;
+  const oreInput=document.getElementById('conf-ore-'+gid);
+  if(!gid||!oreInput)return;
+  const nuoveOre=parseFloat(oreInput.value)||0;
+  btn.textContent='⏳...';btn.disabled=true;
+  try{
+    const{data:g}=await sb.from('giornate').select('ore_totali').eq('id',gid).single();
+    const payload={
+      ore_confermate:nuoveOre,
+      confermato_da:USER.id,
+      data_conferma:new Date().toISOString()
+    };
+    if(nuoveOre!==parseFloat(g?.ore_totali||0)){
+      payload.ore_originali=parseFloat(g?.ore_totali||0);
+      payload.ore_totali=nuoveOre;
+    }
+    const{error}=await sb.from('giornate').update(payload).eq('id',gid);
+    if(error)throw error;
+    showToast(t('badge_confermato')+' ✓');
+    renderConfermaOre();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.textContent=t('btn_conferma_ore');btn.disabled=false;}
 }
 
 // ══════════════════════════════════════════════════
