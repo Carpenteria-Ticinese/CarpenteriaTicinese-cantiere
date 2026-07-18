@@ -2131,7 +2131,7 @@ const TRADUZIONI = {
     conf_elimina_pag:'Eliminare questo pagamento?',
     conf_elimina_bolla:'Eliminare questa bolla?',
     conf_elimina_mat:'Eliminare questo materiale?',
-    conf_elimina_spesa:'Eliminare questa spesa?',
+    conf_elimina_spesa:'Vuoi eliminare questa spesa? L\'azione non è reversibile.',btn_elimina_spesa:'🗑️ Elimina spesa',toast_spesa_eliminata:'Spesa eliminata',
     conf_elimina_el:'Eliminare questo elemento?',
     conf_elimina_assenza:'Eliminare questa assenza?',
     conf_reset_pwd:'Inviare email di reset password a',
@@ -2462,7 +2462,7 @@ const TRADUZIONI = {
     conf_elimina_pag:'Delete this payment?',
     conf_elimina_bolla:'Delete this delivery note?',
     conf_elimina_mat:'Delete this material?',
-    conf_elimina_spesa:'Delete this expense?',
+    conf_elimina_spesa:'Do you want to delete this expense? This action cannot be undone.',btn_elimina_spesa:'🗑️ Delete expense',toast_spesa_eliminata:'Expense deleted',
     conf_elimina_el:'Delete this item?',
     conf_elimina_assenza:'Delete this absence?',
     conf_reset_pwd:'Send password reset email to',
@@ -2793,7 +2793,7 @@ const TRADUZIONI = {
     conf_elimina_pag:'Diese Zahlung löschen?',
     conf_elimina_bolla:'Diesen Lieferschein löschen?',
     conf_elimina_mat:'Dieses Material löschen?',
-    conf_elimina_spesa:'Diese Ausgabe löschen?',
+    conf_elimina_spesa:'Möchten Sie diese Ausgabe löschen? Diese Aktion kann nicht rückgängig gemacht werden.',btn_elimina_spesa:'🗑️ Ausgabe löschen',toast_spesa_eliminata:'Ausgabe gelöscht',
     conf_elimina_el:'Dieses Element löschen?',
     conf_elimina_assenza:'Diese Abwesenheit löschen?',
     conf_reset_pwd:'Passwort-Reset-E-Mail senden an',
@@ -3118,7 +3118,7 @@ const TRADUZIONI = {
     conf_elimina_pag:'¿Eliminar este pago?',
     conf_elimina_bolla:'¿Eliminar este albarán?',
     conf_elimina_mat:'¿Eliminar este material?',
-    conf_elimina_spesa:'¿Eliminar este gasto?',
+    conf_elimina_spesa:'¿Desea eliminar este gasto? Esta acción no se puede deshacer.',btn_elimina_spesa:'🗑️ Eliminar gasto',toast_spesa_eliminata:'Gasto eliminado',
     conf_elimina_el:'¿Eliminar este elemento?',
     conf_elimina_assenza:'¿Eliminar esta ausencia?',
     conf_reset_pwd:'Enviar email de restablecimiento de contraseña a',
@@ -6879,6 +6879,7 @@ async function renderSpese(){
   const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
   el.innerHTML=data.map(s=>{
     const icon=tipoDocIcon[s.tipo_doc]||'📋';const isPag=s.stato_pag==='Pagato';
+    const canDel=['titolare','responsabile'].includes(PROF?.ruolo);
     return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div>${(s.operai?.nome||s.operai?.cognome)?`<div style="font-size:11px;color:var(--t2)">👤 Inserito da: ${s.operai.nome||''} ${s.operai.cognome||''}</div>`:''}</div></div>
@@ -6888,7 +6889,7 @@ async function renderSpese(){
       ${s.note?`<div style="font-size:12px;color:var(--t2);margin-top:4px">📝 ${s.note}</div>`:''}
       ${s.foto_path?`<div style="font-size:11px;color:var(--blue);margin-top:4px">📎 Documento allegato</div>`:''}
     </div>
-      ${!isPag?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:flex-end"><button onclick=\"event.stopPropagation();segnaSpesaPagataRapido(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">✅ Segna pagata</button></div>':''}
+      ${(!isPag||canDel)?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:flex-end;gap:8px">'+(!isPag?'<button onclick=\"event.stopPropagation();segnaSpesaPagataRapido(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">✅ Segna pagata</button>':'')+(canDel?'<button onclick=\"event.stopPropagation();deleteSpesa(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(224,85,85,.12);color:var(--red);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">'+t('btn_elimina_spesa')+'</button>':'')+'</div>':''}
     </div>`;
   }).join('');
 }
@@ -6934,6 +6935,9 @@ async function visualizzaSpesa(id){
     if(s.cantiere_id&&s.cantieri?.nome){
       cantWrap.innerHTML=`<button class="btn btn-s" style="font-size:13px" onclick="closeModal('mod-spesa-view');filtraSpeseCantiere('${s.cantiere_id}')">📋 Tutte le spese di questo cantiere</button>`;
     }else{cantWrap.innerHTML='';}
+    if(['titolare','responsabile'].includes(PROF?.ruolo)){
+      cantWrap.innerHTML+=`<button class="btn btn-s" style="font-size:13px;margin-top:10px;background:rgba(224,85,85,.12);color:var(--red);border:1px solid rgba(224,85,85,.3)" onclick="deleteSpesa('${id}')">${t('btn_elimina_spesa')}</button>`;
+    }
   }
   openModal('mod-spesa-view');
   if(s.foto_path){
@@ -7041,7 +7045,27 @@ async function salvaSpesa(){
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Salva';btn.disabled=false;}
 }
-async function deleteSpesa(id){if(!confirm(t('conf_elimina_spesa')))return;await sb.from('spese').delete().eq('id',id);closeModal('mod-spesa');renderSpese();showToast(t('toast_eliminata'));}
+async function deleteSpesa(id){
+  if(!['titolare','responsabile'].includes(PROF?.ruolo)){showToast('Non autorizzato','e');return;}
+  if(!confirm(t('conf_elimina_spesa')))return;
+  let fotoPath=null;
+  try{
+    const {data:s}=await sb.from('spese').select('foto_path').eq('id',id).single();
+    fotoPath=s?.foto_path||null;
+  }catch(e){/* prosegue comunque con l'eliminazione della riga */}
+  if(fotoPath){
+    try{
+      await sb.storage.from('cantiere-spese').remove([fotoPath]);
+    }catch(e){console.warn('Errore eliminazione foto storage:',e.message);}
+  }
+  try{
+    const {error}=await sb.from('spese').delete().eq('id',id);
+    if(error)throw error;
+  }catch(e){showToast('Errore: '+e.message,'e');return;}
+  closeModal('mod-spesa');closeModal('mod-spesa-view');
+  renderSpese();
+  showToast(t('toast_spesa_eliminata'));
+}
 
 // ── REGIA ──
 let editRegId=null;
