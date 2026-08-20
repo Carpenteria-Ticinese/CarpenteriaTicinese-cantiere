@@ -1117,14 +1117,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="display:flex;gap:6px">
         <button class="btn-icon btn-sm" onclick="apriSchermoPiano()" title="Proietta su schermo">📺</button>
         <button class="btn-icon btn-sm" onclick="apriInvioNotifica()">📢</button>
-        <button onclick="openModal('mod-piano-ass')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px" data-i18n="btn_assegna_op">➕ Assegna operaio</button>
+        <button onclick="openModalPianoAss()" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px" data-i18n="btn_assegna_op">➕ Assegna operaio</button>
       </div>
     </div>
     <div id="piano-data-label" style="font-size:12px;color:var(--t2);margin-bottom:12px;text-align:center"></div>
     <div id="piano-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
 
     <div class="sec" style="margin-top:20px" data-i18n="sec_piano_mezzi">🚗 Mezzi aziendali</div>
-    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModal('mod-mezzo')" data-i18n="btn_nuovo">➕ Nuovo mezzo</button>
+    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModalMezzo()" data-i18n="btn_nuovo">➕ Nuovo mezzo</button>
     <div id="mezzi-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <div class="sec" style="margin-top:24px" data-i18n="sec_veicolo">🔍 Chi ha guidato il veicolo?</div>
     <div class="row2" style="margin-bottom:8px">
@@ -5630,9 +5630,12 @@ async function renderAdmin(){
   const existingImp=document.getElementById('adm-impostazioni');
   if(!existingImp){
     const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
-    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl" data-i18n="lbl_tariffa_ora">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div></div>`;
+    // Niente secondo campo imp-tariffa qui: creava un id DOM duplicato con quello
+    // statico di #scr-impostazioni e getElementById leggeva sempre l'altro.
+    // La tariffa si gestisce solo dalla schermata Impostazioni.
+    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Tariffa oraria, dati azienda, pasti e timbratura si gestiscono da Impostazioni.</div><button class="btn btn-g btn-sm" onclick="navTo('impostazioni')">⚙️ Vai a Impostazioni</button></div>`;
     document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest?.('.sec')||document.getElementById('scr-admin').lastChild);
-  }else document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
+  }
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
@@ -5640,7 +5643,18 @@ async function renderAdmin(){
     const _admu=document.getElementById('adm-utenti');if(_admu)_admu.innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${p.nome}</div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
   }
 }
-function aggiornaTariffa(){const val=parseFloat(document.getElementById('imp-tariffa').value);if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}IMPOSTAZIONI.tariffa_ora=val;saveImpostazioni();}
+async function aggiornaTariffa(){
+  const val=parseFloat(document.getElementById('imp-tariffa').value);
+  if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}
+  try{
+    // La tariffa DEVE stare su Supabase: loadImpostazioni() sovrascrive sempre
+    // i valori locali con quelli del DB, quindi il solo localStorage andrebbe perso.
+    const{error}=await sb.from('impostazioni').upsert({chiave:'tariffa_ora',valore:String(val)},{onConflict:'chiave'});
+    if(error)throw error;
+    IMPOSTAZIONI.tariffa_ora=val;
+    saveImpostazioni(); // aggiorna la cache localStorage e conferma con toast
+  }catch(e){showToast('Errore salvataggio tariffa: '+e.message,'e');}
+}
 function openModalCantiere(id){
   editCid=id;const c=id?CANTIERI.find(x=>x.id===id):null;
   document.getElementById('mod-cant-t').textContent=c?t('modal_modifica_cant'):t('modal_nuovo_cantiere');
@@ -7706,7 +7720,9 @@ async function salvaAssegnazione(){
     }
     // Propaga note caposquadra e hotel a tutti gli operai stesso cantiere+data
     const propagaUpdate={};
-    if(noteCs!==undefined)propagaUpdate.note_caposquadra=noteCs;
+    // noteCs è sempre una stringa o null, mai undefined: la vecchia condizione era
+    // sempre vera e propagava note_caposquadra=null azzerando le note degli altri operai.
+    if(noteCs)propagaUpdate.note_caposquadra=noteCs;
     if(hotelNome||hotelInd){propagaUpdate.hotel_nome=hotelNome;propagaUpdate.hotel_indirizzo=hotelInd;}
     if(Object.keys(propagaUpdate).length){
       await sb.from('piano_giorno').update(propagaUpdate)
