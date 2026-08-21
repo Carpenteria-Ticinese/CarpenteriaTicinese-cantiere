@@ -1117,14 +1117,14 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div style="display:flex;gap:6px">
         <button class="btn-icon btn-sm" onclick="apriSchermoPiano()" title="Proietta su schermo">📺</button>
         <button class="btn-icon btn-sm" onclick="apriInvioNotifica()">📢</button>
-        <button onclick="openModal('mod-piano-ass')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px" data-i18n="btn_assegna_op">➕ Assegna operaio</button>
+        <button onclick="openModalPianoAss()" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px" data-i18n="btn_assegna_op">➕ Assegna operaio</button>
       </div>
     </div>
     <div id="piano-data-label" style="font-size:12px;color:var(--t2);margin-bottom:12px;text-align:center"></div>
     <div id="piano-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
 
     <div class="sec" style="margin-top:20px" data-i18n="sec_piano_mezzi">🚗 Mezzi aziendali</div>
-    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModal('mod-mezzo')" data-i18n="btn_nuovo">➕ Nuovo mezzo</button>
+    <button class="btn btn-s" style="margin-bottom:10px;width:100%" onclick="openModalMezzo()" data-i18n="btn_nuovo">➕ Nuovo mezzo</button>
     <div id="mezzi-list"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
     <div class="sec" style="margin-top:24px" data-i18n="sec_veicolo">🔍 Chi ha guidato il veicolo?</div>
     <div class="row2" style="margin-bottom:8px">
@@ -5630,9 +5630,12 @@ async function renderAdmin(){
   const existingImp=document.getElementById('adm-impostazioni');
   if(!existingImp){
     const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
-    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div class="fg"><label class="fl" data-i18n="lbl_tariffa_ora">Tariffa oraria manodopera (CHF/h)</label><div style="display:flex;gap:10px;align-items:center"><input type="number" class="fi" id="imp-tariffa" value="${IMPOSTAZIONI.tariffa_ora||78}" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px"><button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button></div></div></div>`;
+    // Niente secondo campo imp-tariffa qui: creava un id DOM duplicato con quello
+    // statico di #scr-impostazioni e getElementById leggeva sempre l'altro.
+    // La tariffa si gestisce solo dalla schermata Impostazioni.
+    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div style="font-size:12px;color:var(--t2);margin-bottom:10px">Tariffa oraria, dati azienda, pasti e timbratura si gestiscono da Impostazioni.</div><button class="btn btn-g btn-sm" onclick="navTo('impostazioni')">⚙️ Vai a Impostazioni</button></div>`;
     document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest?.('.sec')||document.getElementById('scr-admin').lastChild);
-  }else document.getElementById('imp-tariffa').value=IMPOSTAZIONI.tariffa_ora||78;
+  }
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
@@ -5640,7 +5643,18 @@ async function renderAdmin(){
     const _admu=document.getElementById('adm-utenti');if(_admu)_admu.innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${p.nome}</div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
   }
 }
-function aggiornaTariffa(){const val=parseFloat(document.getElementById('imp-tariffa').value);if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}IMPOSTAZIONI.tariffa_ora=val;saveImpostazioni();}
+async function aggiornaTariffa(){
+  const val=parseFloat(document.getElementById('imp-tariffa').value);
+  if(!val||val<1){showToast('Inserisci una tariffa valida','e');return;}
+  try{
+    // La tariffa DEVE stare su Supabase: loadImpostazioni() sovrascrive sempre
+    // i valori locali con quelli del DB, quindi il solo localStorage andrebbe perso.
+    const{error}=await sb.from('impostazioni').upsert({chiave:'tariffa_ora',valore:String(val)},{onConflict:'chiave'});
+    if(error)throw error;
+    IMPOSTAZIONI.tariffa_ora=val;
+    saveImpostazioni(); // aggiorna la cache localStorage e conferma con toast
+  }catch(e){showToast('Errore salvataggio tariffa: '+e.message,'e');}
+}
 function openModalCantiere(id){
   editCid=id;const c=id?CANTIERI.find(x=>x.id===id):null;
   document.getElementById('mod-cant-t').textContent=c?t('modal_modifica_cant'):t('modal_nuovo_cantiere');
@@ -7706,7 +7720,9 @@ async function salvaAssegnazione(){
     }
     // Propaga note caposquadra e hotel a tutti gli operai stesso cantiere+data
     const propagaUpdate={};
-    if(noteCs!==undefined)propagaUpdate.note_caposquadra=noteCs;
+    // noteCs è sempre una stringa o null, mai undefined: la vecchia condizione era
+    // sempre vera e propagava note_caposquadra=null azzerando le note degli altri operai.
+    if(noteCs)propagaUpdate.note_caposquadra=noteCs;
     if(hotelNome||hotelInd){propagaUpdate.hotel_nome=hotelNome;propagaUpdate.hotel_indirizzo=hotelInd;}
     if(Object.keys(propagaUpdate).length){
       await sb.from('piano_giorno').update(propagaUpdate)
@@ -8599,6 +8615,92 @@ function caricaTema(){
   applicaTema(t);
 }
 
+// ── RUOLO APP (profili.ruolo) — gestione dal titolare, via Edge Function ──
+// Sul DB un trigger blocca la modifica di profili.ruolo a chiunque non sia
+// service_role, quindi questa e' l'unica strada per cambiarlo dall'app.
+const RUOLI_APP=[
+  {v:'caposquadra', l:'Caposquadra'},
+  {v:'responsabile',l:'Responsabile cantiere'},
+  {v:'operaio',     l:'Operaio'},
+  {v:'magazziniere',l:'Magazziniere'}
+];
+let _profiliAppCache=null; // email(lower) → {user_id, ruolo, nome}
+
+async function _caricaProfiliApp(){
+  if(PROF?.ruolo!=='titolare')return null;
+  // renderPersonale gira a ogni cambio di filtro: riusiamo la cache invece di
+  // richiamare la funzione ogni volta. La invalidiamo dopo aver creato un
+  // collaboratore; i cambi di ruolo aggiornano la cache sul posto.
+  if(_profiliAppCache)return _profiliAppCache;
+  try{
+    const{data,error}=await sb.functions.invoke('cambia-ruolo',{body:{azione:'elenco'}});
+    if(error||!data||!Array.isArray(data.profili)){
+      console.warn('Elenco profili app non disponibile (funzione non ancora deployata?)');
+      return null;
+    }
+    const map={};
+    data.profili.forEach(function(p){
+      if(p.email)map[String(p.email).toLowerCase()]={user_id:p.user_id,ruolo:p.ruolo,nome:p.nome};
+    });
+    _profiliAppCache=map;
+    return map;
+  }catch(e){console.warn('Elenco profili app:',e.message);return null;}
+}
+
+function _ruoloAppHtml(pApp,o){
+  // I titolari non si gestiscono dall'app: la Edge Function li rifiuta, quindi
+  // non mostriamo nemmeno il menù.
+  if(pApp.ruolo==='titolare'){
+    return '<div style="margin-top:8px;font-size:11px;color:var(--gold)">🔑 Ruolo app: titolare — si modifica dal dashboard Supabase</div>';
+  }
+  const nomeOp=escHtml((o.nome||'')+' '+(o.cognome||'')).replace(/'/g,'&#39;');
+  const opts=RUOLI_APP.map(function(r){
+    return '<option value="'+r.v+'"'+(r.v===pApp.ruolo?' selected':'')+'>'+r.l+'</option>';
+  }).join('');
+  return '<div style="margin-top:8px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:11px;color:var(--t2);white-space:nowrap">🔑 Ruolo app</span>'
+    +'<select class="fs" style="flex:1;font-size:12px;padding:6px 10px"'
+    +' data-ruolo-attuale="'+escHtml(pApp.ruolo||'')+'"'
+    +' data-uid="'+escHtml(pApp.user_id||'')+'"'
+    +' data-nome="'+nomeOp+'"'
+    +' onchange="cambiaRuoloApp(this)">'+opts+'</select>'
+    +'</div>';
+}
+
+async function cambiaRuoloApp(sel){
+  const nuovo=sel.value;
+  const prec=sel.dataset.ruoloAttuale||'';
+  const uid=sel.dataset.uid;
+  const nomeOp=sel.dataset.nome||'il collaboratore';
+  if(!uid||nuovo===prec)return;
+  sel.disabled=true;
+  try{
+    const{data,error}=await sb.functions.invoke('cambia-ruolo',{
+      body:{azione:'cambia',user_id:uid,nuovo_ruolo:nuovo}
+    });
+    if(error){
+      let msg=error.message||'Errore sconosciuto';
+      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
+      throw new Error(msg);
+    }
+    if(data&&data.error)throw new Error(data.error);
+    // Aggiorna stato locale senza ricaricare la lista
+    sel.dataset.ruoloAttuale=nuovo;
+    if(_profiliAppCache){
+      Object.keys(_profiliAppCache).forEach(function(k){
+        if(_profiliAppCache[k].user_id===uid)_profiliAppCache[k].ruolo=nuovo;
+      });
+    }
+    const lbl=(RUOLI_APP.find(function(r){return r.v===nuovo;})||{}).l||nuovo;
+    showToast('Ruolo app di '+nomeOp+' → '+lbl+' ✓');
+  }catch(e){
+    sel.value=prec; // ripristina la scelta precedente: il cambio non e' avvenuto
+    showToast('Errore: '+e.message,'e');
+  }finally{
+    sel.disabled=false;
+  }
+}
+
 async function renderPersonale(){
   const el=document.getElementById('pers-list');
   if(!el)return;
@@ -8628,12 +8730,18 @@ async function renderPersonale(){
     // profili non ha colonna email → usiamo USER.email per riconoscere solo l'account corrente
     const emailToProfiloId={};
     if(USER?.email) emailToProfiloId[USER.email.toLowerCase()]=USER.id;
+    // Solo per il titolare: mappa email → {user_id, ruolo} di tutti gli account.
+    // L'incrocio auth.users ↔ profili lo puo' fare solo la Edge Function, perche'
+    // profili non ha la colonna email. Se la funzione non c'e' ancora, resta null
+    // e la schermata continua a funzionare senza i menù "Ruolo app".
+    const profiliApp=await _caricaProfiliApp();
     el.innerHTML='';
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
     function _buildOperaioDiv(o){
       const isEx=o.data_fine_rapporto&&o.data_fine_rapporto<oggi;
-      const hasAccount=o.email&&emailToProfiloId[o.email.toLowerCase()];
+      const pApp=(profiliApp&&o.email)?profiliApp[o.email.toLowerCase()]:null;
+      const hasAccount=pApp?true:(o.email&&emailToProfiloId[o.email.toLowerCase()]);
       const div=document.createElement('div');
       div.id='op-card-'+o.id;
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
@@ -8648,6 +8756,7 @@ async function renderPersonale(){
         +'</div></div>'
         +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
         +'</div>'
+        +(pApp?_ruoloAppHtml(pApp,o):'')
         +(hasAccount?'<button style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:var(--rsm);color:var(--t2);font-size:12px;padding:6px 12px;cursor:pointer;width:100%" onclick="resetPasswordOperaio(\''+o.email+'\')">🔑 Reset password (invia email)</button>':'');
       return div;
     }
@@ -9945,45 +10054,34 @@ async function invitaCollaboratore(){
   const btn=document.getElementById('btn-invita');
   btn.disabled=true;btn.textContent='⏳...';
   try{
-    // Crea account usando il client Supabase (richiede email confirmation disabilitata in Supabase)
-    const{data:signUpData,error:signUpErr}=await sb.auth.signUp({
-      email,
-      password:pwd,
-      options:{
-        data:{nome,cognome:cogn},
-        emailRedirectTo:window.location.href
-      }
+    // L'account viene creato dalla Edge Function 'crea-collaboratore', che gira
+    // lato server con la service_role key. Due motivi per non usare più
+    // sb.auth.signUp() da qui:
+    //  1. signUp() sostituiva la sessione del titolare con quella del nuovo
+    //     utente, facendo proseguire le scritture successive con i permessi
+    //     sbagliati;
+    //  2. signUp() richiede la registrazione libera aperta su Supabase, che
+    //     lascia registrare chiunque. La Edge Function usa admin.createUser,
+    //     che funziona anche a registrazione libera disattivata.
+    // La funzione verifica da sola che il chiamante sia 'titolare'.
+    const{data,error}=await sb.functions.invoke('crea-collaboratore',{
+      body:{email,password:pwd,nome,cognome:cogn,ruolo}
     });
-    
-    if(signUpErr){
-      // Se l'utente esiste già
-      if(signUpErr.message.includes('already registered')){
-        errEl.textContent='Questa email è già registrata.';
-      }else{
-        errEl.textContent='Errore: '+signUpErr.message;
-      }
-      errEl.style.display='block';
-      return;
+    if(error){
+      // Sugli status non-2xx supabase-js espone la Response in error.context:
+      // il messaggio utile sta nel body JSON, non in error.message.
+      let msg=error.message||'Errore sconosciuto';
+      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
+      throw new Error(msg);
     }
-    
-    const newUserId=signUpData?.user?.id;
-    
-    // Crea profilo
-    if(newUserId){
-      await sb.from('profili').upsert({id:newUserId,nome:nome+' '+cogn,ruolo},{onConflict:'id'});
-    }
-    
-    // Crea operaio
-    const{data:opEx}=await sb.from('operai').select('id').ilike('email',email).maybeSingle();
-    if(!opEx){
-      await sb.from('operai').insert({nome,cognome:cogn,ruolo:ruolo==='caposquadra'?'Caposquadra':ruolo==='responsabile'?'Responsabile cantiere':'Operaio generico',email});
-    }
-    
+    if(data&&data.error)throw new Error(data.error);
+
     closeModal('mod-invita');
     showToast('Collaboratore '+nome+' '+cogn+' creato ✓');
+    _profiliAppCache=null; // c'e' un account in piu': ricarica la mappa dei ruoli app
     await loadOperai();
     renderPersonale();
-    
+
   }catch(e){
     errEl.textContent='Errore: '+e.message;
     errEl.style.display='block';

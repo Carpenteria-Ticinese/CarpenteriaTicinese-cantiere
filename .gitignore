@@ -1,0 +1,16 @@
+# ── Segreti: non committare MAI chiavi Supabase ──
+# La service_role key vive solo come variabile d'ambiente lato Supabase.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# ── Supabase CLI ──
+supabase/.temp/
+supabase/.branches/
+supabase/logs/
+
+# ── Varie ──
+node_modules/
+.DS_Store
