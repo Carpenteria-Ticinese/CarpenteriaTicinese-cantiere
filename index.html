@@ -9961,45 +9961,33 @@ async function invitaCollaboratore(){
   const btn=document.getElementById('btn-invita');
   btn.disabled=true;btn.textContent='⏳...';
   try{
-    // Crea account usando il client Supabase (richiede email confirmation disabilitata in Supabase)
-    const{data:signUpData,error:signUpErr}=await sb.auth.signUp({
-      email,
-      password:pwd,
-      options:{
-        data:{nome,cognome:cogn},
-        emailRedirectTo:window.location.href
-      }
+    // L'account viene creato dalla Edge Function 'crea-collaboratore', che gira
+    // lato server con la service_role key. Due motivi per non usare più
+    // sb.auth.signUp() da qui:
+    //  1. signUp() sostituiva la sessione del titolare con quella del nuovo
+    //     utente, facendo proseguire le scritture successive con i permessi
+    //     sbagliati;
+    //  2. signUp() richiede la registrazione libera aperta su Supabase, che
+    //     lascia registrare chiunque. La Edge Function usa admin.createUser,
+    //     che funziona anche a registrazione libera disattivata.
+    // La funzione verifica da sola che il chiamante sia 'titolare'.
+    const{data,error}=await sb.functions.invoke('crea-collaboratore',{
+      body:{email,password:pwd,nome,cognome:cogn,ruolo}
     });
-    
-    if(signUpErr){
-      // Se l'utente esiste già
-      if(signUpErr.message.includes('already registered')){
-        errEl.textContent='Questa email è già registrata.';
-      }else{
-        errEl.textContent='Errore: '+signUpErr.message;
-      }
-      errEl.style.display='block';
-      return;
+    if(error){
+      // Sugli status non-2xx supabase-js espone la Response in error.context:
+      // il messaggio utile sta nel body JSON, non in error.message.
+      let msg=error.message||'Errore sconosciuto';
+      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
+      throw new Error(msg);
     }
-    
-    const newUserId=signUpData?.user?.id;
-    
-    // Crea profilo
-    if(newUserId){
-      await sb.from('profili').upsert({id:newUserId,nome:nome+' '+cogn,ruolo},{onConflict:'id'});
-    }
-    
-    // Crea operaio
-    const{data:opEx}=await sb.from('operai').select('id').ilike('email',email).maybeSingle();
-    if(!opEx){
-      await sb.from('operai').insert({nome,cognome:cogn,ruolo:ruolo==='caposquadra'?'Caposquadra':ruolo==='responsabile'?'Responsabile cantiere':'Operaio generico',email});
-    }
-    
+    if(data&&data.error)throw new Error(data.error);
+
     closeModal('mod-invita');
     showToast('Collaboratore '+nome+' '+cogn+' creato ✓');
     await loadOperai();
     renderPersonale();
-    
+
   }catch(e){
     errEl.textContent='Errore: '+e.message;
     errEl.style.display='block';

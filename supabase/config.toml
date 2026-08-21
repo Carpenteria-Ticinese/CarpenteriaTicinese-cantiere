@@ -1,0 +1,10 @@
+# Configurazione Supabase CLI.
+# project_id e' il "project ref", gia' pubblico: compare nell'URL dell'app
+# (SB_URL in index.html). Non e' un segreto.
+project_id = "wgidgbauhivdctdxfjnk"
+
+[functions.crea-collaboratore]
+# La piattaforma valida il JWT prima ancora di eseguire la funzione.
+# Difesa in profondita': la funzione ricontrolla comunque che il chiamante
+# esista e che il suo ruolo in `profili` sia 'titolare'.
+verify_jwt = true
