@@ -8,3 +8,8 @@ project_id = "wgidgbauhivdctdxfjnk"
 # Difesa in profondita': la funzione ricontrolla comunque che il chiamante
 # esista e che il suo ruolo in `profili` sia 'titolare'.
 verify_jwt = true
+
+[functions.cambia-ruolo]
+# Come sopra: JWT validato dalla piattaforma, ruolo 'titolare' ricontrollato
+# dentro la funzione.
+verify_jwt = true

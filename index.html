@@ -8615,6 +8615,92 @@ function caricaTema(){
   applicaTema(t);
 }
 
+// ── RUOLO APP (profili.ruolo) — gestione dal titolare, via Edge Function ──
+// Sul DB un trigger blocca la modifica di profili.ruolo a chiunque non sia
+// service_role, quindi questa e' l'unica strada per cambiarlo dall'app.
+const RUOLI_APP=[
+  {v:'caposquadra', l:'Caposquadra'},
+  {v:'responsabile',l:'Responsabile cantiere'},
+  {v:'operaio',     l:'Operaio'},
+  {v:'magazziniere',l:'Magazziniere'}
+];
+let _profiliAppCache=null; // email(lower) → {user_id, ruolo, nome}
+
+async function _caricaProfiliApp(){
+  if(PROF?.ruolo!=='titolare')return null;
+  // renderPersonale gira a ogni cambio di filtro: riusiamo la cache invece di
+  // richiamare la funzione ogni volta. La invalidiamo dopo aver creato un
+  // collaboratore; i cambi di ruolo aggiornano la cache sul posto.
+  if(_profiliAppCache)return _profiliAppCache;
+  try{
+    const{data,error}=await sb.functions.invoke('cambia-ruolo',{body:{azione:'elenco'}});
+    if(error||!data||!Array.isArray(data.profili)){
+      console.warn('Elenco profili app non disponibile (funzione non ancora deployata?)');
+      return null;
+    }
+    const map={};
+    data.profili.forEach(function(p){
+      if(p.email)map[String(p.email).toLowerCase()]={user_id:p.user_id,ruolo:p.ruolo,nome:p.nome};
+    });
+    _profiliAppCache=map;
+    return map;
+  }catch(e){console.warn('Elenco profili app:',e.message);return null;}
+}
+
+function _ruoloAppHtml(pApp,o){
+  // I titolari non si gestiscono dall'app: la Edge Function li rifiuta, quindi
+  // non mostriamo nemmeno il menù.
+  if(pApp.ruolo==='titolare'){
+    return '<div style="margin-top:8px;font-size:11px;color:var(--gold)">🔑 Ruolo app: titolare — si modifica dal dashboard Supabase</div>';
+  }
+  const nomeOp=escHtml((o.nome||'')+' '+(o.cognome||'')).replace(/'/g,'&#39;');
+  const opts=RUOLI_APP.map(function(r){
+    return '<option value="'+r.v+'"'+(r.v===pApp.ruolo?' selected':'')+'>'+r.l+'</option>';
+  }).join('');
+  return '<div style="margin-top:8px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:11px;color:var(--t2);white-space:nowrap">🔑 Ruolo app</span>'
+    +'<select class="fs" style="flex:1;font-size:12px;padding:6px 10px"'
+    +' data-ruolo-attuale="'+escHtml(pApp.ruolo||'')+'"'
+    +' data-uid="'+escHtml(pApp.user_id||'')+'"'
+    +' data-nome="'+nomeOp+'"'
+    +' onchange="cambiaRuoloApp(this)">'+opts+'</select>'
+    +'</div>';
+}
+
+async function cambiaRuoloApp(sel){
+  const nuovo=sel.value;
+  const prec=sel.dataset.ruoloAttuale||'';
+  const uid=sel.dataset.uid;
+  const nomeOp=sel.dataset.nome||'il collaboratore';
+  if(!uid||nuovo===prec)return;
+  sel.disabled=true;
+  try{
+    const{data,error}=await sb.functions.invoke('cambia-ruolo',{
+      body:{azione:'cambia',user_id:uid,nuovo_ruolo:nuovo}
+    });
+    if(error){
+      let msg=error.message||'Errore sconosciuto';
+      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
+      throw new Error(msg);
+    }
+    if(data&&data.error)throw new Error(data.error);
+    // Aggiorna stato locale senza ricaricare la lista
+    sel.dataset.ruoloAttuale=nuovo;
+    if(_profiliAppCache){
+      Object.keys(_profiliAppCache).forEach(function(k){
+        if(_profiliAppCache[k].user_id===uid)_profiliAppCache[k].ruolo=nuovo;
+      });
+    }
+    const lbl=(RUOLI_APP.find(function(r){return r.v===nuovo;})||{}).l||nuovo;
+    showToast('Ruolo app di '+nomeOp+' → '+lbl+' ✓');
+  }catch(e){
+    sel.value=prec; // ripristina la scelta precedente: il cambio non e' avvenuto
+    showToast('Errore: '+e.message,'e');
+  }finally{
+    sel.disabled=false;
+  }
+}
+
 async function renderPersonale(){
   const el=document.getElementById('pers-list');
   if(!el)return;
@@ -8644,12 +8730,18 @@ async function renderPersonale(){
     // profili non ha colonna email → usiamo USER.email per riconoscere solo l'account corrente
     const emailToProfiloId={};
     if(USER?.email) emailToProfiloId[USER.email.toLowerCase()]=USER.id;
+    // Solo per il titolare: mappa email → {user_id, ruolo} di tutti gli account.
+    // L'incrocio auth.users ↔ profili lo puo' fare solo la Edge Function, perche'
+    // profili non ha la colonna email. Se la funzione non c'e' ancora, resta null
+    // e la schermata continua a funzionare senza i menù "Ruolo app".
+    const profiliApp=await _caricaProfiliApp();
     el.innerHTML='';
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
     function _buildOperaioDiv(o){
       const isEx=o.data_fine_rapporto&&o.data_fine_rapporto<oggi;
-      const hasAccount=o.email&&emailToProfiloId[o.email.toLowerCase()];
+      const pApp=(profiliApp&&o.email)?profiliApp[o.email.toLowerCase()]:null;
+      const hasAccount=pApp?true:(o.email&&emailToProfiloId[o.email.toLowerCase()]);
       const div=document.createElement('div');
       div.id='op-card-'+o.id;
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
@@ -8664,6 +8756,7 @@ async function renderPersonale(){
         +'</div></div>'
         +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
         +'</div>'
+        +(pApp?_ruoloAppHtml(pApp,o):'')
         +(hasAccount?'<button style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:var(--rsm);color:var(--t2);font-size:12px;padding:6px 12px;cursor:pointer;width:100%" onclick="resetPasswordOperaio(\''+o.email+'\')">🔑 Reset password (invia email)</button>':'');
       return div;
     }
@@ -9985,6 +10078,7 @@ async function invitaCollaboratore(){
 
     closeModal('mod-invita');
     showToast('Collaboratore '+nome+' '+cogn+' creato ✓');
+    _profiliAppCache=null; // c'e' un account in piu': ricarica la mappa dei ruoli app
     await loadOperai();
     renderPersonale();
 
