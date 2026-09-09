@@ -276,16 +276,6 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <div id="app">
 
-<!-- OVERLAY BENVENUTO -->
-<div id="benvenuto-overlay" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;transition:opacity .4s" onclick="chiudiBenvenuto()">
-  <div style="text-align:center;max-width:480px">
-    <div style="font-size:48px;margin-bottom:16px">👷</div>
-    <div id="benv-saluto" style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:12px;line-height:1.2"></div>
-    <div id="benv-frase" style="font-size:16px;color:var(--t2);line-height:1.7;font-style:italic;margin-bottom:28px"></div>
-    <button onclick="chiudiBenvenuto()" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--rsm);padding:12px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif" data-i18n="btn_inizia_giornata">Inizia la giornata →</button>
-    <div style="margin-top:16px;font-size:11px;color:var(--t3)" data-i18n="btn_tocca_chiudi">Tocca ovunque per chiudere</div>
-  </div>
-</div>
   <div class="top">
     <div style="display:flex;align-items:center;gap:8px">
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:16px;line-height:1;flex-shrink:0" title="Indietro">←</button>
@@ -2016,7 +2006,6 @@ const TRADUZIONI = {
     btn_esporta_csv:'⬇️ Esporta CSV',btn_excel:'⬇️ Excel',btn_pdf:'📄 PDF',
     btn_report_avanzato:'📊 Report avanzato →',
     btn_aggiungi:'➕ Aggiungi',btn_nuovo:'➕ Nuovo',btn_nuovo_cantiere:'➕ Nuovo cantiere',
-    btn_inizia_giornata:'Inizia la giornata →',btn_tocca_chiudi:'Tocca ovunque per chiudere',
     btn_inserimento_manuale:'📋 Inserimento manuale',btn_torna_app:'← Torna all\'app',
     btn_salva_azienda:'💾 Salva dati azienda',btn_salva_tariffe:'Salva',
     btn_salva_trasferta:'💾 Salva',btn_salva_pasti:'💾 Salva importi pasti',
@@ -2356,7 +2345,6 @@ const TRADUZIONI = {
     btn_esporta_csv:'⬇️ Export CSV',btn_excel:'⬇️ Excel',btn_pdf:'📄 PDF',
     btn_report_avanzato:'📊 Advanced report →',
     btn_aggiungi:'➕ Add',btn_nuovo:'➕ New',btn_nuovo_cantiere:'➕ New site',
-    btn_inizia_giornata:'Start the day →',btn_tocca_chiudi:'Tap anywhere to close',
     btn_inserimento_manuale:'📋 Manual entry',btn_torna_app:'← Back to app',
     btn_salva_azienda:'💾 Save company data',btn_salva_tariffe:'Save',
     btn_salva_trasferta:'💾 Save',btn_salva_pasti:'💾 Save meal amounts',
@@ -2687,7 +2675,6 @@ const TRADUZIONI = {
     btn_esporta_csv:'⬇️ CSV exportieren',btn_excel:'⬇️ Excel',btn_pdf:'📄 PDF',
     btn_report_avanzato:'📊 Erweiterter Bericht →',
     btn_aggiungi:'➕ Hinzufügen',btn_nuovo:'➕ Neu',btn_nuovo_cantiere:'➕ Neue Baustelle',
-    btn_inizia_giornata:'Tag beginnen →',btn_tocca_chiudi:'Tippen zum Schließen',
     btn_inserimento_manuale:'📋 Manuelle Eingabe',btn_torna_app:'← Zurück zur App',
     btn_salva_azienda:'💾 Firmendaten speichern',btn_salva_tariffe:'Speichern',
     btn_salva_trasferta:'💾 Speichern',btn_salva_pasti:'💾 Mahlzeiten speichern',
@@ -3012,7 +2999,6 @@ const TRADUZIONI = {
     btn_report_avanzato:'📊 Informe avanzado →',
     btn_aggiungi:'➕ Añadir',btn_nuovo:'➕ Nuevo',btn_nuevo_cantiere:'➕ Nueva obra',
     btn_nuevo_cantiere:'➕ Nueva obra',btn_nuovo_cantiere:'➕ Nueva obra',
-    btn_inizia_giornata:'Comenzar el día →',btn_tocca_chiudi:'Toca en cualquier lugar para cerrar',
     btn_inserimento_manuale:'📋 Entrada manual',btn_torna_app:'← Volver a la app',
     btn_salva_azienda:'💾 Guardar datos empresa',btn_salva_tariffe:'Guardar',
     btn_salva_trasferta:'💾 Guardar',btn_salva_pasti:'💾 Guardar importes dietas',
@@ -3930,7 +3916,6 @@ async function afterLogin(){
     const nome=(PROF?.nome||USER.email).split('@')[0];
     const ruolo=PROF?.ruolo||'caposquadra';
     document.getElementById('ubadge').textContent=nome;
-    mostraBenvenuto(nome, ruolo);
     const rb=document.getElementById('rbadge');
     rb.textContent=ruolo;rb.className='rbadge '+(ruolo==='titolare'?'r-tit':'r-cap');
     if(ruolo==='titolare'){
@@ -10232,56 +10217,6 @@ function setFontSize(level){
 function initFontSize(){
   const saved=parseInt(localStorage.getItem('ct_font_size'))||2;
   setFontSize(saved);
-}
-// ── BENVENUTO ──
-const FRASI_GIORNO = [
-  "Chi lavora bene non ha bisogno di parlare molto.",
-  "Un cantiere pulito è un cantiere sicuro.",
-  "La squadra che si rispetta, lavora meglio.",
-  "Misura due volte, taglia una.",
-  "Il legno non mente. Neanche il lavoro ben fatto.",
-  "Ogni trave al suo posto, ogni giorno al suo tempo.",
-  "Chi arriva puntuale rispetta gli altri.",
-  "Il lavoro fatto bene non ha bisogno di essere rifatto.",
-  "Oggi si costruisce. Domani si vedrà il risultato.",
-  "Un buon artigiano conosce i suoi strumenti.",
-  "La qualità si vede, non si dichiara.",
-  "Pianifica prima di costruire. Pensa prima di agire.",
-  "Il cantiere è di tutti. La responsabilità anche.",
-  "Poco rumore, molto lavoro.",
-  "Il rispetto si guadagna sul campo.",
-  "Una squadra unita finisce il lavoro in tempo.",
-  "Chi impara ogni giorno, migliora ogni giorno.",
-  "La sicurezza non è un optional. Mai.",
-  "Un problema segnalato è un problema a metà risolto.",
-  "Il lavoro manuale è arte quando è fatto con cura.",
-  "Buona giornata. Testa sul lavoro, occhi aperti.",
-  "Ogni giornata ben lavorata conta.",
-];
-
-function getFraseGiorno(){
-  const d=new Date();
-  const idx=d.getDate()%FRASI_GIORNO.length;
-  return FRASI_GIORNO[idx];
-}
-
-function mostraBenvenuto(nome, ruolo){
-  const ora=new Date().getHours();
-  const saluto=ora<12?'Buongiorno':ora<17?'Buon pomeriggio':'Buonasera';
-  const frase=getFraseGiorno();
-  const el=document.getElementById('benvenuto-overlay');
-  if(!el)return;
-  const nomeBreve=(nome||'').split(' ')[0];
-  document.getElementById('benv-saluto').textContent=saluto+', '+nomeBreve+'!';
-  document.getElementById('benv-frase').textContent=frase;
-  el.style.display='flex';
-  // Auto-chiudi dopo 3 secondi
-  setTimeout(()=>chiudiBenvenuto(),3000);
-}
-
-function chiudiBenvenuto(){
-  const el=document.getElementById('benvenuto-overlay');
-  if(el){el.style.opacity='0';setTimeout(()=>{el.style.display='none';el.style.opacity='1';},400);}
 }
 
 
