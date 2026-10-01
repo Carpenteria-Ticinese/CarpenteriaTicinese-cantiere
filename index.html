@@ -989,6 +989,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="sec" data-i18n="sec_situazione_timb">⏱ Timbrature da assegnare</div>
       <div id="sit-timb-content"></div>
     </div>
+    <div id="sit-spreg-wrap" style="display:none;margin-bottom:16px">
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span data-i18n="sec_spese_registrare">💲 Spese da registrare in Pre-contabilità</span><span id="sit-spreg-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div id="sit-spreg-content"></div>
+    </div>
     <div style="margin-bottom:16px">
       <div class="sec" data-i18n="sec_spese_pagare">💸 Spese da pagare</div>
       <div id="sit-spese-content"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
@@ -1176,7 +1180,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')"><div class="nb-icon">🏠</div><div class="nb-label" data-i18n="nav_cantieri">Cantieri</div></div>
     <div class="nb" id="nb-giornata" onclick="navTo('nuova')"><div class="nb-icon">➕</div><div class="nb-label" data-i18n="nav_giornata">Giornata</div></div>
-    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon">💲</div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
+    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon" style="position:relative">💲<span id="sp-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--orange);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
     <div class="nb" id="nb-situazione" onclick="navTo('situazione')">
       <div class="nb-icon" style="position:relative">📌<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
       <div class="nb-label" data-i18n="nav_situazione">Da sistemare</div>
@@ -1414,10 +1418,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="mod">
     <div class="mod-h"></div>
     <div class="mod-t" id="mod-spesa-t" data-i18n="modal_nuova_spesa">Nuova spesa / documento</div>
-    <div class="row2">
-      <div class="fg"><label class="fl" data-i18n="lbl_cantiere">Cantiere</label><select class="fs" id="sp-cant-sel"></select></div>
-      <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="sp-data"></div>
-    </div>
+    <div class="fg"><label class="fl" data-i18n="lbl_destinazione">Dove va la spesa</label><select class="fs" id="sp-cant-sel"></select></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_data">Data</label><input type="date" class="fi" id="sp-data"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_op_spesa">Operaio / Chi ha sostenuto la spesa</label><select class="fs" id="sp-op-sel"></select></div>
     <div class="fg"><label class="fl" data-i18n="lbl_pagato_da">Pagato da</label><select class="fs" id="sp-pagato-da"></select></div>
     <div class="row2">
@@ -1439,6 +1441,15 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg" id="sp-metodo-wrap">
       <label class="fl" data-i18n="lbl_chi_pag_come">Chi ha pagato / come</label>
       <select class="fs" id="sp-metodo"><option>Carta aziendale</option><option>Carta privata operaio</option><option>Contanti</option></select>
+    </div>
+    <div class="fg"><label class="fl" data-i18n="lbl_documento_sp">Documento della spesa</label>
+      <select class="fs" id="sp-documento" onchange="p3DocumentoCambiato()">
+        <option value="" data-i18n="opt_scegli">— Scegli —</option>
+        <option value="foto" data-i18n="opt_doc_foto">📷 Foto</option>
+        <option value="cartaceo" data-i18n="opt_doc_cartaceo">📄 Cartaceo consegnato in ufficio</option>
+        <option value="nessuno" data-i18n="opt_doc_nessuno">⚠️ Nessun documento</option>
+      </select>
+      <div class="warn" id="sp-doc-warn" data-i18n="warn_doc_nessuno">⚠️ Senza documento la spesa si salva, ma resta segnalata finché il documento non arriva in ufficio.</div>
     </div>
     <div class="fg"><label class="fl" data-i18n="lbl_foto_sp">Foto scontrino / bolla / fattura</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
@@ -2004,7 +2015,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='2b';
+const APP_VERSIONE='3';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2341,7 +2352,7 @@ const TRADUZIONI = {
     log_note_hdr:'Note',
     fs_piccolo:'Piccolo',fs_normale:'Normale',fs_grande:'Grande',
     lbl_regia_operaio:'🔧 Lavoro a regia',ph_regia_desc:'Descrizione lavoro a regia...',
-    opt_spese_gen:'🏢 Spese generali ditta',gru_incluso:'Incluso nel contratto',
+    opt_spese_gen:'🏢 Spese ditta e ufficio',opt_dest_attrezzature:'🛠️ Attrezzature e macchinari',opt_dest_magazzino:'📦 Magazzino',opt_dest_altro:'❓ Altro (da sistemare in ufficio)',grp_cant_attivi:'Cantieri attivi',grp_dest_interne:'Destinazioni interne',lbl_destinazione:'Dove va la spesa',lbl_documento_sp:'Documento della spesa',opt_scegli:'— Scegli —',opt_doc_foto:'📷 Foto',opt_doc_cartaceo:'📄 Cartaceo consegnato in ufficio',opt_doc_nessuno:'⚠️ Nessun documento',warn_doc_nessuno:'⚠️ Senza documento la spesa si salva, ma resta segnalata finché il documento non arriva in ufficio.',sec_spese_registrare:'💲 Spese da registrare in Pre-contabilità',gru_incluso:'Incluso nel contratto',
     sec_op_non_assegnati:'⚠️ Operai non assegnati oggi',btn_assegna_ora:'➕ Assegna',
     lbl_rapportino:'RAPPORTINO GIORNALIERO',lbl_vista_approvata:'Vista e approvata da',
     sett_rapportino_firma:'📄 Rapportino — Mostra riga firma',
@@ -2671,7 +2682,7 @@ const TRADUZIONI = {
     log_note_hdr:'Notes',
     fs_piccolo:'Small',fs_normale:'Normal',fs_grande:'Large',
     lbl_regia_operaio:'🔧 Extra work (T&M)',ph_regia_desc:'Work description...',
-    opt_spese_gen:'🏢 General company expenses',gru_incluso:'Included in contract',
+    opt_spese_gen:'🏢 Company & office',opt_dest_attrezzature:'🛠️ Tools & machinery',opt_dest_magazzino:'📦 Warehouse',opt_dest_altro:'❓ Other (office will sort it out)',grp_cant_attivi:'Active sites',grp_dest_interne:'Internal',lbl_destinazione:'Expense for',lbl_documento_sp:'Expense document',opt_scegli:'— Choose —',opt_doc_foto:'📷 Photo',opt_doc_cartaceo:'📄 Paper copy handed to the office',opt_doc_nessuno:'⚠️ No document',warn_doc_nessuno:'⚠️ Without a document the expense is saved, but stays flagged until the document reaches the office.',sec_spese_registrare:'💲 Expenses to record in pre-accounting',gru_incluso:'Included in contract',
     sec_op_non_assegnati:'⚠️ Unassigned workers today',btn_assegna_ora:'➕ Assign',
     lbl_rapportino:'DAILY REPORT',lbl_vista_approvata:'Seen and approved by',
     sett_rapportino_firma:'📄 Report — Show signature line',
@@ -3001,7 +3012,7 @@ const TRADUZIONI = {
     log_note_hdr:'Notizen',
     fs_piccolo:'Klein',fs_normale:'Normal',fs_grande:'Groß',
     lbl_regia_operaio:'🔧 Regiearbeit',ph_regia_desc:'Arbeitsbeschreibung...',
-    opt_spese_gen:'🏢 Allgemeine Firmenausgaben',gru_incluso:'Im Vertrag inbegriffen',
+    opt_spese_gen:'🏢 Firma & Büro',opt_dest_attrezzature:'🛠️ Werkzeuge & Maschinen',opt_dest_magazzino:'📦 Lager',opt_dest_altro:'❓ Anderes (klärt das Büro)',grp_cant_attivi:'Aktive Baustellen',grp_dest_interne:'Intern',lbl_destinazione:'Ausgabe für',lbl_documento_sp:'Beleg',opt_scegli:'— Wählen —',opt_doc_foto:'📷 Foto',opt_doc_cartaceo:'📄 Papier im Büro abgegeben',opt_doc_nessuno:'⚠️ Kein Beleg',warn_doc_nessuno:'⚠️ Ohne Beleg wird die Ausgabe gespeichert, bleibt aber markiert, bis der Beleg im Büro ist.',sec_spese_registrare:'💲 In der Vorbuchhaltung zu erfassen',gru_incluso:'Im Vertrag inbegriffen',
     sec_op_non_assegnati:'⚠️ Heute nicht eingeteilt',btn_assegna_ora:'➕ Einteilen',
     lbl_rapportino:'TAGESBERICHT',lbl_vista_approvata:'Gesehen und genehmigt von',
     sett_rapportino_firma:'📄 Bericht — Unterschriftszeile anzeigen',
@@ -3325,7 +3336,7 @@ const TRADUZIONI = {
     log_note_hdr:'Notas',
     fs_piccolo:'Pequeño',fs_normale:'Normal',fs_grande:'Grande',
     lbl_regia_operaio:'🔧 Trabajo extra',ph_regia_desc:'Descripción del trabajo...',
-    opt_spese_gen:'🏢 Gastos generales empresa',gru_incluso:'Incluido en el contrato',
+    opt_spese_gen:'🏢 Empresa y oficina',opt_dest_attrezzature:'🛠️ Herramientas y maquinaria',opt_dest_magazzino:'📦 Almacén',opt_dest_altro:'❓ Otro (lo resuelve la oficina)',grp_cant_attivi:'Obras activas',grp_dest_interne:'Internos',lbl_destinazione:'Gasto para',lbl_documento_sp:'Documento del gasto',opt_scegli:'— Elegir —',opt_doc_foto:'📷 Foto',opt_doc_cartaceo:'📄 Papel entregado en la oficina',opt_doc_nessuno:'⚠️ Sin documento',warn_doc_nessuno:'⚠️ Sin documento el gasto se guarda, pero queda señalado hasta que el documento llegue a la oficina.',sec_spese_registrare:'💲 Gastos por registrar en precontabilidad',gru_incluso:'Incluido en el contrato',
     sec_op_non_assegnati:'⚠️ Operarios sin asignar hoy',btn_assegna_ora:'➕ Asignar',
     lbl_rapportino:'PARTE DIARIO',lbl_vista_approvata:'Visto y aprobado por',
     sett_rapportino_firma:'📄 Parte — Mostrar línea de firma',
@@ -4307,7 +4318,7 @@ async function renderCantiere(){
   try{
     const [{data:giornate,error:ge},{data:spese},{data:regia},{data:materialiList}]=await Promise.all([
       sb.from('giornate').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
-      sb.from('spese').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
+      _p3Filtra(sb.from('spese').select('*').eq('cantiere_id',curCant.id)).order('data',{ascending:false}),
       sb.from('regia').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
       sb.from('materiali').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}).limit(20),
     ]);
@@ -4622,7 +4633,7 @@ async function downloadFotoZip(){
 }
 
 async function downloadDocSpesa(spId){
-  const {data:s}=await sb.from('spese').select('foto_path,descrizione,data').eq('id',spId).single();
+  const {data:s}=await _p3Filtra(sb.from('spese').select('foto_path,descrizione,data').eq('id',spId)).maybeSingle();
   if(!s?.foto_path){showToast('Nessun documento allegato','e');return;}
   const {data:u}=await sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,600);
   if(!u?.signedUrl){showToast('Errore generazione link','e');return;}
@@ -4637,7 +4648,7 @@ async function downloadSpeseZip(cantId){
   const btn=document.getElementById('btn-dl-spese');
   if(btn){btn.textContent='⏳ Preparazione...';btn.disabled=true;}
   try{
-    let q=sb.from('spese').select('*').not('foto_path','is',null).order('data');
+    let q=_p3Filtra(sb.from('spese').select('*').not('foto_path','is',null)).order('data');
     if(cantId)q=q.eq('cantiere_id',cantId);
     const {data:spese,error}=await q;
     if(error)throw error;
@@ -5192,7 +5203,7 @@ async function exportPdfCantiere(cantId){
   try{
     const [{data:giornate},{data:spese},{data:regia}]=await Promise.all([
       sb.from('giornate').select('*,operai(nome,cognome),voci_lavoro(*,lavorazioni(nome,um))').eq('cantiere_id',cantId).order('data',{ascending:true}),
-      sb.from('spese').select('*').eq('cantiere_id',cantId).order('data',{ascending:true}),
+      _p3Filtra(sb.from('spese').select('*').eq('cantiere_id',cantId)).order('data',{ascending:true}),
       sb.from('voci_regia').select('*').eq('cantiere_id',cantId).order('created_at',{ascending:true})
     ]);
     let logoDataUrl='';
@@ -5625,6 +5636,14 @@ function _p2OrdinaLavs(ls){
 }
 // ── fine P2 funzioni pure ──
 
+// Titolo del capitolo: fascia colorata che resta in alto mentre si scorre.
+// color-mix sopra un fondo pieno: funziona con ogni tema; dove non c'e' resta --s3.
+// top: dove si ferma (nell'anteprima "Incolla" copre anche il margine interno della finestra)
+function _capitoloCss(top){
+  return 'position:sticky;top:'+(top||0)+'px;z-index:2;box-sizing:border-box;width:100%;margin:10px 0 6px;padding:9px 12px;'
+    +'border-radius:var(--rsm);border-left:4px solid var(--gold);background:var(--s3);background:color-mix(in srgb,var(--gold) 24%,var(--s1));'
+    +'color:var(--text);font-size:17px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;line-height:1.25';
+}
 // Etichette di testo (mai solo colore): Eventuale, Da confermare
 function _p2Etichette(l,soloTesto){
   const e=[];if(l.eventuale)e.push('Eventuale');if(l.stato==='da_confermare')e.push('Da confermare');
@@ -5676,8 +5695,9 @@ async function p2AnalizzaIncolla(){
     +'<span style="color:var(--t2)">Al salvataggio: '+piano.inserisci.length+' nuove · '+piano.aggiorna.length+' aggiornate · '+piano.archivia.length+' archiviate (tolte dal preventivo, le ore restano)</span>'
     +'</div>';
   let capCorr;
+  const nPerCap={};r.voci.forEach(v=>{const k=v.capitolo||'';nPerCap[k]=(nPerCap[k]||0)+1;});
   r.voci.forEach((v,i)=>{
-    if(i===0||v.capitolo!==capCorr){capCorr=v.capitolo;h+='<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);padding:10px 0 4px">'+escHtml(v.capitolo||'Senza capitolo')+'</div>';}
+    if(i===0||v.capitolo!==capCorr){capCorr=v.capitolo;h+='<div style="'+_capitoloCss(-18)+'">'+escHtml(v.capitolo||'Senza capitolo')+' · '+nPerCap[v.capitolo||'']+'</div>';}
     h+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
       +(v.padre?'<div style="font-size:11px;color:var(--t3)">'+escHtml(_p2Corta(v.padre,90))+'</div>':'')
       +'<div style="display:flex;gap:8px;align-items:baseline">'
@@ -6243,7 +6263,7 @@ async function aggiornaBadgeSituazione(){
       sb.from('assenze').select('id',{count:'exact'}).eq('stato','in_attesa'),
       sb.from('giornate').select('id',{count:'exact'}).eq('cantiere_da_assegnare',true)
     ]);
-    const tot=(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0)+(timb?.length||0);
+    const tot=(await _p3ContaDaRegistrare())+(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0)+(timb?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
@@ -7155,6 +7175,7 @@ function navTo(dest){
 
 // ── SITUAZIONE ──
 async function renderSituazione(){
+  renderSpeseDaRegistrare(); // P3
   // Timbrature da assegnare (P23/P24 — solo titolare/responsabile)
   if(['titolare','responsabile'].includes(PROF?.ruolo)){
     const elTimbW=document.getElementById('sit-timb-wrap');
@@ -7305,7 +7326,8 @@ async function renderSituazione(){
 }
 async function segnaSpesaPagata(id){
   if(!confirm(t('conf_segna_pagata')))return;
-  await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id);
+  const{data:_r,error:_e}=await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id).select('id');
+  if(_e||!_r||!_r.length){showToast('Spesa NON aggiornata, riprova. ('+(_e?_e.message:'0 righe')+')','e');return;}
   showToast('Spesa segnata come pagata ✓');renderSituazione();aggiornaBadgeSituazione();
 }
 async function toggleFatturato(id,statoAttuale,btn){
@@ -7317,12 +7339,151 @@ async function toggleFatturato(id,statoAttuale,btn){
 
 // ── SPESE — con download ──
 let spFotoFile=null,editSpId=null;
+// ── P3: destinazione, documento e stato verso la Pre-contabilita' ──
+let _p3FotoEsistente=false; // in modifica: la spesa ha gia' una foto
+// valore della tendina → destinazione salvata (cantiere vuoto)
+const P3_DEST_VALORI={interno:'ditta_ufficio',attrezzature:'attrezzature',magazzino:'magazzino',altro:'altro'};
+const P3_VALORE_DA_DEST={ditta_ufficio:'interno',attrezzature:'attrezzature',magazzino:'magazzino',altro:'altro'};
+const P3_DEST_ETICHETTA={ditta_ufficio:'opt_spese_gen',attrezzature:'opt_dest_attrezzature',magazzino:'opt_dest_magazzino',altro:'opt_dest_altro'};
+// Operaio e caposquadra vedono solo le spese inserite da loro (solo nell'app:
+// le regole del database arrivano nel passaggio 6).
+function _p3SoloMie(){return !['titolare','responsabile'].includes(_ruoloApp());}
+function _p3Filtra(q){return _p3SoloMie()?q.eq('created_by',USER.id):q;}
+// I due finti cantieri non si propongono piu' (restano nel database con i loro dati)
+function _p3CantiereFinto(c){const n=String(c.nome||'').toLowerCase().replace(/\s+/g,' ').trim();return n==='spese ditta'||n==='materiale magazzino';}
+function _p3OpzioniDestinazione(){
+  const cant=(CANTIERI||[]).filter(c=>c.stato==='Attivo'&&!_p3CantiereFinto(c));
+  return '<option value="">'+t('opt_scegli')+'</option>'
+    +(cant.length?'<optgroup label="'+escHtml(t('grp_cant_attivi'))+'">'+cant.map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('')+'</optgroup>':'')
+    +'<optgroup label="'+escHtml(t('grp_dest_interne'))+'">'
+    +'<option value="interno">'+t('opt_spese_gen')+'</option>'
+    +'<option value="attrezzature">'+t('opt_dest_attrezzature')+'</option>'
+    +'<option value="magazzino">'+t('opt_dest_magazzino')+'</option>'
+    +'<option value="altro">'+t('opt_dest_altro')+'</option>'
+    +'</optgroup>';
+}
+// In modifica: un cantiere non piu' nella scelta (finto, chiuso) resta com'era
+function _p3ImpostaDestinazione(s){
+  const sel=document.getElementById('sp-cant-sel');if(!sel)return;
+  let v;
+  if(s.cantiere_id){
+    v=s.cantiere_id;
+    if(![...sel.options].some(o=>o.value===v)){
+      const c=(CANTIERI||[]).find(x=>x.id===v);
+      sel.add(new Option((c?.nome||'Cantiere')+' (non più nella scelta)',v));
+    }
+  }else v=P3_VALORE_DA_DEST[s.destinazione||'ditta_ufficio']||'interno';
+  sel.value=v;
+}
+function _p3DoveVa(s){
+  if(s.cantiere_id)return s.cantieri?.nome||'Cantiere';
+  return t(P3_DEST_ETICHETTA[s.destinazione||'ditta_ufficio']||'opt_spese_gen');
+}
+// Etichette (testo + colore, mai solo colore)
+function _p3Etichette(s){
+  const e=[];
+  if(s.stato_precontabilita==='registrata')e.push(['✓ Registrata','var(--green)']);
+  else if(s.stato_precontabilita==='da_registrare')e.push(['Da registrare','var(--orange)']);
+  if(s.documento==='nessuno')e.push(['⚠️ Senza documento','var(--red)']);
+  else if(s.documento==='cartaceo')e.push(['📄 Cartaceo in ufficio','var(--t2)']);
+  if(!e.length)return '';
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+    +e.map(x=>'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid '+x[1]+';color:'+x[1]+'">'+x[0]+'</span>').join('')+'</div>';
+}
+function p3DocumentoCambiato(){
+  const w=document.getElementById('sp-doc-warn');
+  if(w)w.classList.toggle('on',document.getElementById('sp-documento')?.value==='nessuno');
+}
+function _p3BloccoPrecontabilita(s){
+  if(!s.stato_precontabilita)return ''; // colonne non ancora create (SQL del passaggio 3)
+  const reg=s.stato_precontabilita==='registrata';
+  let h='<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px">'
+    +'<div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Pre-contabilità</div>'
+    +_p3Etichette(s)
+    +(reg?'<div style="font-size:12px;color:var(--t2);margin-top:6px">Registrata il '+(s.registrata_il?new Date(s.registrata_il).toLocaleDateString('it-CH'):'—')+' da <span id="spv-reg-chi">…</span></div>':'');
+  if(_ruoloApp()==='titolare'){
+    h+=reg
+      ?'<button class="btn btn-s" style="margin-top:10px;font-size:13px" onclick="p3SegnaRegistrata(\''+s.id+'\',false,this)">↩ Riporta a "Da registrare"</button>'
+      :'<button class="btn btn-g" style="margin-top:10px;font-size:13px" onclick="p3SegnaRegistrata(\''+s.id+'\',true,this)">✓ Segna registrata in Pre-contabilità</button>';
+  }
+  return h+'</div>';
+}
+async function _p3NomeUtente(uid){
+  if(!uid)return '—';
+  if(uid===USER?.id)return PROF?.nome||USER.email;
+  const{data,error}=await sb.from('profili').select('nome').eq('id',uid).maybeSingle();
+  if(error)return '—';
+  return data?.nome||'utente sconosciuto';
+}
+function _p3CompilaChiRegistrata(s){
+  if(s.stato_precontabilita!=='registrata')return;
+  _p3NomeUtente(s.registrata_da).then(n=>{const el=document.getElementById('spv-reg-chi');if(el)el.textContent=n;});
+}
+// Solo il titolare cambia lo stato. Niente si cancella: si cambia stato.
+async function p3SegnaRegistrata(id,registra,btn){
+  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare può registrare le spese','e');return;}
+  if(!confirm(registra?'Segnare questa spesa come registrata in Pre-contabilità?':'Riportare questa spesa a "Da registrare"?'))return;
+  if(btn)btn.disabled=true;
+  const upd=registra
+    ?{stato_precontabilita:'registrata',registrata_il:new Date().toISOString(),registrata_da:USER.id}
+    :{stato_precontabilita:'da_registrare',registrata_il:null,registrata_da:null};
+  const{data,error}=await sb.from('spese').update(upd).eq('id',id).select('id');
+  if(btn)btn.disabled=false;
+  if(error){showToast('Spesa NON aggiornata, riprova. ('+error.message+')','e');return;}
+  if(!data||!data.length){showToast('Spesa NON aggiornata, riprova. (0 righe)','e');return;}
+  showToast(registra?'Spesa registrata ✓':'Spesa riportata a "Da registrare"');
+  if(document.getElementById('mod-spesa-view')?.classList.contains('on'))visualizzaSpesa(id);
+  if(document.getElementById('scr-situazione')?.classList.contains('on'))renderSpeseDaRegistrare();
+  if(document.getElementById('scr-spese')?.classList.contains('on'))renderSpese();
+  aggiornaBadgeSituazione();
+}
+// Conteggio per l'icona Spese e per "Da sistemare" (solo titolare e responsabile)
+async function _p3ContaDaRegistrare(){
+  const b=document.getElementById('sp-badge');
+  if(_p3SoloMie()){if(b)b.style.display='none';return 0;}
+  const{count,error}=await sb.from('spese').select('id',{count:'exact',head:true}).eq('stato_precontabilita','da_registrare');
+  if(error){console.warn('Spese da registrare:',error.message);if(b)b.style.display='none';return 0;}
+  const n=count||0;
+  if(b){if(n>0){b.textContent=n>99?'99+':n;b.style.display='inline-flex';}else b.style.display='none';}
+  return n;
+}
+async function renderSpeseDaRegistrare(){
+  const wrap=document.getElementById('sit-spreg-wrap'),el=document.getElementById('sit-spreg-content'),nEl=document.getElementById('sit-spreg-n');
+  if(!wrap||!el)return;
+  if(_p3SoloMie()){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  try{
+    const{data,error,count}=await sb.from('spese').select('id,data,descrizione,tipo_spesa,importo,valuta,cantiere_id,destinazione,documento,stato_precontabilita,cantieri(nome)',{count:'exact'}).eq('stato_precontabilita','da_registrare').order('data',{ascending:false}).limit(50);
+    if(error)throw error;
+    const lista=data||[];const tot=(count!=null)?count:lista.length;
+    if(nEl)nEl.textContent=tot;
+    if(!tot){el.innerHTML='<div style="font-size:13px;color:var(--t2);padding:8px 0">✅ Tutte le spese sono registrate</div>';return;}
+    const isTit=_ruoloApp()==='titolare';
+    el.innerHTML='';
+    lista.forEach(s=>{
+      const d=document.createElement('div');
+      d.style.cssText='background:var(--s1);border:1px solid rgba(224,136,64,.35);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;cursor:pointer';
+      d.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700">'+escHtml(s.descrizione||s.tipo_spesa||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--t2)">'+escHtml(_p3DoveVa(s))+' · '+fmtDate(s.data)+'</div></div>'
+        +'<div style="font-family:\'DM Mono\';font-size:15px;font-weight:600;white-space:nowrap">'+parseFloat(s.importo||0).toFixed(2)+' '+escHtml(s.valuta||'CHF')+'</div></div>'
+        +_p3Etichette(s)
+        +(isTit?'<button class="btn btn-g" style="margin-top:10px;font-size:13px;padding:8px" data-a="reg">✓ Segna registrata</button>':'');
+      d.addEventListener('click',function(e){if(e.target.closest('button'))return;visualizzaSpesa(s.id);});
+      const b=d.querySelector('[data-a="reg"]');if(b)b.addEventListener('click',function(){p3SegnaRegistrata(s.id,true,b);});
+      el.appendChild(d);
+    });
+    if(tot>lista.length){const m=document.createElement('div');m.style.cssText='font-size:12px;color:var(--t2);padding:4px 0';m.textContent='… e altre '+(tot-lista.length)+': le trovi in Spese.';el.appendChild(m);}
+  }catch(e){el.innerHTML='<div class="warn on">Errore nel caricare le spese da registrare: '+escHtml(e.message)+'</div>';}
+}
+
 function populateSpeseSel(){
   setTimeout(populatePagatoDa, 100); // P28
 
   const opts='<option value="">Tutti i cantieri</option>'+CANTIERI.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('sp-cantiere').innerHTML=opts;
-  document.getElementById('sp-cant-sel').innerHTML='<option value="interno">'+t('opt_spese_gen')+'</option>'+CANTIERI.filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('sp-cant-sel').innerHTML=_p3OpzioniDestinazione(); // P3
   document.getElementById('sp-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
   document.getElementById('reg-cant-sel').innerHTML=CANTIERI.filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('reg-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
@@ -7338,7 +7499,7 @@ async function renderSpese(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const cantF=document.getElementById('sp-cantiere').value;
   const statoF=document.getElementById('sp-stato').value;
-  let q=sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)').order('data',{ascending:false});
+  let q=_p3Filtra(sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)')).order('data',{ascending:false}); // P3: operaio/caposquadra solo le proprie
   if(cantF)q=q.eq('cantiere_id',cantF);if(statoF)q=q.eq('stato_pag',statoF);
   const {data,error}=await q.limit(100);
   if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;document.getElementById('sp-totali').innerHTML='';return;}
@@ -7355,12 +7516,13 @@ async function renderSpese(){
     const canDel=['titolare','responsabile'].includes(PROF?.ruolo);
     return `<div style="background:var(--s1);border:1px solid ${isPag?'var(--border)':'rgba(224,85,85,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaSpesa('${s.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${s.cantieri?.nome||'—'} · ${fmtDate(s.data)}</div>${(s.operai?.nome||s.operai?.cognome)?`<div style="font-size:11px;color:var(--t2)">👤 Inserito da: ${s.operai.nome||''} ${s.operai.cognome||''}</div>`:''}</div></div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="font-size:24px">${icon}</span><div><div style="font-size:var(--fs-lg);font-weight:700">${s.descrizione||s.tipo_spesa}</div><div style="font-size:11px;color:var(--t2)">${escHtml(_p3DoveVa(s))} · ${fmtDate(s.data)}</div>${(s.operai?.nome||s.operai?.cognome)?`<div style="font-size:11px;color:var(--t2)">👤 Inserito da: ${s.operai.nome||''} ${s.operai.cognome||''}</div>`:''}</div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono';font-size:18px;font-weight:600;color:${isPag?'var(--gold)':'var(--red)'}">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</div><div style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px;background:${isPag?'rgba(76,175,125,.15)':'rgba(224,85,85,.15)'};color:${isPag?'var(--green)':'var(--red)'}">${s.stato_pag}</div></div>
       </div>
       ${s.metodo_pag?`<div style="font-size:11px;color:var(--t3)">💳 ${s.metodo_pag}</div>`:''}
       ${s.note?`<div style="font-size:12px;color:var(--t2);margin-top:4px">📝 ${s.note}</div>`:''}
       ${s.foto_path?`<div style="font-size:11px;color:var(--blue);margin-top:4px">📎 Documento allegato</div>`:''}
+      ${_p3Etichette(s)}
     </div>
       ${(!isPag||canDel)?'<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:flex-end;gap:8px">'+(!isPag?'<button onclick=\"event.stopPropagation();segnaSpesaPagataRapido(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">✅ Segna pagata</button>':'')+(canDel?'<button onclick=\"event.stopPropagation();deleteSpesa(\\"'+s.id+'\\")\" style=\"font-size:12px;background:rgba(224,85,85,.12);color:var(--red);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:6px 14px;cursor:pointer;font-weight:700\">'+t('btn_elimina_spesa')+'</button>':'')+'</div>':''}
     </div>`;
@@ -7370,14 +7532,16 @@ async function renderSpese(){
 async function segnaSpesaPagataRapido(id){
   if(!confirm(t('conf_segna_pagata')))return;
   try{
-    await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id);
+    const{data:_r,error:_e}=await sb.from('spese').update({stato_pag:'Pagato',metodo_pag:'Contanti'}).eq('id',id).select('id');
+    if(_e)throw _e;
+    if(!_r||!_r.length)throw new Error('spesa NON aggiornata dal database (0 righe)');
     showToast('Spesa segnata come pagata ✓');
     renderSpese();aggiornaBadgeSituazione();
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
 async function visualizzaSpesa(id){
-  const {data:s,error}=await sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)').eq('id',id).single();
+  const {data:s,error}=await _p3Filtra(sb.from('spese').select('*, cantieri(nome), operai(nome,cognome)').eq('id',id)).maybeSingle();
   if(error||!s){showToast('Errore nel caricamento','e');return;}
   const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
   const icon=tipoDocIcon[s.tipo_doc]||'📋';const isPag=s.stato_pag==='Pagato';
@@ -7385,7 +7549,7 @@ async function visualizzaSpesa(id){
   document.getElementById('spv-content').innerHTML=`
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
       <div class="row2" style="margin-bottom:8px">
-        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${s.cantieri?.nome||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">${t('lbl_destinazione')}</div><div style="font-weight:700">${escHtml(_p3DoveVa(s))}</div></div>
         <div><div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(s.data)}</div></div>
       </div>
       <div class="row2" style="margin-bottom:8px">
@@ -7399,6 +7563,7 @@ async function visualizzaSpesa(id){
       </div>
     </div>
     ${s.note?`<div style="font-size:13px;color:var(--t2);margin-bottom:12px">📝 ${s.note}</div>`:''}
+    ${_p3BloccoPrecontabilita(s)}
     <div style="font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Foto / Documento</div>
     <div id="spv-foto">${s.foto_path?'<div style="font-size:12px;color:var(--t2);padding:8px 0">'+t('lbl_caricamento_gen')+'</div>':'<div style="color:var(--t2);font-size:13px;margin-top:8px">📷 '+t('empty_doc_all')+'</div>'}</div>
     ${s.foto_path?`<button class="btn btn-s" style="margin-top:10px;font-size:13px" onclick="downloadDocSpesa('${id}')">⬇️ Scarica documento</button>`:''}`;
@@ -7413,6 +7578,7 @@ async function visualizzaSpesa(id){
     }
   }
   openModal('mod-spesa-view');
+  _p3CompilaChiRegistrata(s); // P3
   if(s.foto_path){
     try{
       const {data:u,error:ue}=await sb.storage.from('cantiere-spese').createSignedUrl(s.foto_path,7200);
@@ -7453,7 +7619,7 @@ async function visualizzaRegia(id){
 }
 
 function openModalSpesa(id){
-  editSpId=id;spFotoFile=null;
+  editSpId=id;spFotoFile=null;_p3FotoEsistente=false;
   document.getElementById('sp-foto-prv').innerHTML='';
   populateSpeseSel();
   if(!id){
@@ -7462,12 +7628,16 @@ function openModalSpesa(id){
     document.getElementById('sp-importo').value='';document.getElementById('sp-desc').value='';document.getElementById('sp-note').value='';
     document.getElementById('sp-stato-pag').value='Da pagare';document.getElementById('sp-metodo-wrap').style.display='none';
     document.getElementById('del-sp-w').innerHTML='';
-    if(curCant)document.getElementById('sp-cant-sel').value=curCant.id;
+    document.getElementById('sp-cant-sel').value='';
+    if(curCant)document.getElementById('sp-cant-sel').value=curCant.id; // se non e' tra le scelte resta "— Scegli —"
+    document.getElementById('sp-documento').value='';p3DocumentoCambiato();
   }else{
-    sb.from('spese').select('*').eq('id',id).single().then(({data:s})=>{
+    _p3Filtra(sb.from('spese').select('*').eq('id',id)).maybeSingle().then(({data:s})=>{
       if(!s)return;
       document.getElementById('mod-spesa-t').textContent=t('modal_modifica_spesa');
-      document.getElementById('sp-cant-sel').value=s.cantiere_id||'';document.getElementById('sp-op-sel').value=s.operaio_id||'';
+      _p3ImpostaDestinazione(s); // P3: anche cantieri non piu' nella scelta restano com'erano
+      document.getElementById('sp-documento').value=s.documento||'';p3DocumentoCambiato();
+      _p3FotoEsistente=!!s.foto_path;document.getElementById('sp-op-sel').value=s.operaio_id||'';
       document.getElementById('sp-data').value=s.data||'';document.getElementById('sp-tipo-doc').value=s.tipo_doc||'Scontrino';
       document.getElementById('sp-tipo-spesa').value=s.tipo_spesa||'Materiale';document.getElementById('sp-desc').value=s.descrizione||'';
       document.getElementById('sp-importo').value=s.importo||'';document.getElementById('sp-valuta').value=s.valuta||'CHF';
@@ -7493,29 +7663,48 @@ function addFotoSpesa(e){
   const raw=e.target.files[0];if(!raw)return;e.target.value='';
   compressImg(raw,800,compressed=>{
     spFotoFile=compressed;
+    const _d=document.getElementById('sp-documento');if(_d){_d.value='foto';p3DocumentoCambiato();} // P3
     const r=new FileReader();
     r.onload=ev=>{const isImg=raw.type.startsWith('image/');document.getElementById('sp-foto-prv').innerHTML=isImg?`<img src="${ev.target.result}" style="width:100%;border-radius:var(--rsm);margin-top:8px;max-height:200px;object-fit:contain">`:`<div style="background:var(--s2);border-radius:var(--rsm);padding:10px;font-size:13px;color:var(--t2);margin-top:8px">📄 ${raw.name}</div>`;};
     r.readAsDataURL(compressed);
   });
 }
 async function salvaSpesa(){
-  const cantId=document.getElementById('sp-cant-sel').value,data=document.getElementById('sp-data').value,desc=document.getElementById('sp-desc').value.trim();
-  if(!cantId||!data||!desc){showToast('Compila cantiere, data e descrizione','e');return;}
+  const scelta=document.getElementById('sp-cant-sel').value,data=document.getElementById('sp-data').value,desc=document.getElementById('sp-desc').value.trim();
+  const documento=document.getElementById('sp-documento')?.value||'';
+  if(!scelta||!data||!desc){showToast('Compila dove va la spesa, data e descrizione','e');return;}
+  if(!documento){showToast('Scegli il documento della spesa: foto, cartaceo o nessuno','e');return;}
+  if(documento==='foto'&&!spFotoFile&&!_p3FotoEsistente){showToast('Hai scelto "Foto": aggiungi la foto oppure scegli un\'altra opzione','e');return;}
+  // P3: destinazione interna (cantiere vuoto) oppure cantiere
+  const destInterna=P3_DEST_VALORI[scelta]||null;
+  const cantId=destInterna?null:scelta;
   const btn=document.getElementById('btn-salva-sp');btn.textContent='⏳...';btn.disabled=true;
   try{
     const statoPag=document.getElementById('sp-stato-pag').value;
-    const _pagDa=document.getElementById('sp-pagato-da')?.value||USER.id;const payload={cantiere_id:cantId==='interno'?null:cantId,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,created_by:USER.id,pagato_da:_pagDa||USER.id};
+    const _pagDa=document.getElementById('sp-pagato-da')?.value||USER.id;const payload={cantiere_id:cantId,destinazione:destInterna||'cantiere',documento,operaio_id:document.getElementById('sp-op-sel').value||null,data,tipo_doc:document.getElementById('sp-tipo-doc').value,tipo_spesa:document.getElementById('sp-tipo-spesa').value,descrizione:desc,importo:parseFloat(document.getElementById('sp-importo').value)||null,valuta:document.getElementById('sp-valuta').value,stato_pag:statoPag,metodo_pag:statoPag==='Pagato'?document.getElementById('sp-metodo').value:null,note:document.getElementById('sp-note').value.trim()||null,pagato_da:_pagDa||USER.id};
     let spId=editSpId;
-    if(editSpId)await sb.from('spese').update(payload).eq('id',editSpId);
-    else{const {data:newSp,error}=await sb.from('spese').insert(payload).select().single();if(error)throw error;spId=newSp.id;}
+    if(editSpId){
+      // P3: in modifica "chi l'ha inserita" resta quello di prima (created_by non si tocca)
+      const{data:_u,error}=await sb.from('spese').update(payload).eq('id',editSpId).select('id');
+      if(error)throw error;
+      if(!_u||!_u.length)throw new Error('il database non ha modificato la spesa (0 righe)');
+    }else{
+      const{data:_n,error}=await sb.from('spese').insert(Object.assign({},payload,{created_by:USER.id,stato_precontabilita:'da_registrare'})).select('id');
+      if(error)throw error;
+      if(!_n||!_n.length)throw new Error('il database non ha salvato la spesa (0 righe)');
+      spId=_n[0].id;editSpId=spId; // se la foto fallisce, al "riprova" si aggiorna invece di duplicare
+    }
     if(spFotoFile&&spId){
-      const cant=CANTIERI.find(c=>c.id===cantId);const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
+      const cant=CANTIERI.find(c=>c.id===cantId);const cn=(cant?.nome||destInterna||'spese').replace(/[^a-zA-Z0-9]/g,'_');
       const ext=spFotoFile.name.split('.').pop();const path=`${cn}/${data}/${Date.now()}_spesa.${ext}`;
       const {error:ue}=await sb.storage.from('cantiere-spese').upload(path,spFotoFile);
-      if(!ue)await sb.from('spese').update({foto_path:path}).eq('id',spId);
+      if(ue)throw Object.assign(new Error(ue.message),{p3Msg:'Spesa salvata, ma la foto NON è stata caricata ('+ue.message+'). Tocca di nuovo Salva per riprovare.'});
+      const{data:_f,error:fe}=await sb.from('spese').update({foto_path:path}).eq('id',spId).select('id');
+      if(fe||!_f||!_f.length)throw Object.assign(new Error('foto'),{p3Msg:'Spesa salvata, ma la foto NON è collegata ('+(fe?fe.message:'0 righe')+'). Tocca di nuovo Salva per riprovare.'});
+      spFotoFile=null;_p3FotoEsistente=true;
     }
-    closeModal('mod-spesa');renderSpese();showToast('Spesa salvata ✓');
-  }catch(e){showToast('Errore: '+e.message,'e');}
+    closeModal('mod-spesa');renderSpese();aggiornaBadgeSituazione();showToast('Spesa salvata ✓');
+  }catch(e){showToast(e.p3Msg||('Spesa NON salvata, riprova. ('+e.message+')'),'e');}
   finally{btn.textContent='💾 Salva';btn.disabled=false;}
 }
 async function deleteSpesa(id){
@@ -7532,9 +7721,10 @@ async function deleteSpesa(id){
     }catch(e){console.warn('Errore eliminazione foto storage:',e.message);}
   }
   try{
-    const {error}=await sb.from('spese').delete().eq('id',id);
+    const {data:_d,error}=await sb.from('spese').delete().eq('id',id).select('id');
     if(error)throw error;
-  }catch(e){showToast('Errore: '+e.message,'e');return;}
+    if(!_d||!_d.length)throw new Error('il database non ha eliminato la spesa (0 righe)');
+  }catch(e){showToast('Spesa NON eliminata, riprova. ('+e.message+')','e');return;}
   closeModal('mod-spesa');closeModal('mod-spesa-view');
   renderSpese();
   showToast(t('toast_spesa_eliminata'));
@@ -8453,8 +8643,8 @@ function renderLavMultiLista(q){
   cats.forEach((lavs,cat)=>{
     // Header capitolo
     const catDiv=document.createElement('div');
-    catDiv.style.cssText='font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);padding:10px 0 4px';
-    catDiv.textContent=cat;
+    catDiv.style.cssText=_capitoloCss();
+    catDiv.textContent=cat+' · '+lavs.length;
     el.appendChild(catDiv);
 
     lavs.forEach(l=>{
