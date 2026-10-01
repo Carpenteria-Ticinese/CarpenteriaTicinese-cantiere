@@ -1333,6 +1333,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" placeholder="es. +41 79 123 45 67"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" placeholder="es. Patente gru, specializzazioni..."></div>
+    <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
     <div class="toggle-wrap" style="margin-bottom:8px">
@@ -1368,7 +1369,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
+      <button class="btn btn-g" id="o-salva" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
     </div>
     <div id="del-op-w" style="margin-top:10px"></div>
   </div>
@@ -5671,6 +5672,7 @@ function openModalOp(id){
   const eEl=document.getElementById('o-email');if(eEl)eEl.value=o?.email||'';
   const tEl=document.getElementById('o-telefono');if(tEl)tEl.value=o?.telefono||'';
   const nEl=document.getElementById('o-note');if(nEl)nEl.value=o?.note||'';
+  const iEl=document.getElementById('o-inizio');if(iEl)iEl.value=o?.data_assunzione||'';
   const fEl=document.getElementById('o-fine');if(fEl)fEl.value=o?.data_fine_rapporto||'';
   const agEl=document.getElementById('o-agenzia');if(agEl)agEl.checked=!!o?.agenzia;
   const agNEl=document.getElementById('o-nome-agenzia');if(agNEl)agNEl.value=o?.nome_agenzia||'';
@@ -5700,7 +5702,18 @@ async function saveOp(){
   const nome=document.getElementById('o-nome').value.trim(),cogn=document.getElementById('o-cogn').value.trim();
   if(!nome||!cogn){showToast('Inserisci nome e cognome','e');return;}
   const fine=document.getElementById('o-fine')?.value||null;
+  const inizio=document.getElementById('o-inizio')?.value||null;
+  // P1b: tasto Salva bloccato durante il salvataggio (niente doppi inserimenti)
+  const btnSalva=document.getElementById('o-salva');
+  const txtSalva=btnSalva?btnSalva.textContent:'';
+  if(btnSalva){btnSalva.disabled=true;btnSalva.textContent='Salvataggio…';}
   try{
+    // P1b: avviso se esiste gia' una persona attiva con lo stesso nome e cognome
+    if(!editOid){
+      const _norm=x=>String(x||'').toLowerCase().replace(/\s+/g,'');
+      const _dup=(OPERAI_TUTTI||[]).find(o=>_opAttivo(o)&&_norm(o.nome)===_norm(nome)&&_norm(o.cognome)===_norm(cogn));
+      if(_dup&&!confirm('Esiste già '+(_dup.nome||'')+' '+(_dup.cognome||'')+'. Aggiungere comunque?'))return;
+    }
     const isAgenzia=document.getElementById('o-agenzia')?.checked||false;
     const p={
       nome,cognome:cogn,
@@ -5708,6 +5721,7 @@ async function saveOp(){
       email:document.getElementById('o-email')?.value.trim()||null,
       telefono:document.getElementById('o-telefono')?.value.trim()||null,
       note:document.getElementById('o-note')?.value.trim()||null,
+      data_assunzione:inizio||null,
       data_fine_rapporto:fine||null,
       agenzia:isAgenzia,
       nome_agenzia:isAgenzia?(document.getElementById('o-nome-agenzia')?.value.trim()||null):null
@@ -5729,6 +5743,7 @@ async function saveOp(){
     }
     await loadOperai();closeModal('mod-op');renderPersonale();showToast(t('toast_salvato'));
   }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{if(btnSalva){btnSalva.disabled=false;btnSalva.textContent=txtSalva;}}
 }
 // P1-A: "Rimuovi" non cancella: segna la persona come non attiva e mette la fine
 // rapporto a oggi (se non ce n'era una). Ore, foto e storico restano collegati.
@@ -10629,6 +10644,8 @@ async function renderOre(){
       else if(da.getFullYear()<annoSel) primoMeseAttivo=0;
       else primoMeseAttivo=12;
     }
+    // P1b: senza data di inizio e senza giornate non sappiamo da quando contare: nessun arretrato
+    const senzaInizio=!operaioInfo?.data_assunzione&&mesiConGiornate.size===0;
 
     const mesi=[];
     for(let m=0;m<12;m++){
@@ -10638,7 +10655,7 @@ async function renderOre(){
       } else if(mesiConGiornate.size>0){
         includiMese=mesiConGiornate.has(m);
       } else {
-        includiMese=true;
+        includiMese=!senzaInizio;
       }
       // Ore teoriche mese = oreAnnuali × (giorni_lav_mese / totale_giorni_lav_anno)
       const teoriche=(includiMese&&totGiorniLavAnno>0)
@@ -10692,6 +10709,7 @@ async function renderOre(){
         </table>
       </div>
       <div style="margin-top:10px;font-size:12px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h${notaPeriodo}</div>
+      ${senzaInizio?'<div class="warn" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
     </div>`;
   }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
