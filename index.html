@@ -271,6 +271,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="lang-btn" data-lang="DE" onclick="changeLang('DE')" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 12px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif">🇩🇪 DE</button>
       <button class="lang-btn" data-lang="ES" onclick="changeLang('ES')" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 12px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif">🇪🇸 ES</button>
     </div>
+    <div id="login-versione" style="text-align:center;margin-top:10px;font-size:10px;color:var(--t3)"></div>
   </div>
 </div>
 
@@ -283,7 +284,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     </div>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
-      <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span>
+      <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span><span id="top-versione" style="font-size:10px;color:var(--t3)"></span>
       <button class="btn-icon" onclick="buildTemaModal();openModal('mod-tema')" title="Tema colore" style="font-size:18px">🎨</button>
       <button class="btn-icon" onclick="doLogout()" data-i18n="btn_esci">Esci</button>
     </div>
@@ -1308,8 +1309,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div class="mod-h"></div>
     <div class="mod-t" id="mod-op-t" data-i18n="modal_nuovo_op">Nuovo operaio</div>
     <div class="row2">
-      <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="o-nome"></div>
-      <div class="fg"><label class="fl" data-i18n="lbl_cognome">Cognome</label><input type="text" class="fi" id="o-cogn"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="o-nome" autocomplete="off"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_cognome">Cognome</label><input type="text" class="fi" id="o-cogn" autocomplete="off"></div>
     </div>
     <div class="fg"><label class="fl">Ruolo <span style="font-weight:400;font-size:10px;color:var(--t2)">(seleziona o scrivi liberamente)</span></label>
       <input class="fi" id="o-ruolo" list="ruoli-list" placeholder="es. Carpentiere, Elettricista..." autocomplete="off">
@@ -1331,8 +1332,8 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="Ditta esterna">
       </datalist></div>
     <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" placeholder="es. +41 79 123 45 67"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" placeholder="es. Patente gru, specializzazioni..."></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" autocomplete="off" placeholder="es. +41 79 123 45 67"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" autocomplete="off" placeholder="es. Patente gru, specializzazioni..."></div>
     <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
@@ -1372,6 +1373,22 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-g" id="o-salva" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
     </div>
     <div id="del-op-w" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="ov" id="mod-op-scheda">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t" id="scheda-op-t">Scheda collaboratore</div>
+    <div id="scheda-op-dati"></div>
+    <hr style="margin:14px 0">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 Documenti e scadenze</div>
+    <div id="scheda-op-docs" style="min-height:20px;margin-bottom:10px"></div>
+    <hr>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-op-scheda')">Chiudi</button>
+      <button class="btn btn-g" id="scheda-op-mod">✏️ Modifica</button>
+    </div>
   </div>
 </div>
 
@@ -1974,6 +1991,12 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 </div>
 
 <script>
+// Versione visibile (login e barra in alto): aumentarla a ogni passaggio
+const APP_VERSIONE='1c';
+try{
+  document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
+  document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
+}catch(e){}
 const SB_URL='https://wgidgbauhivdctdxfjnk.supabase.co';
 const SB_KEY='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
 const sb=supabase.createClient(SB_URL,SB_KEY);
@@ -5673,6 +5696,10 @@ function openModalOp(id){
   const tEl=document.getElementById('o-telefono');if(tEl)tEl.value=o?.telefono||'';
   const nEl=document.getElementById('o-note');if(nEl)nEl.value=o?.note||'';
   const iEl=document.getElementById('o-inizio');if(iEl)iEl.value=o?.data_assunzione||'';
+  // P1c: campi "Aggiungi documento" vuoti a ogni apertura (non resta la data della persona precedente)
+  const dtEl=document.getElementById('doc-tipo');if(dtEl)dtEl.selectedIndex=0;
+  const dsEl=document.getElementById('doc-scad');if(dsEl)dsEl.value='';
+  const dnEl=document.getElementById('doc-note');if(dnEl)dnEl.value='';
   const fEl=document.getElementById('o-fine');if(fEl)fEl.value=o?.data_fine_rapporto||'';
   const agEl=document.getElementById('o-agenzia');if(agEl)agEl.checked=!!o?.agenzia;
   const agNEl=document.getElementById('o-nome-agenzia');if(agNEl)agNEl.value=o?.nome_agenzia||'';
@@ -8830,6 +8857,12 @@ async function renderPersonale(){
         +'</div>'
         +(pApp?_ruoloAppHtml(pApp,o):'')
         +(hasAccount?'<button style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:var(--rsm);color:var(--t2);font-size:12px;padding:6px 12px;cursor:pointer;width:100%" onclick="resetPasswordOperaio(\''+o.email+'\')">🔑 Reset password (invia email)</button>':'');
+      // P1c: toccare la riga (non matita, menù o pulsanti) apre la scheda in sola lettura
+      div.style.cursor='pointer';
+      div.addEventListener('click',function(e){
+        if(e.target.closest('button,select,input,a'))return;
+        apriSchedaOp(o.id);
+      });
       return div;
     }
     if(raggruppa){
@@ -8877,6 +8910,50 @@ async function renderPersonale(){
       }catch(e){}
     })();
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+e.message+'</div>';}
+}
+
+// P1c: scheda collaboratore in sola lettura (da Personale, toccando la riga)
+let _schedaOpTok=0;
+async function apriSchedaOp(id){
+  if(!puoAprire('personale'))return;
+  const o=(OPERAI_TUTTI||[]).find(x=>x.id===id);
+  if(!o)return;
+  const tok=++_schedaOpTok;
+  const _data=d=>d?new Date(d+'T12:00').toLocaleDateString('it-CH',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  const _riga=(lbl,val)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'
+    +'<span style="color:var(--t2);flex-shrink:0">'+lbl+'</span><span style="font-weight:600;text-align:right;word-break:break-word">'+(val||'—')+'</span></div>';
+  document.getElementById('scheda-op-t').textContent=(o.nome||'')+' '+(o.cognome||'');
+  document.getElementById('scheda-op-dati').innerHTML=
+    _riga('Mestiere',escHtml(o.ruolo))
+    +_riga('Email',escHtml(o.email))
+    +_riga('Telefono',escHtml(o.telefono))
+    +_riga('Inizio rapporto',_data(o.data_assunzione))
+    +_riga('Fine rapporto',o.data_fine_rapporto?_data(o.data_fine_rapporto):'— (attivo)')
+    +_riga('Note',escHtml(o.note));
+  document.getElementById('scheda-op-mod').onclick=function(){closeModal('mod-op-scheda');openModalOp(id);};
+  const docsEl=document.getElementById('scheda-op-docs');
+  docsEl.innerHTML='<div style="font-size:12px;color:var(--t2)">Caricamento…</div>';
+  openModal('mod-op-scheda');
+  try{
+    const{data:docs,error}=await sb.from('documenti_operai').select('tipo,scadenza,note').eq('operaio_id',id).order('scadenza',{ascending:true,nullsFirst:false});
+    if(error)throw error;
+    if(tok!==_schedaOpTok)return; // nel frattempo e' stata aperta un'altra scheda
+    if(!docs||!docs.length){docsEl.innerHTML='<div style="font-size:12px;color:var(--t2);padding:4px 0">Nessun documento registrato</div>';return;}
+    const oggi=new Date().toISOString().split('T')[0];
+    const tra30=new Date(Date.now()+30*24*60*60*1000).toISOString().split('T')[0];
+    docsEl.innerHTML=docs.map(function(d){
+      let badge='';
+      if(d.scadenza&&d.scadenza<oggi)badge='<span style="font-size:10px;background:var(--red);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">⚠️ SCADUTO</span>';
+      else if(d.scadenza&&d.scadenza<=tra30)badge='<span style="font-size:10px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">⚠️ IN SCADENZA</span>';
+      return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:13px;font-weight:600">'+escHtml(d.tipo)+badge+'</div>'
+        +'<div style="font-size:11px;color:var(--t2)">'+(d.scadenza?'Scadenza: '+_data(d.scadenza):'Nessuna scadenza')+'</div>'
+        +(d.note?'<div style="font-size:11px;color:var(--t2)">'+escHtml(d.note)+'</div>':'')
+        +'</div>';
+    }).join('');
+  }catch(e){
+    if(tok===_schedaOpTok)docsEl.innerHTML='<div style="font-size:12px;color:var(--red)">Errore nel caricare i documenti: '+escHtml(e.message)+'</div>';
+  }
 }
 
 async function resetPasswordOperaio(email){
