@@ -1091,6 +1091,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <label class="fl" style="margin:0;white-space:nowrap">Data:</label>
       <input type="date" id="conferma-ore-data" class="fi" style="flex:1" onchange="renderConfermaOre()">
     </div>
+    <div id="conferma-voci-nuove"></div>
     <div id="conferma-ore-content">
       <div class="empty"><div class="spin" style="margin:0 auto"></div></div>
     </div>
@@ -1257,19 +1258,20 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   </div>
 </div>
 
-<div class="ov" id="mod-import">
+<div class="ov" id="mod-incolla-prev">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" data-i18n="modal_importa_prev">📥 Importa voci dal preventivo</div>
-    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">Carica il file <strong>CT_Preventivatore_v3_GRANDE.xlsx</strong>. Le voci del foglio OFFERTA diventano automaticamente le lavorazioni selezionabili per questo cantiere.</p>
-    <div class="import-box" onclick="document.getElementById('xlsx-inp').click()">
-      <div style="font-size:36px">📊</div>
-      <p data-i18n="txt_importa_drop">Tocca per selezionare il file Excel del preventivo</p>
-    </div>
-    <input type="file" id="xlsx-inp" accept=".xlsx,.xls" style="display:none" onchange="importPreventivo(event)">
-    <div id="import-status" style="margin-top:12px;font-size:13px;color:var(--t2)"></div>
+    <div class="mod-t">📋 Incolla voci del preventivo</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6">In Excel seleziona le righe dell'offerta (colonne <strong>codice · testo · unità · quantità</strong>, oppure <strong>testo · unità · quantità</strong>), copia e incolla qui sotto. Poi tocca <strong>Analizza</strong> e controlla l'anteprima prima di salvare.</p>
+    <textarea class="ft" id="p2-testo" placeholder="Incolla qui le righe copiate da Excel…" style="min-height:140px;font-family:'DM Mono',monospace;font-size:12px"></textarea>
+    <button class="btn btn-s" style="margin-top:8px" onclick="p2AnalizzaIncolla()">🔍 Analizza</button>
+    <div id="p2-anteprima" style="margin-top:12px"></div>
     <hr>
-    <button class="btn btn-s" onclick="closeModal('mod-import')" data-i18n="btn_chiudi">Chiudi</button>
+    <p style="font-size:11px;color:var(--t3);margin-bottom:8px">Salvare non cancella mai niente: le voci tolte dal preventivo vengono archiviate e le ore già registrate restano.</p>
+    <div class="row2">
+      <button class="btn btn-s" onclick="closeModal('mod-incolla-prev')">Chiudi</button>
+      <button class="btn btn-g" id="p2-salva" onclick="p2SalvaIncolla()" disabled>💾 Salva voci</button>
+    </div>
   </div>
 </div>
 
@@ -1983,6 +1985,16 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <p style="font-size:13px;color:var(--t2);margin-bottom:12px" data-i18n="txt_sel_lav_sub">Seleziona una o più lavorazioni svolte.</p>
     <input type="text" class="fi" id="lav-multi-search" placeholder="🔍 Cerca lavorazione..." oninput="filtraLavMulti()" style="margin-bottom:10px">
     <div id="lav-multi-lista" style="margin-bottom:14px;max-height:45vh;overflow-y:auto"></div>
+    <div id="p2-libera-form" style="display:none;background:var(--s2);border:1px dashed var(--border);border-radius:var(--rsm);padding:12px;margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px;font-weight:700">➕ Voce libera</div>
+      <div class="fg"><label class="fl">Lavoro svolto</label><input type="text" class="fi" id="p2-lib-testo" placeholder="es. Smontaggio vecchia grondaia" autocomplete="off"></div>
+      <div class="row2">
+        <div class="fg"><label class="fl">Unità</label><select class="fs" id="p2-lib-um"><option value="pz">pz</option><option value="ml">ml</option><option value="m²">m²</option><option value="m³">m³</option><option value="h" selected>h</option><option value="a corpo">a corpo</option></select></div>
+        <div class="fg"><label class="fl">Quantità</label><input type="number" class="fi" id="p2-lib-qty" min="0" step="0.01" placeholder="—" style="font-family:'DM Mono',monospace"></div>
+      </div>
+      <button class="btn btn-g" onclick="p2AggiungiLibera()">➕ Aggiungi voce libera</button>
+    </div>
+    <datalist id="p2-um-list"><option value="pz"><option value="ml"><option value="m²"><option value="m³"><option value="h"><option value="a corpo"></datalist>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-lav-multi')" data-i18n="btn_annulla">Annulla</button>
       <button class="btn btn-g" onclick="confermaSelezioneMulti()" data-i18n="btn_aggiungi_sel">✓ Aggiungi selezionate</button>
@@ -1992,7 +2004,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='1c';
+const APP_VERSIONE='2';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4192,10 +4204,17 @@ async function loadOperai(){
     OPERAI_TUTTI=[];OPERAI=[];
   }
 }
+// P2: solo le voci di questo cantiere (preventivo + libere), non archiviate.
+// Le voci generali (cantiere_id vuoto) restano nel database ma non si propongono piu'.
 async function loadLavs(cantId){
-  const {data:lavC}=await sb.from('lavorazioni').select('*').eq('cantiere_id',cantId).order('categoria,nome');
-  const {data:lavG}=await sb.from('lavorazioni').select('*').is('cantiere_id',null).order('categoria,nome');
-  LAVS=[...(lavC||[]),...(lavG||[])];
+  let{data,error}=await sb.from('lavorazioni').select('*').eq('cantiere_id',cantId).eq('archiviata',false);
+  if(error){
+    // colonna "archiviata" assente = SQL del passaggio 2 non ancora eseguito
+    console.warn('loadLavs:',error.message);
+    ({data,error}=await sb.from('lavorazioni').select('*').eq('cantiere_id',cantId));
+    if(error){console.warn('loadLavs:',error.message);LAVS=[];return;}
+  }
+  LAVS=_p2OrdinaLavs(data||[]);
 }
 async function loadImpostazioni(){
   const cached=localStorage.getItem('ct_impostazioni');
@@ -4341,7 +4360,7 @@ async function renderCantiere(){
       </div>`:''}
       <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">${t('btn_nuova_giornata')}</button>
       <div class="row2" style="margin-bottom:8px">
-        <button class="btn btn-s" onclick="openModalImport()">📊 ${prev?t('btn_aggiorna_prev'):t('btn_carica_prev')}</button>
+        ${['titolare','responsabile'].includes(_ruoloApp())?'<button class="btn btn-s" onclick="apriIncollaPreventivo()">📋 Incolla voci del preventivo</button>':''}
         <button class="btn btn-s" onclick="exportCantiere()">${t('btn_esporta_dati')}</button>
       </div>
       <div class="row2" style="margin-bottom:8px">
@@ -4830,14 +4849,14 @@ function mgRenderVoci(voci){
     return;
   }
   // Costruisce opzioni lavorazioni
-  const cats={};
-  LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
-  const opts='<option value="">— Lavorazione —</option>'+
-    Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+
+  // P2: le voci gia' usate ma non piu' in elenco (generali, archiviate) restano selezionate
+  const _p2Extra=[];
+  voci.forEach(v=>{if(v.lavorazione_id&&!LAVS.some(l=>l.id===v.lavorazione_id)&&!_p2Extra.some(x=>x.id===v.lavorazione_id))_p2Extra.push({id:v.lavorazione_id,nome:v.lavorazioni?.nome||v.lavorazione_nome});});
+  const opts='<option value="">— Lavorazione —</option>'+_p2OpzioniLav(_p2Extra)+
     '<option value="__nuova__">✏️ Voce libera...</option>';
   el.innerHTML=voci.map((v,i)=>{
     const lavNome=v.lavorazioni?.nome||v.lavorazione_nome||'Voce libera';
-    return `<div class="voce-row" id="mgv-${i}" data-vid="${v.id||''}">
+    return `<div class="voce-row" id="mgv-${i}" data-vid="${v.id||''}" data-orig-nome="${!v.lavorazione_id?escHtml(lavNome):''}" data-orig-lav-id="${v.lavorazione_id||''}" data-orig-lav-nome="${escHtml(v.lavorazione_nome||v.lavorazioni?.nome||'')}">
       <div class="voce-top">
         <select class="voce-sel" onchange="mgOnChangeVoce(this,${i})">${opts}</select>
         <button class="voce-del" onclick="mgEliminaVoce(${i},'${v.id||''}')">✕</button>
@@ -4890,10 +4909,7 @@ function mgAggiungiVoce(){
   // Voce vuota temporanea
   const tmpVoce={id:'',lavorazione_id:null,lavorazione_nome:'',ore:0,quantita:null,um:'h',lavorazioni:null};
   const vociAttuali=[...el.querySelectorAll('.voce-row')].length;
-  const cats={};
-  LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
-  const opts='<option value="">— Lavorazione —</option>'+
-    Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+
+  const opts='<option value="">— Lavorazione —</option>'+_p2OpzioniLav()+
     '<option value="__nuova__">✏️ Voce libera...</option>';
   const idx=vociAttuali;
   const div=document.createElement('div');
@@ -4939,6 +4955,7 @@ async function salvaModificaGiornata(){
     mgVociEliminate=[];
     // 2. Aggiorna/inserisci voci presenti nel modal
     const mgRighe=[...document.querySelectorAll('#mg-voci-list .voce-row')];
+    let _p2DaConfMg=0,_p2KoMg=false;
     for(const row of mgRighe){
       const vid=row.dataset.vid||'';
       const sel=row.querySelector('.voce-sel');
@@ -4949,10 +4966,17 @@ async function salvaModificaGiornata(){
       const isNuova=sel?.value==='__nuova__'||!sel?.value;
       const nomeLav=isNuova?row.querySelector('.nuova-voce-nome')?.value?.trim()||null:null;
       const lav=LAVS.find(l=>l.id===sel?.value);
+      // P2: voce libera nuova o modificata → voce del cantiere; quelle vecchie invariate restano come sono
+      let _p2LavId=isNuova?null:(sel?.value||null);
+      let _p2LavNome=isNuova?nomeLav:(lav?.nome||(sel?.value&&sel.value===row.dataset.origLavId?(row.dataset.origLavNome||null):null));
+      if(isNuova&&nomeLav&&nomeLav!==(row.dataset.origNome||'')){
+        const lib=await _p2VoceLibera(g.cantiere_id,nomeLav,um||'h');
+        if(lib){_p2LavId=lib.id;_p2LavNome=lib.nome;if(lib.nuova&&lib.daConfermare)_p2DaConfMg++;}else _p2KoMg=true;
+      }
       const payload={
         giornata_id:modificaGid,
-        lavorazione_id:isNuova?null:(sel?.value||null),
-        lavorazione_nome:isNuova?nomeLav:(lav?.nome||null),
+        lavorazione_id:_p2LavId,
+        lavorazione_nome:_p2LavNome,
         ore:oreVal,
         quantita:qty,
         um:um||lav?.um||'h',
@@ -4963,6 +4987,8 @@ async function salvaModificaGiornata(){
         await sb.from('voci_lavoro').insert(payload);
       }
     }
+    if(_p2DaConfMg)_p2AvvisaCapisquadra(_p2DaConfMg,CANTIERI.find(c=>c.id===g.cantiere_id)?.nome);
+    if(curCant&&curCant.id===g.cantiere_id)await loadLavs(g.cantiere_id);
     if(mgFotoFiles.length){
       const cant=CANTIERI.find(c=>c.id===g.cantiere_id);
       const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
@@ -4978,6 +5004,7 @@ async function salvaModificaGiornata(){
     }
     logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
 closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
+    if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
   }catch(err){showToast('Errore: '+err.message,'e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
 }
@@ -5381,10 +5408,9 @@ function checkVociWarn(){
   document.getElementById('g2-warn').classList.toggle('on',somma>ore+0.1);
 }
 function addVoce2(lavId='',ore='',qty='',um=''){
-  const cats={};LAVS.forEach(l=>{if(!cats[l.categoria])cats[l.categoria]=[];cats[l.categoria].push(l);});
-  const opts='<option value="">— Seleziona lavorazione —</option>'+Object.entries(cats).map(([cat,ls])=>`<optgroup label="${cat}">${ls.map(l=>`<option value="${l.id}">${l.nome} (${l.um||'h'})</option>`).join('')}</optgroup>`).join('')+'<option value="__nuova__">✏️ Nuova voce libera...</option>';
+  const opts='<option value="">— Seleziona lavorazione —</option>'+_p2OpzioniLav()+'<option value="__nuova__">✏️ Nuova voce libera...</option>';
   const div=document.createElement('div');div.className='voce-row';
-  div.innerHTML=`<div class="voce-top"><select class="voce-sel" onchange="onChangeVoce(this)">${opts}</select><button class="voce-del" onclick="this.closest('.voce-row').remove();checkVociWarn()">✕</button></div><div class="nuova-voce-wrap" style="display:none;margin-bottom:8px"><input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px"></div><div class="voce-nums"><div><span class="vlbl">Ore lavorate</span><input type="number" class="vnum voce-ore-inp" placeholder="0.00" min="0" max="16" step="0.25" value="${ore||''}" oninput="checkVociWarn()"></div><div><span class="vlbl">Quantità (facoltativo)</span><div style="display:flex;gap:4px"><input type="number" class="vnum qty voce-qty-inp" placeholder="—" min="0" step="0.01" value="${qty||''}" style="flex:1"><input type="text" class="vnum voce-um-inp" placeholder="um" value="${um||''}" style="width:44px;font-size:11px"></div></div></div>`;
+  div.innerHTML=`<div class="voce-top"><select class="voce-sel" onchange="onChangeVoce(this)">${opts}</select><button class="voce-del" onclick="this.closest('.voce-row').remove();checkVociWarn()">✕</button></div><div class="nuova-voce-wrap" style="display:none;margin-bottom:8px"><input type="text" class="fi nuova-voce-nome" placeholder="Nome lavorazione..." style="font-size:13px;padding:8px 12px"></div><div class="voce-nums"><div><span class="vlbl">Ore lavorate</span><input type="number" class="vnum voce-ore-inp" placeholder="0.00" min="0" max="16" step="0.25" value="${ore||''}" oninput="checkVociWarn()"></div><div><span class="vlbl">Quantità (facoltativo)</span><div style="display:flex;gap:4px"><input type="number" class="vnum qty voce-qty-inp" placeholder="—" min="0" step="0.01" value="${qty||''}" style="flex:1"><input type="text" class="vnum voce-um-inp" list="p2-um-list" placeholder="um" value="${um||''}" style="width:44px;font-size:11px"></div></div></div>`;
   const sel=div.querySelector('.voce-sel');if(lavId)sel.value=lavId;
   if(lavId==='__nuova__'){const wrap=div.querySelector('.nuova-voce-wrap');if(wrap)wrap.style.display='block';}
   document.getElementById('g2-voci').appendChild(div);
@@ -5414,7 +5440,16 @@ async function salvaOperaio(){
       const lav=LAVS.find(l=>l.id===sel.value);
       return {giornata_id:newG.id,lavorazione_id:isNuova?null:sel.value||null,lavorazione_nome:isNuova?nomeLav:(lav?.nome||null),ore:oreV,quantita:qty,um:um||lav?.um||null};
     }).filter(Boolean);
-    if(vociRows.length)await sb.from('voci_lavoro').insert(vociRows);
+    // P2: le voci libere diventano voci del cantiere (riusabili); l'operaio le crea "da confermare"
+    let _p2DaConf=0,_p2Ko=false,_p2Nuove=0,_p2ErrVoci='';
+    for(const v of vociRows){
+      if(v.lavorazione_id||!v.lavorazione_nome)continue;
+      const lib=await _p2VoceLibera(GIO.cantId,v.lavorazione_nome,v.um);
+      if(lib){v.lavorazione_id=lib.id;v.lavorazione_nome=lib.nome;if(lib.nuova){_p2Nuove++;if(lib.daConfermare)_p2DaConf++;}}else _p2Ko=true;
+    }
+    if(vociRows.length){const{error:_ve}=await sb.from('voci_lavoro').insert(vociRows);if(_ve)_p2ErrVoci=_ve.message;}
+    if(_p2DaConf)_p2AvvisaCapisquadra(_p2DaConf,curCant?.nome);
+    if(_p2Nuove)await loadLavs(GIO.cantId);
     if(GIO.mat&&GIO.operaiSalvati.length===0)await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id});
     for(const file of fFiles){
       const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
@@ -5445,6 +5480,8 @@ async function salvaOperaio(){
     ['g2-reg-desc','g2-reg-qty','g2-reg-prezzo'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
     const _rum=document.getElementById('g2-reg-um');if(_rum)_rum.value='h';
     fFiles=[];fB64=[];showToast((op?.nome||'')+t('lbl_salvato_op'));
+    if(_p2ErrVoci)showToast('Attenzione: giornata salvata ma i lavori svolti NON sono stati salvati ('+_p2ErrVoci+'). Aprila con ✏️ e reinseriscili.','e');
+    else if(_p2Ko)showToast('Salvato. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Salva operaio';btn.disabled=false;}
 }
@@ -5454,36 +5491,317 @@ function toggleRegiaOp(){
 }
 function chiudiGiornata(){if(GIO.operaiSalvati.length===0&&!confirm(t('conf_nessun_op_esci')))return;goToCantiere();}
 
-// ── IMPORT PREVENTIVO ──
-function openModalImport(){openModal('mod-import');document.getElementById('import-status').textContent='';}
-async function importPreventivo(e){
-  const file=e.target.files[0];if(!file)return;
-  document.getElementById('import-status').textContent='⏳ Lettura del file...';
+// ══════════════════════════════════════════════════
+// P2 — VOCI DAL PREVENTIVO (incolla da Excel) + VOCI LIBERE
+// ══════════════════════════════════════════════════
+// ── P2 funzioni pure (provate con node su _passaggio2/test_import) ──
+// Regole di lettura: parser_riferimento.js del passaggio 2, invariato nella logica.
+function _p2LeggiTSV(t){ // TSV di Excel: celle con a capo arrivano tra virgolette
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"'&&cell==='') q=true;
+    else if(c==='\t'){row.push(cell);cell='';}
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n')i++; row.push(cell);rows.push(row);row=[];cell=''; }
+    else cell+=c; }
+  if(cell!==''||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+function _p2Pulisci(s){return String(s||'').replace(/\s+/g,' ').trim();}
+function _p2Corta(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1).trim()+'…':s;}
+function _p2Unita(u){
+  const x=_p2Pulisci(u).toLowerCase().replace(/^ca\.?\s*/,'').replace(/\.$/,'').trim();
+  const m={'ml':'ml','m2':'m²','m²':'m²','m3':'m³','m³':'m³','pz':'pz','ore':'h','h':'h','a corpo':'a corpo','appros':'a corpo','kg':'kg','t':'t'};
+  return x?(m[x]||x):'';
+}
+function _p2Quantita(q){
+  q=_p2Pulisci(q);if(!q)return{q:null,ev:false};
+  if(/^-+\.?-*$/.test(q))return{q:null,ev:true}; // -----.----- = eventuale
+  const n=parseFloat(q.replace(/'/g,'').replace(',','.'));return{q:isNaN(n)?null:n,ev:false};
+}
+function _p2IsCodice(c){return /^\d+([.,]\d+)?[a-z]?$/i.test(c);}
+function _p2IsMaiuscolo(s){const l=s.replace(/[^A-Za-zÀ-ú]/g,'');const u=l.replace(/[^A-ZÀ-Þ]/g,'');return l.length>=3&&u.length/l.length>=0.6;}
+function _p2Analizza(testo){
+  const rows=_p2LeggiTSV(String(testo||'')).map(r=>r.map(c=>c==null?'':c));
+  const maxCol=rows.length?Math.max(...rows.map(r=>r.length)):0;
+  const conCodice=maxCol>=4; // 4 colonne: codice|testo|unita|quantita ; altrimenti testo|unita|quantita
+  const out=[];let cap=null,testataIntera=null,voce=null;
+  const scarti={note:0,senzaUnita:0,capitoli:0};
+  rows.forEach(r=>{
+    let cod,txt,um,qt;if(conCodice)[cod,txt,um,qt]=[r[0],r[1],r[2],r[3]];else{cod='';[txt,um,qt]=[r[0],r[1],r[2]];}
+    cod=_p2Pulisci(cod);const txtP=_p2Pulisci(txt);const U=_p2Unita(um);const Q=_p2Quantita(qt);
+    if(!cod&&!txtP&&!U)return;
+    // nota N.B.: si scarta il testo; unita'/quantita' eventuali vanno alla voce aperta
+    if(/^n\.?\s?b\.?$/i.test(cod)||/^n\.?\s?b\./i.test(txtP)){scarti.note++;if(voce&&U&&!voce.um){voce.um=U;voce.quantita=Q.q;voce.eventuale=Q.ev;out.push(voce);voce.emessa=true;}return;}
+    // capitolo: senza codice, senza unita', testo maiuscolo; ripetuto a fine capitolo lo chiude
+    if(!cod&&!U&&_p2IsMaiuscolo(txtP)){if(cap===txtP){cap=null;}else{cap=txtP;scarti.capitoli++;}voce=null;testataIntera=null;return;}
+    if(cod==='---'){ // riga figlia della voce/testata aperta
+      if(!voce)return;
+      if(U){out.push({capitolo:cap,codice:voce.codice,testo:txtP,padre:voce.testo,um:U,quantita:Q.q,eventuale:Q.ev||voce.eventuale});voce.haFigli=true;}
+      else{voce.testo+=' '+txtP;}
+      return;}
+    if(_p2IsCodice(cod)||(!conCodice&&txtP)){
+      if(voce&&!voce.emessa&&!voce.haFigli&&!voce.um)scarti.senzaUnita++;
+      const intero=cod.split(/[.,]/)[0];
+      const padre=(cod&&/[.,]/.test(cod)&&testataIntera&&testataIntera.codice===intero)?testataIntera.testo:null;
+      voce={capitolo:cap,codice:cod||null,testo:txtP,padre,um:U||null,quantita:U?Q.q:null,eventuale:Q.ev||/^eventual/i.test(txtP)||/^eventual/i.test(padre||''),haFigli:false,emessa:false};
+      if(!/[.,]/.test(cod))testataIntera={codice:cod,testo:txtP};
+      if(U){out.push(voce);voce.emessa=true;}
+      return;}
+    if(!cod&&voce&&txtP){voce.testo+=' '+txtP;} // continuazione testo
+  });
+  if(voce&&!voce.emessa&&!voce.haFigli&&!voce.um)scarti.senzaUnita++;
+  return{conCodice,voci:out.map((v,i)=>({ordine:i+1,capitolo:v.capitolo,codice:v.codice,testo:v.testo,padre:v.padre,um:v.um,quantita:v.quantita,eventuale:!!v.eventuale})),scarti};
+}
+// Chiave di confronto: codice + testo_padre + testo (minuscolo, spazi normalizzati)
+function _p2Chiave(codice,padre,testo){return [codice,padre,testo].map(x=>_p2Pulisci(x).toLowerCase()).join('|');}
+// Nome breve usato nel resto dell'app: codice + testata accorciata + testo, max 160 caratteri
+function _p2Nome(v){
+  const n=[v.codice||'',v.padre?_p2Corta(v.padre,50)+' ›':'',v.testo||''].filter(Boolean).join(' ');
+  return _p2Corta(n,160);
+}
+// Unione: mai cancellare. Presente → aggiorna; nuova → inserisci; tolta dal preventivo → archivia.
+// Le voci libere non si toccano.
+function _p2PianoUnione(esistenti,voci,cantId){
+  const prevEsist=(esistenti||[]).filter(l=>(l.origine||'preventivo')==='preventivo');
+  const code={};
+  prevEsist.slice().sort((a,b)=>(a.archiviata?1:0)-(b.archiviata?1:0)).forEach(l=>{
+    const k=_p2Chiave(l.codice,l.testo_padre,l.testo_completo);(code[k]=code[k]||[]).push(l);
+  });
+  const aggiorna=[],inserisci=[],usati=new Set();
+  (voci||[]).forEach(v=>{
+    const campi={categoria:v.capitolo||null,ordine:v.ordine,um:v.um,quantita_prevista:v.quantita,eventuale:!!v.eventuale,archiviata:false};
+    const l=(code[_p2Chiave(v.codice,v.padre,v.testo)]||[]).shift();
+    if(l){usati.add(l.id);aggiorna.push({id:l.id,campi});}
+    else inserisci.push(Object.assign({cantiere_id:cantId,codice:v.codice,nome:_p2Nome(v),testo_padre:v.padre,testo_completo:v.testo},campi,{origine:'preventivo',stato:'confermata'}));
+  });
+  const archivia=prevEsist.filter(l=>!l.archiviata&&!usati.has(l.id)).map(l=>l.id);
+  return{aggiorna,inserisci,archivia};
+}
+// Ordine nella scelta: voci del preventivo per "ordine", poi le libere per data
+function _p2OrdinaLavs(ls){
+  const num=x=>(x===null||x===undefined)?1e9:x;
+  const prev=ls.filter(l=>l.origine!=='libera').sort((a,b)=>(num(a.ordine)-num(b.ordine))||String(a.categoria||'').localeCompare(String(b.categoria||''))||String(a.nome||'').localeCompare(String(b.nome||'')));
+  const lib=ls.filter(l=>l.origine==='libera').sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')));
+  return prev.concat(lib);
+}
+// ── fine P2 funzioni pure ──
+
+// Etichette di testo (mai solo colore): Eventuale, Da confermare
+function _p2Etichette(l,soloTesto){
+  const e=[];if(l.eventuale)e.push('Eventuale');if(l.stato==='da_confermare')e.push('Da confermare');
+  if(!e.length)return '';
+  if(soloTesto)return ' · '+e.join(' · ');
+  return e.map(x=>x==='Eventuale'
+    ?'<span style="font-size:10px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700;white-space:nowrap">Eventuale</span>'
+    :'<span style="font-size:10px;border:1px solid var(--t2);color:var(--t2);padding:0 5px;border-radius:3px;margin-left:6px;font-weight:700;white-space:nowrap">Da confermare</span>').join('');
+}
+// Opzioni delle tendine lavorazioni, raggruppate per capitolo. extra = voci gia' usate non piu' in elenco
+function _p2OpzioniLav(extra){
+  const gruppi=new Map();
+  LAVS.forEach(l=>{const g=l.origine==='libera'?'Voci libere':(l.categoria||'Senza capitolo');if(!gruppi.has(g))gruppi.set(g,[]);gruppi.get(g).push(l);});
+  let h='';
+  gruppi.forEach((ls,g)=>{h+=`<optgroup label="${escHtml(g)}">${ls.map(l=>`<option value="${l.id}">${escHtml(l.nome)} (${escHtml(l.um||'h')})${_p2Etichette(l,true)}</option>`).join('')}</optgroup>`;});
+  if(extra&&extra.length)h+=`<optgroup label="Voci non più in elenco">${extra.map(x=>`<option value="${x.id}">${escHtml(x.nome||'—')}</option>`).join('')}</optgroup>`;
+  return h;
+}
+
+// ── Incolla voci del preventivo (solo titolare e responsabile) ──
+let _p2Analisi=null;
+function apriIncollaPreventivo(){
+  if(!curCant)return;
+  if(!['titolare','responsabile'].includes(_ruoloApp())){showToast('Solo titolare e responsabile','e');return;}
+  document.getElementById('p2-testo').value='';
+  document.getElementById('p2-anteprima').innerHTML='';
+  _p2Analisi=null;document.getElementById('p2-salva').disabled=true;
+  openModal('mod-incolla-prev');
+}
+async function p2AnalizzaIncolla(){
+  const box=document.getElementById('p2-anteprima');
+  const testo=document.getElementById('p2-testo').value;
+  _p2Analisi=null;document.getElementById('p2-salva').disabled=true;
+  if(!curCant)return;
+  if(!testo.trim()){box.innerHTML='<div class="warn on">Incolla prima le righe copiate da Excel.</div>';return;}
+  let r;
+  try{r=_p2Analizza(testo);}catch(e){box.innerHTML='<div class="warn on">Non riesco a leggere il testo: '+escHtml(e.message)+'</div>';return;}
+  if(!r.voci.length){box.innerHTML='<div class="warn on">Nessuna voce trovata. Copia da Excel le colonne codice, testo, unità, quantità (oppure testo, unità, quantità).</div>';return;}
+  box.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
+  const{data:esist,error}=await sb.from('lavorazioni').select('id,codice,testo_padre,testo_completo,origine,archiviata').eq('cantiere_id',curCant.id);
+  if(error){box.innerHTML='<div class="warn on">Errore nel leggere le voci già presenti: '+escHtml(error.message)+'</div>';return;}
+  const piano=_p2PianoUnione(esist||[],r.voci,curCant.id);
+  const nCap=new Set(r.voci.map(v=>v.capitolo)).size;
+  const nEv=r.voci.filter(v=>v.eventuale).length;
+  const fmtQ=q=>q==null?'—':String(q).replace('.',',');
+  let h='<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 12px;font-size:13px;line-height:1.7;margin-bottom:10px">'
+    +'<strong>'+r.voci.length+'</strong> voci trovate · <strong>'+nCap+'</strong> capitoli · <strong>'+nEv+'</strong> eventuali<br>'
+    +'<span style="color:var(--t2)">Righe scartate: '+r.scarti.note+' note · '+r.scarti.senzaUnita+' senza unità</span><br>'
+    +'<span style="color:var(--t2)">Al salvataggio: '+piano.inserisci.length+' nuove · '+piano.aggiorna.length+' aggiornate · '+piano.archivia.length+' archiviate (tolte dal preventivo, le ore restano)</span>'
+    +'</div>';
+  let capCorr;
+  r.voci.forEach((v,i)=>{
+    if(i===0||v.capitolo!==capCorr){capCorr=v.capitolo;h+='<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);padding:10px 0 4px">'+escHtml(v.capitolo||'Senza capitolo')+'</div>';}
+    h+='<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
+      +(v.padre?'<div style="font-size:11px;color:var(--t3)">'+escHtml(_p2Corta(v.padre,90))+'</div>':'')
+      +'<div style="display:flex;gap:8px;align-items:baseline">'
+      +'<span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--gold);flex-shrink:0">'+escHtml(v.codice||'—')+'</span>'
+      +'<span style="flex:1;min-width:0;font-size:13px">'+escHtml(_p2Corta(v.testo,220))+_p2Etichette(v,false)+'</span>'
+      +'<span style="font-family:\'DM Mono\',monospace;font-size:12px;white-space:nowrap">'+fmtQ(v.quantita)+' '+escHtml(v.um||'')+'</span>'
+      +'</div></div>';
+  });
+  box.innerHTML=h;
+  _p2Analisi={cantId:curCant.id,voci:r.voci};
+  document.getElementById('p2-salva').disabled=false;
+}
+async function p2SalvaIncolla(){
+  if(!_p2Analisi||!curCant||_p2Analisi.cantId!==curCant.id)return;
+  const btn=document.getElementById('p2-salva');const txt=btn.textContent;
+  btn.disabled=true;btn.textContent='Salvataggio…';
   try{
-    const data=await file.arrayBuffer();const wb=XLSX.read(data,{type:'array'});
-    const ws=wb.Sheets['OFFERTA'];if(!ws){document.getElementById('import-status').textContent='❌ Foglio OFFERTA non trovato';return;}
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
-    const voci=[];const seen=new Set();
-    rows.forEach(row=>{
-      if(!row||!row[1]||!row[2]||!row[3])return;
-      const pos=String(row[1]||'').trim();const desc=String(row[2]||'').trim();const um=String(row[3]||'').trim();
-      const hc=parseFloat(row[6])||0;const mat=parseFloat(row[5])||0;
-      if(!pos||!desc||pos.includes('NB')||pos.includes('---'))return;if(desc.length<5)return;
-      const key=pos+'|'+desc.substring(0,40);if(seen.has(key))return;seen.add(key);
-      const posNum=parseFloat(pos)||0;
-      let cat='Varie';if(posNum<2)cat='Installazione';else if(posNum<10)cat='Cantiere';else if(posNum<100)cat='Copritetto';else if(posNum<200)cat='Pareti';else if(posNum<400)cat='Finiture interne';else if(posNum<500)cat='Facciata';else if(posNum<700)cat='Carpenteria tetto';else if(posNum<800)cat='Lattoneria';else if(posNum<900)cat='Impermeabilizz.';else if(posNum<1000)cat='Solaio/interno';else cat='Lattoneria';
-      voci.push({codice:pos,nome:`${desc} (${pos})`.substring(0,120),um:um||'h',categoria:cat,h_um_preventivo:hc>0?hc:null,prezzo_mat_preventivo:mat>0?mat:null,cantiere_id:curCant.id});
+    const cantId=_p2Analisi.cantId;
+    // ricalcolo sul dato fresco: se nel frattempo qualcuno ha cambiato le voci, si unisce su quello
+    const{data:esist,error:e0}=await sb.from('lavorazioni').select('id,codice,testo_padre,testo_completo,origine,archiviata').eq('cantiere_id',cantId);
+    if(e0)throw e0;
+    const piano=_p2PianoUnione(esist||[],_p2Analisi.voci,cantId);
+    for(let i=0;i<piano.aggiorna.length;i+=10){
+      const blocco=piano.aggiorna.slice(i,i+10);
+      const ris=await Promise.all(blocco.map(a=>sb.from('lavorazioni').update(a.campi).eq('id',a.id).select('id')));
+      ris.forEach(x=>{if(x.error)throw x.error;if(!x.data||!x.data.length)throw new Error('voce NON aggiornata dal database (0 righe). Riprova: le voci già salvate non si duplicano.');});
+    }
+    for(let i=0;i<piano.inserisci.length;i+=100){
+      const blocco=piano.inserisci.slice(i,i+100);
+      const{data,error}=await sb.from('lavorazioni').insert(blocco).select('id');
+      if(error)throw error;
+      if(!data||data.length!==blocco.length)throw new Error('voci nuove NON salvate dal database. Riprova: le voci già salvate non si duplicano.');
+    }
+    for(let i=0;i<piano.archivia.length;i+=100){
+      const blocco=piano.archivia.slice(i,i+100);
+      const{data,error}=await sb.from('lavorazioni').update({archiviata:true}).in('id',blocco).select('id');
+      if(error)throw error;
+      if(!data||data.length!==blocco.length)throw new Error('voci tolte NON archiviate dal database. Riprova.');
+    }
+    // riepilogo "Preventivo caricato — N voci" nella scheda cantiere (non blocca se fallisce)
+    const{error:pe}=await sb.from('preventivi_cantiere').upsert({cantiere_id:cantId,nome_file:'Voci incollate',n_voci:_p2Analisi.voci.length,created_by:USER.id},{onConflict:'cantiere_id'});
+    if(pe)console.warn('preventivi_cantiere:',pe.message);
+    await loadLavs(cantId);
+    closeModal('mod-incolla-prev');
+    showToast('Voci salvate ✓ '+piano.inserisci.length+' nuove · '+piano.aggiorna.length+' aggiornate · '+piano.archivia.length+' archiviate');
+    renderCantiere();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{btn.disabled=false;btn.textContent=txt;}
+}
+
+// ── Voce libera → riga di lavorazioni del cantiere (origine 'libera'), riusabile i giorni dopo ──
+// Se il database la rifiuta (es. permessi) restituisce null: la voce si salva come prima, solo col nome.
+async function _p2VoceLibera(cantId,testo,um){
+  const tx=_p2Pulisci(testo);if(!tx||!cantId)return null;
+  const gia=LAVS.find(l=>l.cantiere_id===cantId&&l.origine==='libera'&&_p2Pulisci(l.testo_completo||l.nome).toLowerCase()===tx.toLowerCase());
+  if(gia)return{id:gia.id,nome:gia.nome,nuova:false,daConfermare:false};
+  const stato=['titolare','responsabile','caposquadra'].includes(_ruoloApp())?'confermata':'da_confermare';
+  const{data,error}=await sb.from('lavorazioni').insert({cantiere_id:cantId,nome:_p2Corta(tx,160),testo_completo:tx,um:um||'h',origine:'libera',stato}).select('id,nome');
+  if(error||!data||!data.length){console.warn('Voce libera non creata:',error?error.message:'0 righe');return null;}
+  return{id:data[0].id,nome:data[0].nome,nuova:true,daConfermare:stato==='da_confermare'};
+}
+// Avviso nel sistema notifiche: ai capisquadra (se non ce ne sono: responsabile e titolare)
+async function _p2AvvisaCapisquadra(n,cantNome){
+  try{
+    let{data:dest,error}=await sb.from('profili').select('id').eq('ruolo','caposquadra').neq('id',USER.id);
+    if(error)throw error;
+    if(!dest||!dest.length){
+      const r=await sb.from('profili').select('id').in('ruolo',['responsabile','titolare']).neq('id',USER.id);
+      if(r.error)throw r.error;dest=r.data||[];
+    }
+    if(!dest.length)return;
+    const chi=PROF?.nome||USER.email;
+    const testo=chi+' ha aggiunto '+(n===1?'una voce libera':n+' voci libere')+(cantNome?' nel cantiere '+cantNome:'')+'. Controlla in Conferma ore.';
+    // tipo 'piano': valore gia' usato dalle notifiche dell'app
+    const{error:ie}=await sb.from('notifiche').insert(dest.map(p=>({user_id:p.id,mittente_id:USER.id,titolo:'Voce nuova da confermare',testo,letta:false,tipo:'piano'})));
+    if(ie)throw ie;
+  }catch(e){console.warn('Avviso caposquadra non inviato:',e.message);}
+}
+
+// ── Conferma ore: "Voci nuove da confermare" (caposquadra, responsabile, titolare) ──
+async function renderVociDaConfermare(){
+  const box=document.getElementById('conferma-voci-nuove');
+  if(!box)return;
+  if(!['titolare','responsabile','caposquadra'].includes(_ruoloApp())){box.innerHTML='';return;}
+  try{
+    const{data:voci,error}=await sb.from('lavorazioni').select('id,nome,testo_completo,um,cantiere_id,created_at').eq('stato','da_confermare').eq('archiviata',false).order('created_at');
+    if(error)throw error;
+    if(!voci||!voci.length){box.innerHTML='';return;}
+    const{data:ore,error:oe}=await sb.from('voci_lavoro').select('lavorazione_id,ore').in('lavorazione_id',voci.map(v=>v.id));
+    if(oe)throw oe;
+    const orePer={};(ore||[]).forEach(o=>{orePer[o.lavorazione_id]=(orePer[o.lavorazione_id]||0)+parseFloat(o.ore||0);});
+    box.innerHTML='<div class="sec" style="display:flex;align-items:center;gap:8px">Voci nuove da confermare <span style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px">'+voci.length+'</span></div>';
+    voci.forEach(v=>{
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--s1);border:1px solid rgba(224,136,64,.4);border-radius:var(--r);padding:14px;margin-bottom:10px';
+      const cantNome=(CANTIERI.find(c=>c.id===v.cantiere_id)||{}).nome||'';
+      card.innerHTML='<div style="font-size:11px;color:var(--t2);margin-bottom:4px">🏗️ '+escHtml(cantNome)+(v.created_at?' · '+new Date(v.created_at).toLocaleDateString('it-CH'):'')+'</div>'
+        +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">'+escHtml(v.testo_completo||v.nome)+'</div>'
+        +'<div style="font-size:12px;color:var(--t2);margin-bottom:10px">Unità: '+escHtml(v.um||'—')+' · Ore registrate: '+(orePer[v.id]||0).toFixed(2)+'h</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +'<button class="btn btn-g" style="flex:1;font-size:13px;padding:8px" data-a="ok">✓ Conferma</button>'
+        +'<button class="btn btn-s" style="flex:1;font-size:13px;padding:8px" data-a="testo">✏️ Correggi testo</button>'
+        +'<button class="btn btn-s" style="flex:1;font-size:13px;padding:8px" data-a="sposta">↪ Sposta su una voce esistente</button>'
+        +'</div><div class="p2-sposta" style="display:none;margin-top:10px"></div>';
+      card.querySelector('[data-a="ok"]').addEventListener('click',function(){p2ConfermaVoce(v.id,this);});
+      card.querySelector('[data-a="testo"]').addEventListener('click',function(){p2CorreggiVoce(v.id,v.testo_completo||v.nome);});
+      card.querySelector('[data-a="sposta"]').addEventListener('click',function(){p2MostraSposta(v,card.querySelector('.p2-sposta'));});
+      box.appendChild(card);
     });
-    if(!voci.length){document.getElementById('import-status').textContent='❌ '+t('empty_voce_trovata');return;}
-    document.getElementById('import-status').textContent=`⏳ Importo ${voci.length} voci...`;
-    await sb.from('lavorazioni').delete().eq('cantiere_id',curCant.id);
-    for(let i=0;i<voci.length;i+=100){const {error}=await sb.from('lavorazioni').insert(voci.slice(i,i+100));if(error)throw error;}
-    await sb.from('preventivi_cantiere').upsert({cantiere_id:curCant.id,nome_file:file.name,n_voci:voci.length,created_by:USER.id},{onConflict:'cantiere_id'});
-    await loadLavs(curCant.id);
-    document.getElementById('import-status').textContent=`✅ Importate ${voci.length} voci dal preventivo`;
-    showToast(voci.length+t('lbl_voci_importate'));setTimeout(()=>renderCantiere(),800);
-  }catch(err){document.getElementById('import-status').textContent='❌ Errore: '+err.message;}
-  finally{e.target.value='';}
+  }catch(e){box.innerHTML='<div class="warn on" style="margin-bottom:12px">Errore nel caricare le voci da confermare: '+escHtml(e.message)+'</div>';}
+}
+function _p2DopoModificaVoce(){renderVociDaConfermare();if(curCant)loadLavs(curCant.id);}
+async function p2ConfermaVoce(id,btn){
+  if(btn)btn.disabled=true;
+  const{data,error}=await sb.from('lavorazioni').update({stato:'confermata'}).eq('id',id).select('id');
+  if(btn)btn.disabled=false;
+  if(error){showToast('Errore: '+error.message,'e');return;}
+  if(!data||!data.length){showToast('Errore: conferma NON salvata dal database (0 righe)','e');return;}
+  showToast('Voce confermata ✓');_p2DopoModificaVoce();
+}
+async function p2CorreggiVoce(id,attuale){
+  const nuovo=prompt('Correggi il testo della voce:',attuale||'');
+  if(nuovo===null)return;
+  const tx=_p2Pulisci(nuovo);if(!tx){showToast('Il testo non può essere vuoto','e');return;}
+  const{data,error}=await sb.from('lavorazioni').update({nome:_p2Corta(tx,160),testo_completo:tx}).eq('id',id).select('id');
+  if(error){showToast('Errore: '+error.message,'e');return;}
+  if(!data||!data.length){showToast('Errore: correzione NON salvata dal database (0 righe)','e');return;}
+  showToast('Testo corretto ✓');_p2DopoModificaVoce();
+}
+async function p2MostraSposta(v,wrap){
+  if(!wrap)return;
+  if(wrap.style.display==='block'){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  wrap.innerHTML='<div style="font-size:12px;color:var(--t2)">Caricamento…</div>';
+  const{data,error}=await sb.from('lavorazioni').select('*').eq('cantiere_id',v.cantiere_id).eq('archiviata',false).neq('id',v.id);
+  if(error){wrap.innerHTML='<div class="warn on">Errore: '+escHtml(error.message)+'</div>';return;}
+  const ls=_p2OrdinaLavs(data||[]);
+  if(!ls.length){wrap.innerHTML='<div style="font-size:12px;color:var(--t2)">Nessun\'altra voce in questo cantiere.</div>';return;}
+  const sel=document.createElement('select');sel.className='fs';sel.style.marginBottom='8px';
+  sel.innerHTML='<option value="">— Scegli la voce giusta —</option>'+ls.map(l=>'<option value="'+l.id+'">'+escHtml(l.nome)+' ('+escHtml(l.um||'h')+')'+_p2Etichette(l,true)+'</option>').join('');
+  const b=document.createElement('button');b.className='btn btn-g';b.style.cssText='font-size:13px;padding:8px';b.textContent='↪ Sposta le ore e archivia questa voce';
+  b.addEventListener('click',function(){const d=ls.find(l=>l.id===sel.value);p2SpostaVoce(v.id,d,b);});
+  wrap.innerHTML='';wrap.appendChild(sel);wrap.appendChild(b);
+}
+async function p2SpostaVoce(id,dest,btn){
+  if(!dest){showToast('Scegli la voce su cui spostare le ore','e');return;}
+  if(!confirm('Spostare le ore su "'+dest.nome+'"?\n\nLa voce libera verrà archiviata (non cancellata).'))return;
+  if(btn)btn.disabled=true;
+  try{
+    const{data:prima,error:e1}=await sb.from('voci_lavoro').select('id').eq('lavorazione_id',id);
+    if(e1)throw e1;
+    if(prima&&prima.length){
+      const{data:mosse,error:e2}=await sb.from('voci_lavoro').update({lavorazione_id:dest.id,lavorazione_nome:dest.nome}).eq('lavorazione_id',id).select('id');
+      if(e2)throw e2;
+      if(!mosse||mosse.length!==prima.length)throw new Error('ore NON spostate tutte dal database ('+(mosse?mosse.length:0)+' su '+prima.length+'). La voce libera non è stata archiviata.');
+    }
+    const{data:arc,error:e3}=await sb.from('lavorazioni').update({archiviata:true}).eq('id',id).select('id');
+    if(e3)throw e3;
+    if(!arc||!arc.length)throw new Error('ore spostate, ma la voce libera NON è stata archiviata (0 righe). Riprova.');
+    showToast('Ore spostate ✓');_p2DopoModificaVoce();
+  }catch(e){showToast('Errore: '+e.message,'e');}
+  finally{if(btn)btn.disabled=false;}
 }
 
 // ── EXPORT ──
@@ -8057,6 +8375,10 @@ function apriSelezioneMultipla(){
     if(sel.value&&sel.value!=='__nuova__')_lavSelezionate.add(sel.value);
   });
   document.getElementById('lav-multi-search').value='';
+  // P2: form voce libera chiuso e vuoto
+  const _lf=document.getElementById('p2-libera-form');if(_lf)_lf.style.display='none';
+  ['p2-lib-testo','p2-lib-qty'].forEach(function(id){const x=document.getElementById(id);if(x)x.value='';});
+  const _lu=document.getElementById('p2-lib-um');if(_lu)_lu.value='h';
   renderLavMultiLista('');
   openModal('mod-lav-multi');
 }
@@ -8070,25 +8392,24 @@ function renderLavMultiLista(q){
   const ql=q.toLowerCase();
   const el=document.getElementById('lav-multi-lista');
   if(!el)return;
-
-  // Raggruppa per categoria, filtra
-  const cats={};
-  LAVS.filter(l=>!ql||l.nome.toLowerCase().includes(ql)||(l.categoria||'').toLowerCase().includes(ql))
+  // P2: solo voci del cantiere, per capitolo nell'ordine del preventivo; le libere in fondo
+  const srch=document.getElementById('lav-multi-search');if(srch)srch.style.display=LAVS.length?'':'none';
+  const cats=new Map();
+  LAVS.filter(l=>!ql||[l.nome,l.categoria,l.codice,l.testo_padre,l.testo_completo].some(x=>String(x||'').toLowerCase().includes(ql)))
     .forEach(l=>{
-      const cat=l.categoria||'Altre';
-      if(!cats[cat])cats[cat]=[];
-      cats[cat].push(l);
+      const cat=l.origine==='libera'?'Voci libere':(l.categoria||'Senza capitolo');
+      if(!cats.has(cat))cats.set(cat,[]);
+      cats.get(cat).push(l);
     });
 
   el.innerHTML='';
 
-  if(!Object.keys(cats).length){
+  if(LAVS.length&&!cats.size){
     el.innerHTML='<div style="color:var(--t2);font-size:13px;padding:12px;text-align:center">'+t('empty_lav_trovata')+'</div>';
-    return;
   }
 
-  Object.entries(cats).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([cat,lavs])=>{
-    // Header categoria
+  cats.forEach((lavs,cat)=>{
+    // Header capitolo
     const catDiv=document.createElement('div');
     catDiv.style.cssText='font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);padding:10px 0 4px';
     catDiv.textContent=cat;
@@ -8102,9 +8423,12 @@ function renderLavMultiLista(q){
       row.innerHTML='<div style="width:18px;height:18px;border-radius:4px;border:2px solid '+(selezionata?'var(--gold)':'var(--border)')+';background:'+(selezionata?'var(--gold)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
         +(selezionata?'<span style="color:#000;font-size:12px;font-weight:900">✓</span>':'')
         +'</div>'
-        +'<div style="flex:1">'
-        +'<div style="font-size:14px;font-weight:'+(selezionata?'700':'400')+'">'+l.nome+'</div>'
-        +(l.um?'<div style="font-size:11px;color:var(--t2)">'+l.um+'</div>':'')
+        +'<div style="flex:1;min-width:0">'
+        +(l.testo_padre?'<div style="font-size:11px;color:var(--t3)">'+escHtml(_p2Corta(l.testo_padre,90))+'</div>':'')
+        +'<div style="font-size:14px;font-weight:'+(selezionata?'700':'400')+'">'
+        +(l.codice&&l.testo_completo?'<span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--gold);margin-right:6px">'+escHtml(l.codice)+'</span>':'')
+        +escHtml(_p2Corta(l.testo_completo||l.nome,180))+_p2Etichette(l,false)+'</div>'
+        +(l.um?'<div style="font-size:11px;color:var(--t2)">'+escHtml(l.um)+(l.quantita_prevista!=null?' · prev. '+l.quantita_prevista:'')+'</div>':'')
         +'</div>';
       row.addEventListener('click',function(){
         if(_lavSelezionate.has(l.id))_lavSelezionate.delete(l.id);
@@ -8115,24 +8439,36 @@ function renderLavMultiLista(q){
     });
   });
 
-  // Voce libera in fondo
+  // Voce libera in fondo (unica scelta se il cantiere non ha voci)
   const libraRow=document.createElement('div');
   libraRow.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rsm);margin-top:8px;cursor:pointer;background:var(--s2);border:1px dashed var(--border)';
-  libraRow.innerHTML='<div style="font-size:20px">✏️</div><div style="font-size:13px;color:var(--t2)">Aggiungi voce libera (lavoro non in lista)</div>';
+  libraRow.innerHTML='<div style="font-size:20px">➕</div><div style="font-size:13px;color:var(--t2)"><strong>Voce libera</strong> — lavoro non in elenco</div>';
   libraRow.addEventListener('click',function(){
-    closeModal('mod-lav-multi');
-    addVoce2('__nuova__');
+    const f=document.getElementById('p2-libera-form');if(!f)return;
+    f.style.display='block';
+    const tx=document.getElementById('p2-lib-testo');if(tx)tx.focus();
   });
   el.appendChild(libraRow);
 
   // Contatore
-  const cnt=document.getElementById('lav-multi-lista');
   if(_lavSelezionate.size>0){
     const badge=document.createElement('div');
     badge.style.cssText='background:var(--gold);color:#000;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;text-align:center;margin-top:8px';
     badge.textContent=_lavSelezionate.size+' selezionate';
     el.prepend(badge);
   }
+}
+
+// P2: aggiunge una voce libera alla giornata (diventa voce del cantiere al salvataggio dell'operaio)
+function p2AggiungiLibera(){
+  const testo=_p2Pulisci(document.getElementById('p2-lib-testo')?.value);
+  if(!testo){showToast('Scrivi il lavoro svolto','e');return;}
+  const um=document.getElementById('p2-lib-um')?.value||'h';
+  const qty=document.getElementById('p2-lib-qty')?.value||'';
+  if(_lavSelezionate.size)confermaSelezioneMulti();else closeModal('mod-lav-multi');
+  addVoce2('__nuova__','',qty,um);
+  const righe=document.querySelectorAll('#g2-voci .voce-row');
+  const nome=righe[righe.length-1]?.querySelector('.nuova-voce-nome');if(nome)nome.value=testo;
 }
 
 function confermaSelezioneMulti(){
@@ -9817,6 +10153,7 @@ async function aggiornaBadgeMioGiorno(){
 async function renderConfermaOre(){
   const el=document.getElementById('conferma-ore-content');
   if(!el)return;
+  renderVociDaConfermare(); // P2
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const dataInput=document.getElementById('conferma-ore-data');
   const data=dataInput?.value||nowZurich().date;
