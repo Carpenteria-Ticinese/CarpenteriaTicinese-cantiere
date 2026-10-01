@@ -3914,7 +3914,7 @@ async function afterLogin(){
     await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
     verificaColonneGiornate(); // node check — logga SQL in console se colonne mancanti
     const nome=(PROF?.nome||USER.email).split('@')[0];
-    const ruolo=PROF?.ruolo||'caposquadra';
+    const ruolo=_ruoloApp(); // P1-B: ruolo sconosciuto = operaio
     document.getElementById('ubadge').textContent=nome;
     const rb=document.getElementById('rbadge');
     rb.textContent=ruolo;rb.className='rbadge '+(ruolo==='titolare'?'r-tit':'r-cap');
@@ -3925,9 +3925,7 @@ async function afterLogin(){
       const nbMappa=document.getElementById('nb-mappa');if(nbMappa)nbMappa.style.display='flex'; // P26
       const nbPiano=document.getElementById('nb-piano');
       if(nbPiano)nbPiano.style.display='flex';
-      // Titolare: nascondi "Il mio giorno"
-      const nbMioG=document.getElementById('nb-mio-giorno');
-      if(nbMioG)nbMioG.style.display='none';
+      // P1-C: "Il mio giorno" visibile anche al titolare (lavora anche in cantiere)
       const nbPers=document.getElementById('nb-personale');
       if(nbPers)nbPers.style.display='flex';
       const nbPag=document.getElementById('nb-pagamenti');
@@ -3949,6 +3947,7 @@ async function afterLogin(){
       ['nb-giornata','nb-spese','nb-situazione','nb-report','nb-contabilita','nb-bolle','nb-gru'].forEach(function(id){
         const el=document.getElementById(id);if(el)el.style.display='none';
       });
+      applicaMenuRuolo(); // P1-B
       document.getElementById('loading').style.display='none';
       document.getElementById('login').classList.remove('on');
       document.getElementById('app').classList.add('on');
@@ -3958,8 +3957,8 @@ async function afterLogin(){
       return;
     }
     aggiornaBadgeMagazzino();aggiornaBadgeNotifiche();aggiornaBadgeMioGiorno();
-    // Caposquadra: nascondi sezioni economiche
-    if(ruolo==='caposquadra'){
+    // Caposquadra e operaio: nascondi sezioni economiche (classe CSS)
+    if(ruolo==='caposquadra'||ruolo==='operaio'){
       document.getElementById('app').classList.add('is-capo');
     }
     // Caposquadra e responsabile: mostra conferma ore
@@ -3967,6 +3966,7 @@ async function afterLogin(){
       const nbConfOre=document.getElementById('nb-conferma-ore');
       if(nbConfOre)nbConfOre.style.display='flex';
     }
+    applicaMenuRuolo(); // P1-B: ultima parola sul menu, dopo tutte le regole sopra
     document.getElementById('loading').style.display='none';
     document.getElementById('login').classList.remove('on');
     document.getElementById('app').classList.add('on');
@@ -4151,13 +4151,18 @@ async function verificaOreContrattuali(){
     console.groupEnd();
   }
 }
+// P1-A: una persona e' attiva se non e' stata rimossa (attivo=false)
+// e non ha una fine rapporto gia' passata. Unico punto di verita'.
+function _opAttivo(o,giorno){
+  const g=giorno||new Date().toISOString().split('T')[0];
+  return o.attivo!==false&&(!o.data_fine_rapporto||o.data_fine_rapporto>=g);
+}
 async function loadOperai(){
   try{
-    const oggi=new Date().toISOString().split('T')[0];
     const{data,error}=await sb.from('operai').select('*').order('cognome');
     if(error)throw error;
     OPERAI_TUTTI=data||[];
-    OPERAI=OPERAI_TUTTI.filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=oggi);
+    OPERAI=OPERAI_TUTTI.filter(o=>_opAttivo(o));
   }catch(e){
     console.warn('Errore loadOperai:',e.message);
     OPERAI_TUTTI=[];OPERAI=[];
@@ -5592,7 +5597,7 @@ async function renderAdmin(){
   _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${c.nome}</div><div style="font-size:12px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
   const oggi_adm=new Date().toISOString().split('T')[0];
   _admo.innerHTML=OPERAI_TUTTI.map(o=>{
-    const exAt=o.data_fine_rapporto&&o.data_fine_rapporto<oggi_adm;
+    const exAt=!_opAttivo(o,oggi_adm);
     return `<div style="background:var(--s1);border:1px solid ${exAt?'rgba(224,85,85,.2)':'var(--border)'};border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:${exAt?'.65':'1'}">
       <div>
         <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}</div>
@@ -5707,17 +5712,42 @@ async function saveOp(){
       agenzia:isAgenzia,
       nome_agenzia:isAgenzia?(document.getElementById('o-nome-agenzia')?.value.trim()||null):null
     };
+    // P1-A: fine rapporto vuota = persona attiva (serve anche a riattivare un rimosso);
+    // fine gia' passata = non attiva; fine oggi o futura = stato invariato.
+    const _oggiOp=new Date().toISOString().split('T')[0];
+    if(!fine)p.attivo=true;else if(fine<_oggiOp)p.attivo=false;
     if(editOid){
-      const{error}=await sb.from('operai').update(p).eq('id',editOid);
+      // P1-A: .select() restituisce le righe davvero modificate.
+      // Zero righe = il database non ha salvato: lo diciamo invece di scrivere "Salvato".
+      const{data:_upd,error}=await sb.from('operai').update(p).eq('id',editOid).select('id');
       if(error)throw error;
+      if(!_upd||!_upd.length)throw new Error('modifica NON salvata dal database (0 righe). Esci, rientra e riprova; se si ripete, segnalalo.');
     }else{
-      const{error}=await sb.from('operai').insert(p);
+      const{data:_ins,error}=await sb.from('operai').insert(p).select('id');
       if(error)throw error;
+      if(!_ins||!_ins.length)throw new Error('collaboratore NON salvato dal database. Riprova.');
     }
     await loadOperai();closeModal('mod-op');renderPersonale();showToast(t('toast_salvato'));
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
-async function deleteOp(id){if(!confirm(t('conf_rimuovere')))return;await sb.from('operai').update({attivo:false}).eq('id',id);await loadOperai();closeModal('mod-op');renderAdmin();}
+// P1-A: "Rimuovi" non cancella: segna la persona come non attiva e mette la fine
+// rapporto a oggi (se non ce n'era una). Ore, foto e storico restano collegati.
+// Per riattivarla: Modifica → svuota "Fine rapporto" → Salva.
+async function deleteOp(id){
+  if(!confirm('Rimuovere questa persona?\n\nNon comparirà più negli elenchi. Le sue ore e il suo storico restano.\nPer riattivarla: Modifica → svuota "Fine rapporto" → Salva.'))return;
+  try{
+    const o=(OPERAI_TUTTI||[]).find(x=>x.id===id);
+    const oggi=new Date().toISOString().split('T')[0];
+    const upd={attivo:false};
+    if(!o||!o.data_fine_rapporto||o.data_fine_rapporto>oggi)upd.data_fine_rapporto=oggi;
+    const{data:_r,error}=await sb.from('operai').update(upd).eq('id',id).select('id');
+    if(error)throw error;
+    if(!_r||!_r.length)throw new Error('rimozione NON salvata dal database (0 righe).');
+    await loadOperai();closeModal('mod-op');
+    if(document.getElementById('scr-personale')?.classList.contains('on'))renderPersonale();else renderAdmin();
+    showToast('Rimosso ✓ — lo storico resta');
+  }catch(e){showToast('Errore: '+e.message,'e');}
+}
 
 // ── DOCUMENTI OPERAI ──
 async function renderDocumentiOp(operaioId){
@@ -5777,6 +5807,7 @@ function openModal(id){
   const ov=document.getElementById(id);
   if(!ov)return;
   ov.classList.add('on');
+  _armaIndietro(); // P1-D: indietro chiude la finestra invece di uscire
   document.body.style.overflow='hidden';
   // Aggiungi X se non c'è già
   const mod=ov.querySelector('.mod');
@@ -6593,11 +6624,65 @@ async function salvaImpostazioniFoto(){
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 
+// ── P1-B: MENU PER RUOLO ──
+// Unica tabella che decide cosa vede ogni ruolo. '*' = tutto.
+// Ruolo mancante o sconosciuto = 'operaio' (il minimo), MAI di piu'.
+// Responsabile (vice): tutto tranne Report (stipendi), Contabilita' (costo orario)
+// e Admin (tariffa e impostazioni).
+const MENU_RUOLO={
+  titolare:'*',
+  responsabile:['home','nuova','spese','situazione','mio-giorno','conferma-ore','bolle','piano','personale','pagamenti','mappa','gru','notifiche','magazzino','ore','ricerca'],
+  caposquadra:['home','nuova','spese','mio-giorno','conferma-ore','bolle','gru','notifiche','ore','ricerca'],
+  operaio:['home','nuova','spese','mio-giorno','bolle','notifiche','ore','ricerca'],
+  magazziniere:['home','magazzino','notifiche','mio-giorno','ore','ricerca']
+};
+// Schermate senza tasto proprio: seguono il permesso della schermata madre
+const MENU_PADRE={'report-avanzato':'report','impostazioni':'admin','permessi':'admin'};
+const MENU_TASTI={home:'nb-home',nuova:'nb-giornata',spese:'nb-spese',situazione:'nb-situazione',report:'nb-report',contabilita:'nb-contabilita','mio-giorno':'nb-mio-giorno','conferma-ore':'nb-conferma-ore',bolle:'nb-bolle',piano:'nb-piano',personale:'nb-personale',pagamenti:'nb-pagamenti',mappa:'nb-mappa',admin:'nb-admin',gru:'nb-gru',notifiche:'nb-notifiche',magazzino:'nb-magazzino',ore:'nb-ore'};
+function _ruoloApp(){const r=PROF&&PROF.ruolo;return MENU_RUOLO[r]?r:'operaio';}
+function puoAprire(dest){
+  const m=MENU_RUOLO[_ruoloApp()];
+  if(m==='*')return true;
+  return m.includes(MENU_PADRE[dest]||dest);
+}
+function applicaMenuRuolo(){
+  Object.keys(MENU_TASTI).forEach(function(dest){
+    const el=document.getElementById(MENU_TASTI[dest]);
+    if(el)el.style.display=puoAprire(dest)?'flex':'none';
+  });
+}
+
 // ── NAVIGAZIONE INDIETRO ──
 let _navHistory=[];
 
+// P1-D: il tasto indietro del mouse/browser/telefono passa da qui.
+// Tecnica a "voce di guardia": teniamo sempre UNA voce in piu' nella cronologia
+// del browser. Quando l'utente preme indietro il browser la consuma, noi
+// eseguiamo l'indietro dell'app e, se non siamo alla Home, la rimettiamo.
+// Alla Home senza finestre aperte non la rimettiamo: un altro indietro esce.
+function _armaIndietro(){
+  try{if(!(history.state&&history.state.ctGuard))history.pushState({ctGuard:1},'');}catch(e){}
+}
+window.addEventListener('popstate',function(){
+  if(!document.getElementById('app')?.classList.contains('on'))return; // non loggato
+  // 1. finestra aperta → si chiude solo quella
+  const ov=document.querySelector('.ov.on');
+  if(ov){closeModal(ov.id);_armaIndietro();return;}
+  // 2. dentro una giornata in compilazione → chiedere prima di uscire
+  const inGiornata=['scr-giornata-1','scr-giornata-2'].some(function(id){return document.getElementById(id)?.classList.contains('on');});
+  if(inGiornata){
+    if(confirm('Uscire dalla giornata? I dati non ancora salvati si perdono.'))goToCantiere();
+    _armaIndietro();return;
+  }
+  // 3. alla Home → nessuna azione: il prossimo indietro esce dall'app
+  if(document.getElementById('scr-home')?.classList.contains('on')&&_navHistory.length<=1)return;
+  // 4. altrimenti → schermata precedente dell'app
+  goBack();_armaIndietro();
+});
+
 function pushNav(dest){
   if(_navHistory[_navHistory.length-1]!==dest)_navHistory.push(dest);
+  if(dest!=='home')_armaIndietro();
   const btn=document.getElementById('btn-back');
   if(btn)btn.style.display=_navHistory.length>1?'block':'none';
 }
@@ -6608,14 +6693,14 @@ function goBack(){
   const prev=_navHistory[_navHistory.length-1];
   _navHistory.pop();
   if(prev==='home'||!prev)goHome();
-  else if(prev==='cantiere'&&curCant)goToCantiere();
+  else if((prev==='cantiere'||prev==='giornata-1')&&curCant)goToCantiere(); // P1-D
+  else if(!puoAprire(prev))goHome(); // P1-D: mai verso una schermata non permessa
   else navTo(prev);
 }
 
 function navTo(dest){
-  // Caposquadra: blocca accesso a sezioni economiche
-  const ruolo=PROF?.ruolo||'caposquadra';
-  if(ruolo==='caposquadra'&&['contabilita','situazione','report','admin'].includes(dest)){
+  // P1-B: un solo controllo per tutti i ruoli, dalla tabella MENU_RUOLO
+  if(!puoAprire(dest)){
     showToast('Sezione non accessibile','e');
     return;
   }
@@ -6637,8 +6722,7 @@ function navTo(dest){
   else if(dest==='gru'){pushNav('gru');showScr('gru');document.getElementById('top-title').textContent=t('top_gru');populateGruSel();renderGru();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Tiri Gru'}]);}
 
   else if(dest==='mappa'){
-    const ruolo2=PROF?.ruolo||'caposquadra';
-    if(!['titolare','responsabile'].includes(ruolo2)){showToast('Accesso non autorizzato','e');return;}
+    // P1-B: permesso gia' verificato da puoAprire() in testa a navTo
     pushNav('mappa');showScr('mappa');
     document.getElementById('top-title').textContent=t('top_mappa');
     setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Mappa cantieri'}]);
@@ -6657,8 +6741,7 @@ function navTo(dest){
   else if(dest==='ricerca'){pushNav('ricerca');showScr('ricerca');document.getElementById('top-title').textContent=t('top_ricerca');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ricerca')}]);initRicerca();}
   else if(dest==='ore'){pushNav('ore');showScr('ore');document.getElementById('top-title').textContent=t('top_ore');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ore')}]);renderOre();}
   else if(dest==='conferma-ore'){
-    const ruoloU=PROF?.ruolo||'caposquadra';
-    if(!['caposquadra','responsabile'].includes(ruoloU)){showToast('Accesso non autorizzato','e');return;}
+    // P1-B: permesso gia' verificato da puoAprire() in testa a navTo
     pushNav('conferma-ore');showScr('conferma-ore');
     document.getElementById('top-title').textContent=t('top_conferma_ore');
     setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_conferma_ore')}]);
@@ -7401,7 +7484,7 @@ async function renderPiano(){
     // Banner operai non assegnati
     try{
       const oggiStr=data;
-      const opAttivi=(OPERAI_TUTTI||[]).filter(function(o){return !o.data_fine_rapporto||o.data_fine_rapporto>=oggiStr;});
+      const opAttivi=(OPERAI_TUTTI||[]).filter(function(o){return _opAttivo(o,oggiStr);});
       const assegnatiIds=new Set((rows||[]).map(function(r){return r.operaio_id;}));
       const[{data:assenze}]=await Promise.all([
         sb.from('assenze').select('operaio_id').eq('data_inizio',oggiStr).lte('data_inizio',oggiStr).gte('data_fine',oggiStr)
@@ -7607,7 +7690,7 @@ function popolaDropdownPiano(){
   const cantSel=document.getElementById('pa-cantiere');
   const mzSel=document.getElementById('pa-mezzo');
   if(opSel){
-    const opList=(OPERAI&&OPERAI.length?OPERAI:OPERAI_TUTTI||[]).filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=new Date().toISOString().split('T')[0]);
+    const opList=(OPERAI_TUTTI||[]).filter(o=>_opAttivo(o));
     opSel.innerHTML='<option value="">— Seleziona operaio —</option>'+opList.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+(o.ruolo?' ('+o.ruolo+')':'')+'</option>').join('');
   }
   if(cantSel){
@@ -8684,8 +8767,8 @@ async function renderPersonale(){
     const filtroRuolo=document.getElementById('pers-filtro-ruolo')?.value||'';
     const oggi=new Date().toISOString().split('T')[0];
     let lista=(OPERAI_TUTTI||[]);
-    if(filtroStato==='attivi')lista=lista.filter(o=>!o.data_fine_rapporto||o.data_fine_rapporto>=oggi);
-    else if(filtroStato==='ex')lista=lista.filter(o=>o.data_fine_rapporto&&o.data_fine_rapporto<oggi);
+    if(filtroStato==='attivi')lista=lista.filter(o=>_opAttivo(o,oggi));
+    else if(filtroStato==='ex')lista=lista.filter(o=>!_opAttivo(o,oggi));
     if(filtroRuolo)lista=lista.filter(o=>o.ruolo===filtroRuolo);
     const filtroAgenzia=document.getElementById('pers-filtro-agenzia')?.value||'';
     if(filtroAgenzia==='agenzia')lista=lista.filter(o=>!!o.agenzia);
@@ -8713,7 +8796,7 @@ async function renderPersonale(){
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
     function _buildOperaioDiv(o){
-      const isEx=o.data_fine_rapporto&&o.data_fine_rapporto<oggi;
+      const isEx=!_opAttivo(o,oggi);
       const pApp=(profiliApp&&o.email)?profiliApp[o.email.toLowerCase()]:null;
       const hasAccount=pApp?true:(o.email&&emailToProfiloId[o.email.toLowerCase()]);
       const div=document.createElement('div');
@@ -8725,7 +8808,7 @@ async function renderPersonale(){
         +'<div>'
         +'<div style="font-size:15px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+agzBadge+'<span id="op-badge-'+o.id+'"></span></div>'
         +'<div style="font-size:12px;color:var(--t2)">'+o.ruolo
-        +(isEx?'&nbsp;<span style="color:var(--red);font-weight:700">· Ex (fine '+o.data_fine_rapporto+')</span>':'')
+        +(isEx?'&nbsp;<span style="color:var(--red);font-weight:700">· Ex'+(o.data_fine_rapporto?' (fine '+o.data_fine_rapporto+')':' (rimosso)')+'</span>':'')
         +(hasAccount?'&nbsp;<span style="color:var(--green);font-size:10px">● App attiva</span>':'')
         +'</div></div>'
         +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
