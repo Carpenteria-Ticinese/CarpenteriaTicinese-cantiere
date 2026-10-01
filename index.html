@@ -161,7 +161,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .bsp{height:80px}
 .navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.navbar::-webkit-scrollbar{display:none}
 .nb{flex:0 0 auto;min-width:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;transition:color .2s;gap:3px}
-.nb-icon{font-size:22px;line-height:1}
+.nb-icon{font-size:26px;line-height:1}
 .nb-label{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
 .nb.on .nb-label{color:var(--gold)}
 .nb.on .nb-icon{filter:drop-shadow(0 0 4px rgba(200,168,75,.5))}
@@ -305,11 +305,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <span style="font-size:28px">📅</span><span data-i18n="btn_piano_giorno">Piano del giorno</span>
       </button>
       <button onclick="navTo('situazione')" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;position:relative">
-        <span style="font-size:28px">🔔</span><span data-i18n="home_situazione">Situazione</span>
+        <span style="font-size:28px">📌</span><span data-i18n="home_situazione">Da sistemare</span>
         <span id="home-badge-sit" style="display:none;position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px">!</span>
       </button>
       <button onclick="navTo('spese')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
-        <span style="font-size:28px">🧾</span>Spese
+        <span style="font-size:28px">💲</span>Spese
       </button>
       <button onclick="navTo('report')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
         <span style="font-size:28px">📊</span>Report
@@ -1066,7 +1066,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <!-- BOLLE DI CONSEGNA -->
   <div class="scr" id="scr-bolle">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="sec" style="margin:0" data-i18n="sec_bolle">📦 Bolle di consegna</div>
+      <div class="sec" style="margin:0" data-i18n="sec_bolle">🚚 Bolle di consegna</div>
       <button class="btn-icon btn-sm" onclick="openModalBolla(null)" data-i18n="btn_aggiungi">➕ Aggiungi</button>
     </div>
     <div class="row2" style="margin-bottom:12px">
@@ -1176,17 +1176,17 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')"><div class="nb-icon">🏠</div><div class="nb-label" data-i18n="nav_cantieri">Cantieri</div></div>
     <div class="nb" id="nb-giornata" onclick="navTo('nuova')"><div class="nb-icon">➕</div><div class="nb-label" data-i18n="nav_giornata">Giornata</div></div>
-    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon">🧾</div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
+    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon">💲</div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
     <div class="nb" id="nb-situazione" onclick="navTo('situazione')">
-      <div class="nb-icon" style="position:relative">🔔<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
-      <div class="nb-label" data-i18n="nav_situazione">Situazione</div>
+      <div class="nb-icon" style="position:relative">📌<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
+      <div class="nb-label" data-i18n="nav_situazione">Da sistemare</div>
     </div>
     <div class="nb" id="nb-report" onclick="navTo('report')"><div class="nb-icon">📊</div><div class="nb-label" data-i18n="nav_report">Report</div></div>
-    <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">💰</div><div class="nb-label" data-i18n="nav_contabilita">Contabilità</div></div>
-    <div class="nb" id="nb-mio-giorno" onclick="navTo('mio-giorno')"><div class="nb-icon" style="position:relative">📅<span id="mio-giorno-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_mio_giorno">Il mio giorno</div></div>
+    <div class="nb" id="nb-contabilita" onclick="navTo('contabilita')"><div class="nb-icon">📒</div><div class="nb-label" data-i18n="nav_contabilita">Contabilità</div></div>
+    <div class="nb" id="nb-mio-giorno" onclick="navTo('mio-giorno')"><div class="nb-icon" style="position:relative">📍<span id="mio-giorno-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_mio_giorno">Il mio giorno</div></div>
     <div class="nb" id="nb-conferma-ore" onclick="navTo('conferma-ore')" style="display:none"><div class="nb-icon">✅</div><div class="nb-label" data-i18n="nav_conferma_ore">Conf. ore</div></div>
-    <div class="nb" id="nb-bolle" onclick="navTo('bolle')"><div class="nb-icon">📦</div><div class="nb-label" data-i18n="nav_bolle">Bolle</div></div>
-    <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📋</div><div class="nb-label" data-i18n="nav_piano">Piano del g.</div></div>
+    <div class="nb" id="nb-bolle" onclick="navTo('bolle')"><div class="nb-icon">🚚</div><div class="nb-label" data-i18n="nav_bolle">Bolle</div></div>
+    <div class="nb" id="nb-piano" onclick="navTo('piano')" style="display:none"><div class="nb-icon">📅</div><div class="nb-label" data-i18n="nav_piano">Piano del g.</div></div>
     <div class="nb" id="nb-personale" onclick="navTo('personale')" style="display:none"><div class="nb-icon">👷</div><div class="nb-label" data-i18n="nav_personale">Personale</div></div>
     <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label" data-i18n="nav_incassi">Incassi</div></div>
     <div class="nb" id="nb-mappa" onclick="navTo('mappa')" style="display:none"><div class="nb-icon">🗺️</div><div class="nb-label" data-i18n="nav_mappa">Mappa</div></div>
@@ -2004,7 +2004,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='2';
+const APP_VERSIONE='2b';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2017,13 +2017,13 @@ const TRADUZIONI = {
   IT:{
     // ── Navbar ──
     nav_cantieri:'Cantieri',nav_giornata:'Giornata',nav_spese:'Spese',
-    nav_situazione:'Situazione',nav_report:'Report',nav_contabilita:'Contabilità',
+    nav_situazione:'Da sistemare',nav_report:'Report',nav_contabilita:'Contabilità',
     nav_mio_giorno:'Il mio giorno',nav_bolle:'Bolle',nav_piano:'Piano del g.',
     nav_personale:'Personale',nav_incassi:'Incassi',nav_mappa:'Mappa',
     nav_admin:'Admin',nav_gru:'Gru',nav_notifiche:'Notifiche',nav_magazzino:'Magazzino',
     // ── Top-bar titoli ──
     top_cantieri:'Cantieri',top_nuova:'Nuova giornata',top_report:'Report',
-    top_impostazioni:'Impostazioni',top_piano:'Piano del giorno',top_situazione:'Situazione',
+    top_impostazioni:'Impostazioni',top_piano:'Piano del giorno',top_situazione:'Da sistemare',
     top_spese:'Spese & Documenti',top_personale:'Personale',top_contabilita:'Contabilità',
     top_bolle:'Bolle di consegna',top_mio_giorno:'Il mio giorno',top_gru:'Tiri Gru',
     top_pagamenti:'Incassi',top_mappa:'Mappa cantieri',top_admin:'Admin',
@@ -2061,7 +2061,7 @@ const TRADUZIONI = {
     sec_gru_pagare:'🏗️ Tiri gru da pagare',
     sec_assenze:'Assenze & Ferie',sec_lavorazioni:'Lavorazioni',
     sec_anagrafica:'Figure del cantiere',sec_magazzino:'📦 Magazzino',
-    sec_bolle:'📦 Bolle di consegna',sec_situazione_timb:'⏱ Timbrature da assegnare',
+    sec_bolle:'🚚 Bolle di consegna',sec_situazione_timb:'⏱ Timbrature da assegnare',
     sec_incassi:'💳 Incassi',sec_personale:'👷 Personale',
     sec_notifiche:'🔔 Notifiche',sec_gru:'Tiri Gru',
     sec_piano_mezzi:'🚗 Mezzi aziendali',sec_veicolo:'🔍 Chi ha guidato il veicolo?',
@@ -2100,7 +2100,7 @@ const TRADUZIONI = {
     login_titolo:'Gestione Cantieri',login_pwd_dim:'Password dimenticata?',
     login_offline:'📵 Sei offline — modalità sola lettura',
     // ── Home ──
-    home_cantieri_attivi:'📋 Cantieri attivi',home_situazione:'Situazione',
+    home_cantieri_attivi:'📋 Cantieri attivi',home_situazione:'Da sistemare',
     home_report:'Report',home_spese:'Spese',home_personale:'Personale',
     home_impostazioni:'Impostazioni',home_piano:'Piano del giorno',
     impostazioni_title:'⚙️ Impostazioni azienda',scegli_lang:'Seleziona la lingua interfaccia',
@@ -2317,7 +2317,7 @@ const TRADUZIONI = {
     btn_contabilita_cant:'💰 Contabilita cantiere',
     btn_budget_reale:'📊 Budget vs Reale',
     btn_pdf_cant:'📄 PDF cantiere completo',
-    btn_regia_cant:'🔧 Regia',btn_spese_cant:'🧾 Spese',
+    btn_regia_cant:'🔧 Regia',btn_spese_cant:'💲 Spese',
     btn_aggiungi_op_giorno:'➕ Aggiungi operaio a questo giorno',
     btn_modifica_giornata:'✏️ Modifica questa giornata',
     btn_salva_cant:'Salva',
@@ -2358,12 +2358,12 @@ const TRADUZIONI = {
   },
   EN:{
     nav_cantieri:'Sites',nav_giornata:'Day',nav_spese:'Expenses',
-    nav_situazione:'Status',nav_report:'Report',nav_contabilita:'Accounting',
+    nav_situazione:'To do',nav_report:'Report',nav_contabilita:'Accounting',
     nav_mio_giorno:'My day',nav_bolle:'Deliveries',nav_piano:'Day plan',
     nav_personale:'Staff',nav_incassi:'Payments',nav_mappa:'Map',
     nav_admin:'Admin',nav_gru:'Crane',nav_notifiche:'Notices',nav_magazzino:'Warehouse',
     top_cantieri:'Sites',top_nuova:'New day',top_report:'Report',
-    top_impostazioni:'Settings',top_piano:'Day plan',top_situazione:'Status',
+    top_impostazioni:'Settings',top_piano:'Day plan',top_situazione:'To do',
     top_spese:'Expenses & Docs',top_personale:'Staff',top_contabilita:'Accounting',
     top_bolle:'Delivery notes',top_mio_giorno:'My day',top_gru:'Crane lifts',
     top_pagamenti:'Payments',top_mappa:'Sites map',top_admin:'Admin',
@@ -2399,7 +2399,7 @@ const TRADUZIONI = {
     sec_gru_pagare:'🏗️ Crane lifts to pay',
     sec_assenze:'Absences & Leave',sec_lavorazioni:'Works',
     sec_anagrafica:'Site personnel',sec_magazzino:'📦 Warehouse',
-    sec_bolle:'📦 Delivery notes',sec_situazione_timb:'⏱ Timesheets to assign',
+    sec_bolle:'🚚 Delivery notes',sec_situazione_timb:'⏱ Timesheets to assign',
     sec_incassi:'💳 Payments',sec_personale:'👷 Staff',
     sec_notifiche:'🔔 Notifications',sec_gru:'Crane lifts',
     sec_piano_mezzi:'🚗 Company vehicles',sec_veicolo:'🔍 Who drove the vehicle?',
@@ -2432,7 +2432,7 @@ const TRADUZIONI = {
     meteo_sole:'Sunny',meteo_nuvole:'Cloudy',meteo_pioggia:'Rainy',meteo_neve:'Snow',
     login_titolo:'Site Management',login_pwd_dim:'Forgot password?',
     login_offline:'📵 You are offline — read only',
-    home_cantieri_attivi:'📋 Active sites',home_situazione:'Status',
+    home_cantieri_attivi:'📋 Active sites',home_situazione:'To do',
     home_report:'Report',home_spese:'Expenses',home_personale:'Staff',
     home_impostazioni:'Settings',home_piano:'Day plan',
     impostazioni_title:'⚙️ Company settings',scegli_lang:'Select interface language',
@@ -2647,7 +2647,7 @@ const TRADUZIONI = {
     btn_contabilita_cant:'💰 Site accounting',
     btn_budget_reale:'📊 Budget vs Actual',
     btn_pdf_cant:'📄 Complete site PDF',
-    btn_regia_cant:'🔧 Extra',btn_spese_cant:'🧾 Expenses',
+    btn_regia_cant:'🔧 Extra',btn_spese_cant:'💲 Expenses',
     btn_aggiungi_op_giorno:'➕ Add worker to this day',
     btn_modifica_giornata:'✏️ Edit this day',
     btn_salva_cant:'Save',
@@ -2688,12 +2688,12 @@ const TRADUZIONI = {
   },
   DE:{
     nav_cantieri:'Baustellen',nav_giornata:'Tag',nav_spese:'Ausgaben',
-    nav_situazione:'Status',nav_report:'Bericht',nav_contabilita:'Buchhaltung',
+    nav_situazione:'Zu erledigen',nav_report:'Bericht',nav_contabilita:'Buchhaltung',
     nav_mio_giorno:'Mein Tag',nav_bolle:'Lieferscheine',nav_piano:'Tagesplan',
     nav_personale:'Personal',nav_incassi:'Zahlungen',nav_mappa:'Karte',
     nav_admin:'Admin',nav_gru:'Kran',nav_notifiche:'Benachricht.',nav_magazzino:'Lager',
     top_cantieri:'Baustellen',top_nuova:'Neuer Tag',top_report:'Bericht',
-    top_impostazioni:'Einstellungen',top_piano:'Tagesplan',top_situazione:'Status',
+    top_impostazioni:'Einstellungen',top_piano:'Tagesplan',top_situazione:'Zu erledigen',
     top_spese:'Ausgaben & Doks',top_personale:'Personal',top_contabilita:'Buchhaltung',
     top_bolle:'Lieferscheine',top_mio_giorno:'Mein Tag',top_gru:'Kranhübe',
     top_pagamenti:'Zahlungen',top_mappa:'Baustellenkarte',top_admin:'Admin',
@@ -2729,7 +2729,7 @@ const TRADUZIONI = {
     sec_gru_pagare:'🏗️ Ausstehende Kranhübe',
     sec_assenze:'Abwesenheiten',sec_lavorazioni:'Arbeiten',
     sec_anagrafica:'Baustellen-Personal',sec_magazzino:'📦 Lager',
-    sec_bolle:'📦 Lieferscheine',sec_situazione_timb:'⏱ Zuzuweisende Zeitbuchungen',
+    sec_bolle:'🚚 Lieferscheine',sec_situazione_timb:'⏱ Zuzuweisende Zeitbuchungen',
     sec_incassi:'💳 Zahlungen',sec_personale:'👷 Personal',
     sec_notifiche:'🔔 Benachrichtigungen',sec_gru:'Kranhübe',
     sec_piano_mezzi:'🚗 Firmenfahrzeuge',sec_veicolo:'🔍 Wer hat das Fahrzeug gefahren?',
@@ -2762,7 +2762,7 @@ const TRADUZIONI = {
     meteo_sole:'Sonnig',meteo_nuvole:'Bewölkt',meteo_pioggia:'Regnerisch',meteo_neve:'Schnee',
     login_titolo:'Baustellen-Management',login_pwd_dim:'Passwort vergessen?',
     login_offline:'📵 Sie sind offline — nur lesbar',
-    home_cantieri_attivi:'📋 Aktive Baustellen',home_situazione:'Status',
+    home_cantieri_attivi:'📋 Aktive Baustellen',home_situazione:'Zu erledigen',
     home_report:'Bericht',home_spese:'Ausgaben',home_personale:'Personal',
     home_impostazioni:'Einstellungen',home_piano:'Tagesplan',
     impostazioni_title:'⚙️ Unternehmenseinstellungen',scegli_lang:'Schnittstellensprache wählen',
@@ -2977,7 +2977,7 @@ const TRADUZIONI = {
     btn_contabilita_cant:'💰 Baustellenbuchhaltung',
     btn_budget_reale:'📊 Budget vs Ist',
     btn_pdf_cant:'📄 Vollständiges Baustellen-PDF',
-    btn_regia_cant:'🔧 Regie',btn_spese_cant:'🧾 Ausgaben',
+    btn_regia_cant:'🔧 Regie',btn_spese_cant:'💲 Ausgaben',
     btn_aggiungi_op_giorno:'➕ Arbeiter diesem Tag hinzufügen',
     btn_modifica_giornata:'✏️ Diesen Tag bearbeiten',
     btn_salva_cant:'Speichern',
@@ -3011,12 +3011,12 @@ const TRADUZIONI = {
   },
   ES:{
     nav_cantieri:'Obras',nav_giornata:'Día',nav_spese:'Gastos',
-    nav_situazione:'Estado',nav_report:'Informe',nav_contabilita:'Contabilidad',
+    nav_situazione:'Pendientes',nav_report:'Informe',nav_contabilita:'Contabilidad',
     nav_mio_giorno:'Mi día',nav_bolle:'Albaranes',nav_piano:'Plan del día',
     nav_personale:'Personal',nav_incassi:'Cobros',nav_mappa:'Mapa',
     nav_admin:'Admin',nav_gru:'Grúa',nav_notifiche:'Avisos',nav_magazzino:'Almacén',
     top_cantieri:'Obras',top_nuova:'Nuevo día',top_report:'Informe',
-    top_impostazioni:'Ajustes',top_piano:'Plan del día',top_situazione:'Estado',
+    top_impostazioni:'Ajustes',top_piano:'Plan del día',top_situazione:'Pendientes',
     top_spese:'Gastos & Docs',top_personale:'Personal',top_contabilita:'Contabilidad',
     top_bolle:'Albaranes',top_mio_giorno:'Mi día',top_gru:'Izadas grúa',
     top_pagamenti:'Cobros',top_mappa:'Mapa de obras',top_admin:'Admin',
@@ -3053,7 +3053,7 @@ const TRADUZIONI = {
     sec_gru_pagare:'🏗️ Izadas grúa a pagar',
     sec_assenze:'Ausencias',sec_lavorazioni:'Trabajos',
     sec_anagrafica:'Personal de obra',sec_magazzino:'📦 Almacén',
-    sec_bolle:'📦 Albaranes',sec_situazione_timb:'⏱ Fichajes a asignar',
+    sec_bolle:'🚚 Albaranes',sec_situazione_timb:'⏱ Fichajes a asignar',
     sec_incassi:'💳 Cobros',sec_personale:'👷 Personal',
     sec_notifiche:'🔔 Notificaciones',sec_gru:'Izadas grúa',
     sec_piano_mezzi:'🚗 Vehículos empresa',sec_veicolo:'🔍 ¿Quién condujo el vehículo?',
@@ -3086,7 +3086,7 @@ const TRADUZIONI = {
     meteo_sole:'Soleado',meteo_nuvole:'Nublado',meteo_pioggia:'Lluvioso',meteo_neve:'Nieve',
     login_titolo:'Gestión de Obras',login_pwd_dim:'¿Contraseña olvidada?',
     login_offline:'📵 Sin conexión — solo lectura',
-    home_cantieri_attivi:'📋 Obras activas',home_situazione:'Estado',
+    home_cantieri_attivi:'📋 Obras activas',home_situazione:'Pendientes',
     home_report:'Informe',home_spese:'Gastos',home_personale:'Personal',
     home_impostazioni:'Ajustes',home_piano:'Plan del día',
     impostazioni_title:'⚙️ Configuración empresa',scegli_lang:'Selecciona el idioma de la interfaz',
@@ -3301,7 +3301,7 @@ const TRADUZIONI = {
     btn_contabilita_cant:'💰 Contabilidad obra',
     btn_budget_reale:'📊 Presupuesto vs Real',
     btn_pdf_cant:'📄 PDF completo obra',
-    btn_regia_cant:'🔧 Extra',btn_spese_cant:'🧾 Gastos',
+    btn_regia_cant:'🔧 Extra',btn_spese_cant:'💲 Gastos',
     btn_aggiungi_op_giorno:'➕ Añadir obrero a este día',
     btn_modifica_giornata:'✏️ Editar este día',
     btn_salva_cant:'Guardar',
@@ -3409,6 +3409,7 @@ let IMPOSTAZIONI={tariffa_ora:78};
 
 function apriContabilita(){
   if(!curCant)return;
+  if(!puoAprire('contabilita'))return; // P2b: sezione tolta
   showScr('contabilita');
   document.getElementById('top-title').textContent='Contabilità — '+curCant.nome;
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Contabilità'}]);
@@ -4396,8 +4397,8 @@ async function renderCantiere(){
         `}
       </div>`:''}
       <div style="margin-bottom:16px">
-        <button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42)" onclick="apriContabilita()">${t('btn_contabilita_cant')}</button>
-        <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a);margin-top:8px" onclick="apriBudget()">${t('btn_budget_reale')}</button>
+        ${puoAprire('contabilita')?`<button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42);margin-bottom:8px" onclick="apriContabilita()">${t('btn_contabilita_cant')}</button>`:''}
+        <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a)" onclick="apriBudget()">${t('btn_budget_reale')}</button>
         <button class="btn btn-g" style="background:linear-gradient(135deg,#3a2a1b,#7a5a2a);margin-top:8px" onclick="exportPdfCantiere(curCant.id)">${t('btn_pdf_cant')}</button>
       </div>
       ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
@@ -4944,15 +4945,28 @@ async function salvaModificaGiornata(){
     const materialeG=document.getElementById('mg-materiale-g')?.value.trim()||'';
     const attrezzaturaG=document.getElementById('mg-attrezzatura-g')?.value.trim()||'';
     const _mgPWrap2=document.getElementById('mg-pasto-wrap');const _mgPCb2=document.getElementById('mg-pasto');const _pastiOnMg=IMPOSTAZIONI.pasti_abilitati==='1';
-    const {data:g,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{})}).eq('id',modificaGid).select().single();
+    const {data:_gUpd,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{})}).eq('id',modificaGid).select();
     if(error)throw error;
-    if(mat){await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data);await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id});}
-    // Salva modifiche alle voci lavoro
-    // 1. Elimina voci marcate per eliminazione
-    for(const vid of mgVociEliminate){
-      if(vid)await sb.from('voci_lavoro').delete().eq('id',vid);
+    // P2b: 0 righe = il database non ha salvato
+    if(!_gUpd||!_gUpd.length)throw new Error('il database non ha modificato la giornata (0 righe)');
+    const g=_gUpd[0];
+    if(mat){
+      const{error:_me}=await sb.from('materiali').delete().eq('cantiere_id',g.cantiere_id).eq('data',g.data).select('id');
+      if(_me)throw _me;
+      const{data:_mi,error:_mie}=await sb.from('materiali').insert({cantiere_id:g.cantiere_id,data:g.data,descrizione:mat,created_by:USER.id}).select('id');
+      if(_mie)throw _mie;
+      if(!_mi||!_mi.length)throw new Error('materiale non salvato (0 righe)');
     }
-    mgVociEliminate=[];
+    // Salva modifiche alle voci lavoro
+    // 1. Elimina voci marcate per eliminazione (tolte dalla lista solo se eliminate davvero)
+    for(const vid of mgVociEliminate.slice()){
+      if(vid){
+        const{data:_vd,error:_vde}=await sb.from('voci_lavoro').delete().eq('id',vid).select('id');
+        if(_vde)throw _vde;
+        if(!_vd||!_vd.length)throw new Error('un lavoro da togliere non è stato eliminato (0 righe)');
+      }
+      mgVociEliminate.splice(mgVociEliminate.indexOf(vid),1);
+    }
     // 2. Aggiorna/inserisci voci presenti nel modal
     const mgRighe=[...document.querySelectorAll('#mg-voci-list .voce-row')];
     let _p2DaConfMg=0,_p2KoMg=false;
@@ -4970,8 +4984,9 @@ async function salvaModificaGiornata(){
       let _p2LavId=isNuova?null:(sel?.value||null);
       let _p2LavNome=isNuova?nomeLav:(lav?.nome||(sel?.value&&sel.value===row.dataset.origLavId?(row.dataset.origLavNome||null):null));
       if(isNuova&&nomeLav&&nomeLav!==(row.dataset.origNome||'')){
-        const lib=await _p2VoceLibera(g.cantiere_id,nomeLav,um||'h');
-        if(lib){_p2LavId=lib.id;_p2LavNome=lib.nome;if(lib.nuova&&lib.daConfermare)_p2DaConfMg++;}else _p2KoMg=true;
+        // P2b: se un salvataggio precedente l'ha gia' creata, si riusa (niente doppioni al "riprova")
+        const lib=row.dataset.p2LibNome===nomeLav&&row.dataset.p2LibId?{id:row.dataset.p2LibId,nome:nomeLav,nuova:false}:await _p2VoceLibera(g.cantiere_id,nomeLav,um||'h');
+        if(lib){_p2LavId=lib.id;_p2LavNome=lib.nome;row.dataset.p2LibId=lib.id;row.dataset.p2LibNome=nomeLav;if(lib.nuova&&lib.daConfermare)_p2DaConfMg++;}else _p2KoMg=true;
       }
       const payload={
         giornata_id:modificaGid,
@@ -4982,9 +4997,14 @@ async function salvaModificaGiornata(){
         um:um||lav?.um||'h',
       };
       if(vid){
-        await sb.from('voci_lavoro').update(payload).eq('id',vid);
+        const{data:_vu,error:_vue}=await sb.from('voci_lavoro').update(payload).eq('id',vid).select('id');
+        if(_vue)throw _vue;
+        if(!_vu||!_vu.length)throw new Error('un lavoro non è stato modificato (0 righe)');
       }else{
-        await sb.from('voci_lavoro').insert(payload);
+        const{data:_vi,error:_vie}=await sb.from('voci_lavoro').insert(payload).select('id');
+        if(_vie)throw _vie;
+        if(!_vi||!_vi.length)throw new Error('un lavoro nuovo non è stato salvato (0 righe)');
+        row.dataset.vid=_vi[0].id; // al "riprova" si aggiorna invece di inserire di nuovo
       }
     }
     if(_p2DaConfMg)_p2AvvisaCapisquadra(_p2DaConfMg,CANTIERI.find(c=>c.id===g.cantiere_id)?.nome);
@@ -5005,14 +5025,32 @@ async function salvaModificaGiornata(){
     logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
 closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
     if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
-  }catch(err){showToast('Errore: '+err.message,'e');}
+  }catch(err){showToast('Giornata NON salvata, riprova. ('+err.message+')','e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
 }
 async function eliminaGiornataModifica(){
   if(!modificaGid)return;
   if(!confirm(t('conf_elimina_giornata')))return;
-  await sb.from('giornate').delete().eq('id',modificaGid);
-  closeModal('mod-modifica-g');showToast('Giornata eliminata');renderCantiere();
+  // P2b: si chiude solo se il database ha eliminato davvero
+  try{
+    const{data,error}=await sb.from('giornate').delete().eq('id',modificaGid).select('id');
+    if(error)throw error;
+    if(!data||!data.length)throw new Error('il database non ha eliminato la giornata (0 righe)');
+  }catch(e){showToast('Giornata NON eliminata, riprova. ('+e.message+')','e');return;}
+  // righe dei lavori rimaste collegate (se il database non le toglie da solo)
+  let _avviso='';
+  try{
+    const{data:resto,error:re}=await sb.from('voci_lavoro').select('id').eq('giornata_id',modificaGid);
+    if(re)throw re;
+    if(resto&&resto.length){
+      const{data:tolte,error:te}=await sb.from('voci_lavoro').delete().eq('giornata_id',modificaGid).select('id');
+      if(te)throw te;
+      if(!tolte||tolte.length!==resto.length)throw new Error((tolte?tolte.length:0)+' su '+resto.length+' righe');
+    }
+  }catch(e){_avviso=e.message;}
+  closeModal('mod-modifica-g');renderCantiere();
+  if(_avviso)showToast('Giornata eliminata, ma i lavori collegati NON sono stati eliminati ('+_avviso+')','e');
+  else showToast('Giornata eliminata');
 }
 
 function apriRegiaCantiere(){populateSpeseSel();showScr('regia');document.getElementById('top-title').textContent='Regia — '+curCant.nome;document.getElementById('reg-cantiere').value=curCant.id;renderRegia();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Regia'}]);}
@@ -7000,7 +7038,11 @@ const MENU_RUOLO={
 const MENU_PADRE={'report-avanzato':'report','impostazioni':'admin','permessi':'admin'};
 const MENU_TASTI={home:'nb-home',nuova:'nb-giornata',spese:'nb-spese',situazione:'nb-situazione',report:'nb-report',contabilita:'nb-contabilita','mio-giorno':'nb-mio-giorno','conferma-ore':'nb-conferma-ore',bolle:'nb-bolle',piano:'nb-piano',personale:'nb-personale',pagamenti:'nb-pagamenti',mappa:'nb-mappa',admin:'nb-admin',gru:'nb-gru',notifiche:'nb-notifiche',magazzino:'nb-magazzino',ore:'nb-ore'};
 function _ruoloApp(){const r=PROF&&PROF.ruolo;return MENU_RUOLO[r]?r:'operaio';}
+// P2b: sezioni tolte per tutti, titolare compreso. Il codice e i dati restano:
+// per riattivarne una basta toglierla da questa lista.
+const SEZIONI_TOLTE=['pagamenti','contabilita'];
 function puoAprire(dest){
+  if(SEZIONI_TOLTE.includes(MENU_PADRE[dest]||dest))return false;
   const m=MENU_RUOLO[_ruoloApp()];
   if(m==='*')return true;
   return m.includes(MENU_PADRE[dest]||dest);
@@ -7070,7 +7112,7 @@ function navTo(dest){
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else apriScegliCantiere();}
   else if(dest==='spese'){pushNav('spese');showScr('spese');document.getElementById('top-title').textContent=t('top_spese');populateSpeseSel();renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Spese & Documenti'}]);}
-  else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent=t('top_situazione');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Situazione'}]);renderSituazione();}
+  else if(dest==='situazione'){pushNav('situazione');showScr('situazione');document.getElementById('top-title').textContent=t('top_situazione');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_situazione')}]);renderSituazione();}
   else if(dest==='report'){pushNav('report');showScr('report');document.getElementById('top-title').textContent=t('top_report');
     // Inizializza mese corrente se non già impostato
     const _rm=document.getElementById('rep-mese');
@@ -8648,7 +8690,7 @@ const MODULI_APP = [
   {id:'spese',           label:'Spese',               desc:'Inserire e vedere spese/scontrini/fatture',      gruppoDefault:['tutti']},
   {id:'bolle',           label:'Bolle di consegna',   desc:'Bolle materiali ricevuti',                       gruppoDefault:['tutti']},
   {id:'gru',             label:'Tiri Gru',            desc:'Registrare tiri gru',                            gruppoDefault:['tutti']},
-  {id:'situazione',      label:'Situazione',          desc:'Spese da pagare, gru, regia in sospeso',         gruppoDefault:['titolare','responsabile']},
+  {id:'situazione',      label:'Da sistemare',          desc:'Spese da pagare, gru, regia in sospeso',         gruppoDefault:['titolare','responsabile']},
   {id:'contabilita',     label:'Contabilità',         desc:'Costi, ricavi e margine per cantiere',           gruppoDefault:['titolare','responsabile']},
   {id:'pagamenti',       label:'Incassi',  desc:'Pagamenti del cliente — dati sensibili',         gruppoDefault:['titolare']},
   {id:'report',          label:'Report',              desc:'Stipendi, analisi, export dati',                 gruppoDefault:['titolare']},
@@ -11123,7 +11165,7 @@ async function renderOre(){
         </table>
       </div>
       <div style="margin-top:10px;font-size:12px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h${notaPeriodo}</div>
-      ${senzaInizio?'<div class="warn" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
+      ${senzaInizio?'<div class="warn on" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
     </div>`;
   }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
