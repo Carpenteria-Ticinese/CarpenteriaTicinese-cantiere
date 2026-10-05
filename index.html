@@ -264,6 +264,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
     <div style="text-align:center;margin-top:12px">
       <span style="font-size:13px;color:var(--t2);cursor:pointer;text-decoration:underline" onclick="resetPassword()" data-i18n="login_pwd_dim">Password dimenticata?</span>
     </div>
+    <div id="login-pwd-info" style="display:none;text-align:center;margin-top:10px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);font-size:14px;line-height:1.6">
+      <span data-i18n="login_chiedi_titolare">Chiedi al titolare una password nuova.</span><br>
+      <a href="tel:+41762230443" style="color:var(--gold);font-weight:800;font-size:17px;text-decoration:none">📞 076 223 04 43</a>
+    </div>
     <!-- Selettore lingua login -->
     <div style="display:flex;justify-content:center;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
       <button class="lang-btn" data-lang="IT" onclick="changeLang('IT')" style="background:var(--gold);color:#1a1000;border:1px solid var(--gold);border-radius:var(--rsm);padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif">🇮🇹 IT</button>
@@ -1314,6 +1318,33 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
   </div>
 </div>
 
+<div class="ov" id="mod-pwd-op" style="z-index:210">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">🔑 Nuova password</div>
+    <div id="pwdop-form">
+      <p id="pwdop-chi" style="font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.6"></p>
+      <div class="fg"><label class="fl">Nuova password (almeno 8 caratteri)</label>
+        <input type="text" class="fi" id="pwdop-pwd" autocomplete="off" placeholder="es. Cantiere-2026" style="font-family:'DM Mono',monospace"></div>
+      <div id="pwdop-err" style="display:none;font-size:13px;line-height:1.5;border-radius:var(--rsm);padding:10px 12px;margin-top:4px;white-space:pre-wrap;background:rgba(224,85,85,.12);border:1px solid var(--red);color:var(--red)"></div>
+      <hr>
+      <div class="row2">
+        <button class="btn btn-s" onclick="closeModal('mod-pwd-op')" data-i18n="btn_annulla">Annulla</button>
+        <button class="btn btn-g" id="pwdop-salva" onclick="p5bSalvaNuovaPassword()">✓ Salva password</button>
+      </div>
+    </div>
+    <div id="pwdop-esito" style="display:none">
+      <div id="pwdop-esito-titolo" style="font-size:15px;font-weight:700;margin-bottom:8px"></div>
+      <pre id="pwdop-esito-testo" style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;font-family:'DM Mono',monospace;font-size:14px;white-space:pre-wrap;word-break:break-all;user-select:all;margin:0 0 10px"></pre>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:12px">⚠️ La password si vede solo adesso: copiala prima di chiudere.</div>
+      <div class="row2">
+        <button class="btn btn-s" onclick="closeModal('mod-pwd-op')">Chiudi</button>
+        <button class="btn btn-g" onclick="p5bCopiaPassword()">📋 Copia</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="mod-op">
   <div class="mod">
     <div class="mod-h"></div>
@@ -1343,6 +1374,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       </datalist></div>
     <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
     <div id="o-acc-stato" style="font-size:11px;color:var(--t2);margin:-6px 0 10px"></div>
+    <div id="o-pwd-wrap" style="display:none;margin:-4px 0 12px"><button type="button" class="btn btn-s" style="font-size:13px;padding:9px" onclick="p5bApriNuovaPassword()">🔑 Nuova password</button></div>
     <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" autocomplete="off" placeholder="es. +41 79 123 45 67"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" autocomplete="off" placeholder="es. Patente gru, specializzazioni..."></div>
     <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:13px"></div>
@@ -1397,6 +1429,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <button class="btn btn-g" id="o-salva" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
     </div>
     <div id="del-op-w" style="margin-top:10px"></div>
+    <div id="o-elimina-def" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -2038,7 +2071,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='5';
+const APP_VERSIONE='5c';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2131,7 +2164,7 @@ const TRADUZIONI = {
     // ── Meteo ──
     meteo_sole:'Sole',meteo_nuvole:'Nuvole',meteo_pioggia:'Pioggia',meteo_neve:'Neve',
     // ── Login ──
-    login_titolo:'Gestione Cantieri',login_pwd_dim:'Password dimenticata?',
+    login_titolo:'Gestione Cantieri',login_pwd_dim:'Password dimenticata?',login_chiedi_titolare:'Chiedi al titolare una password nuova.',
     login_offline:'📵 Sei offline — modalità sola lettura',
     // ── Home ──
     home_cantieri_attivi:'📋 Cantieri attivi',home_situazione:'Da sistemare',
@@ -2464,7 +2497,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Worker',lbl_da:'From',lbl_a:'To',
     lbl_distr_min_pasto:'Min. distance for meal (km)',
     meteo_sole:'Sunny',meteo_nuvole:'Cloudy',meteo_pioggia:'Rainy',meteo_neve:'Snow',
-    login_titolo:'Site Management',login_pwd_dim:'Forgot password?',
+    login_titolo:'Site Management',login_pwd_dim:'Forgot password?',login_chiedi_titolare:'Ask the owner for a new password.',
     login_offline:'📵 You are offline — read only',
     home_cantieri_attivi:'📋 Active sites',home_situazione:'To do',
     home_report:'Report',home_spese:'Expenses',home_personale:'Staff',
@@ -2794,7 +2827,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Mitarbeiter',lbl_da:'Von',lbl_a:'Bis',
     lbl_distr_min_pasto:'Min. Entfernung für Mahlzeit (km)',
     meteo_sole:'Sonnig',meteo_nuvole:'Bewölkt',meteo_pioggia:'Regnerisch',meteo_neve:'Schnee',
-    login_titolo:'Baustellen-Management',login_pwd_dim:'Passwort vergessen?',
+    login_titolo:'Baustellen-Management',login_pwd_dim:'Passwort vergessen?',login_chiedi_titolare:'Bitte den Inhaber um ein neues Passwort.',
     login_offline:'📵 Sie sind offline — nur lesbar',
     home_cantieri_attivi:'📋 Aktive Baustellen',home_situazione:'Zu erledigen',
     home_report:'Bericht',home_spese:'Ausgaben',home_personale:'Personal',
@@ -3118,7 +3151,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Colaborador',lbl_da:'Desde',lbl_a:'Hasta',
     lbl_distr_min_pasto:'Distancia mín. para dieta (km)',
     meteo_sole:'Soleado',meteo_nuvole:'Nublado',meteo_pioggia:'Lluvioso',meteo_neve:'Nieve',
-    login_titolo:'Gestión de Obras',login_pwd_dim:'¿Contraseña olvidada?',
+    login_titolo:'Gestión de Obras',login_pwd_dim:'¿Contraseña olvidada?',login_chiedi_titolare:'Pide al titular una contraseña nueva.',
     login_offline:'📵 Sin conexión — solo lectura',
     home_cantieri_attivi:'📋 Obras activas',home_situazione:'Pendientes',
     home_report:'Informe',home_spese:'Gastos',home_personale:'Personal',
@@ -4079,14 +4112,11 @@ function checkPwdMatch(){
   err.style.display=(k&&n&&k!==n)?'block':'none';
 }
 
-async function resetPassword(){
-  const email=(document.getElementById('login-email')||document.getElementById('l-email'))?.value.trim()||'';
-  if(!email){showToast('Inserisci prima la tua email','e');return;}
-  try{
-    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
-    if(error)throw error;
-    showToast('Email di reset inviata a '+email+' ✓');
-  }catch(e){showToast('Errore: '+e.message,'e');}
+// P5c: sul piano Free Supabase non manda le email di reimpostazione:
+// "Password dimenticata?" mostra solo chi chiamare.
+function resetPassword(){
+  const el=document.getElementById('login-pwd-info');if(!el)return;
+  el.style.display=el.style.display==='block'?'none':'block';
 }
 
 async function doLogin(){
@@ -6136,6 +6166,8 @@ function openModalOp(id){
   }
   _p4CompilaVisibilitaScheda(o); // P4
   _p5MsgScheda('');_p5StatoAccountScheda(o); // C4
+  _p5bMostraTastoPassword(o); // P5b
+  _p5cPreparaEliminaDefinitiva(o); // P5c
   openModal('mod-op');
 }
 async function saveOp(){
@@ -9889,7 +9921,7 @@ async function renderPersonale(){
         +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
         +'</div>'
         +(pApp?_ruoloAppHtml(pApp,o):'')
-        +(hasAccount?'<button style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:var(--rsm);color:var(--t2);font-size:12px;padding:6px 12px;cursor:pointer;width:100%" onclick="resetPasswordOperaio(\''+o.email+'\')">🔑 Reset password (invia email)</button>':'');
+        +''; // P5b: "Reset password (invia email)" tolto: ora "🔑 Nuova password" nella scheda
       // P1c: toccare la riga (non matita, menù o pulsanti) apre la scheda in sola lettura
       div.style.cursor='pointer';
       div.addEventListener('click',function(e){
@@ -9989,14 +10021,106 @@ async function apriSchedaOp(id){
   }
 }
 
-async function resetPasswordOperaio(email){
-  if(!email)return;
-  if(!confirm(t('conf_reset_pwd')+' '+email+'?'))return;
-  try{
-    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
-    if(error)throw error;
-    showToast('Email di reset inviata a '+email+' ✓');
-  }catch(e){showToast('Errore: '+e.message,'e');}
+// ── P5c: "Elimina definitivamente" (solo titolare, solo persone NON attive, senza dati e senza account) ──
+const P5C_NOMI_TABELLE={giornate:'giornate registrate',voci_lavoro:'righe di lavoro',ore_contrattuali:'righe di ore contrattuali',
+  spese:'spese',foto:'foto',assenze:'assenze',documenti_operai:'documenti',piano_giorno:'assegnazioni nel Piano',
+  regia:'righe di regia',bolle_consegna:'bolle',cantieri_visibili:'cantieri visibili',materiali:'materiali',
+  tm_paghe_anagrafica:'righe di anagrafica paghe',tm_paghe_periodo:'periodi paghe',tm_paghe_voce:'voci paghe'};
+function _p5cDescriviDati(dati){
+  return Object.entries(dati||{}).sort((a,b)=>b[1]-a[1]).map(([t,n])=>n+' '+(P5C_NOMI_TABELLE[t]||('righe in '+t))).join(', ');
+}
+async function _p5cPreparaEliminaDefinitiva(o){
+  const el=document.getElementById('o-elimina-def');if(!el)return;
+  el.innerHTML='';
+  if(!o||_ruoloApp()!=='titolare'||_opAttivo(o))return;
+  el.innerHTML='<div style="font-size:12px;color:var(--t2)">Controllo dei dati collegati…</div>';
+  const{data,error}=await sb.rpc('app_dati_collaboratore',{p_operaio:o.id});
+  if(editOid!==o.id)return; // nel frattempo e' stata aperta un'altra scheda
+  if(error||!data||data.errore){
+    el.innerHTML='<div style="font-size:12px;color:var(--t2)">"Elimina definitivamente" non disponibile: controllo dei dati non riuscito ('+escHtml(error?error.message:(data&&data.errore)||'nessuna risposta')+').</div>';
+    return;
+  }
+  const motivi=[];
+  const desc=_p5cDescriviDati(data.dati);
+  if(desc)motivi.push('Ha '+desc);
+  if(data.ha_account)motivi.push('Ha un account app ('+(data.email||'')+')');
+  if(motivi.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--t2);background:var(--s2);border-radius:var(--rsm);padding:8px 12px">🔒 '+escHtml(motivi.join('. '))+': resta tra gli ex.</div>';
+    return;
+  }
+  el.innerHTML='<button class="btn btn-d" style="font-size:13px" onclick="p5cEliminaDefinitivamente()">🗑️ Elimina definitivamente</button>'
+    +'<div style="font-size:11px;color:var(--t3);margin-top:4px">Nessun dato collegato e nessun account app: la scheda si può cancellare del tutto.</div>';
+}
+async function p5cEliminaDefinitivamente(){
+  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare','e');return;}
+  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);if(!o)return;
+  if(_opAttivo(o)){_p5MsgScheda('Errore: la persona è attiva. Prima va rimossa.','e');return;}
+  const nome=((o.nome||'')+' '+(o.cognome||'')).replace(/\s+/g,' ').trim();
+  const scritto=prompt('Eliminare DEFINITIVAMENTE la scheda di '+nome+'?\n\nNon si potrà recuperare.\nPer confermare scrivi il nome per esteso:\n'+nome);
+  if(scritto===null)return;
+  if(scritto.replace(/\s+/g,' ').trim().toLowerCase()!==nome.toLowerCase()){_p5MsgScheda('Errore: il nome scritto non corrisponde a «'+nome+'». Niente è stato eliminato.','e');return;}
+  // si ricontrolla subito prima: nel frattempo potrebbe essere arrivato un dato
+  const{data,error}=await sb.rpc('app_dati_collaboratore',{p_operaio:o.id});
+  if(error||!data||data.errore){_p5MsgScheda('Errore: controllo dei dati non riuscito ('+(error?error.message:(data&&data.errore)||'nessuna risposta')+'). Niente è stato eliminato.','e');return;}
+  const desc=_p5cDescriviDati(data.dati);
+  if(desc||data.ha_account){_p5MsgScheda('Errore: '+(desc?'ha '+desc:'ha un account app')+'. Niente è stato eliminato.','e');_p5cPreparaEliminaDefinitiva(o);return;}
+  const{data:del,error:de}=await sb.from('operai').delete().eq('id',o.id).select('id');
+  if(de||!del||!del.length){_p5MsgScheda('Errore: il database non ha eliminato la scheda ('+(de?de.message:'0 righe')+'). La persona resta tra gli ex.','e');return;}
+  await loadOperai();closeModal('mod-op');renderPersonale();
+  showToast('Scheda di '+nome+' eliminata definitivamente');
+}
+
+// P5b: la nuova password la sceglie il titolare (o il responsabile) e si salva
+// con la funzione gestisci-accesso, azione "password". Errori sempre a schermo.
+function _p5bMostraTastoPassword(o){
+  const w=document.getElementById('o-pwd-wrap');if(!w)return;
+  const em=String(o?.email||'').trim().toLowerCase();
+  let vedi=!!o&&!!em&&['titolare','responsabile'].includes(_ruoloApp());
+  // il titolare conosce i ruoli degli account: niente tasto sui titolari
+  // (e il responsabile solo su caposquadra, operaio, magazziniere: lo ricontrolla la funzione)
+  const pa=_profiliAppCache&&em?_profiliAppCache[em]:null;
+  if(pa&&pa.ruolo==='titolare')vedi=false;
+  if(pa&&_ruoloApp()==='responsabile'&&!['caposquadra','operaio','magazziniere'].includes(pa.ruolo))vedi=false;
+  w.style.display=vedi?'block':'none';
+}
+function p5bApriNuovaPassword(){
+  if(!editOid)return;
+  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);if(!o)return;
+  document.getElementById('pwdop-chi').textContent='Account di '+(o.nome||'')+' '+(o.cognome||'')+' ('+(o.email||'—')+'). Scegli tu la password: nessuna email viene inviata.';
+  document.getElementById('pwdop-pwd').value='';
+  const err=document.getElementById('pwdop-err');err.style.display='none';err.textContent='';
+  document.getElementById('pwdop-form').style.display='block';
+  document.getElementById('pwdop-esito').style.display='none';
+  const b=document.getElementById('pwdop-salva');b.disabled=false;b.textContent='✓ Salva password';
+  openModal('mod-pwd-op');
+}
+async function p5bSalvaNuovaPassword(){
+  const err=document.getElementById('pwdop-err');
+  const mostra=t=>{err.textContent=t;err.style.display='block';};
+  err.style.display='none';
+  const pwd=document.getElementById('pwdop-pwd').value;
+  if(pwd.length<8){mostra('La password deve avere almeno 8 caratteri.');return;}
+  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);
+  if(!o){mostra('Scheda non trovata: chiudi e riapri.');return;}
+  const b=document.getElementById('pwdop-salva');b.disabled=true;b.textContent='Salvataggio…';
+  const r=await _p4GestisciAccesso('password',o.id,{nuova_password:pwd});
+  b.disabled=false;b.textContent='✓ Salva password';
+  if(!r.ok){
+    mostra(r.nessunAccount?'Nessun account app con l\'email '+(o.email||'')+': la password non è stata cambiata.':(/^password non cambiata/i.test(r.errore)?r.errore:'Password NON cambiata.\n'+r.errore));
+    return;
+  }
+  document.getElementById('pwdop-esito-titolo').textContent='Comunica a '+(o.nome||'')+' '+(o.cognome||'')+':';
+  document.getElementById('pwdop-esito-testo').textContent='Email: '+(o.email||'')+'\nPassword: '+pwd;
+  document.getElementById('pwdop-form').style.display='none';
+  document.getElementById('pwdop-esito').style.display='block';
+  showToast('Password cambiata ✓');
+}
+function p5bCopiaPassword(){
+  const txt=document.getElementById('pwdop-esito-testo')?.textContent||'';
+  const fatto=()=>showToast('Copiato ✓');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(fatto).catch(function(){_p4CopiaVecchioModo(txt)?fatto():showToast('Copia non riuscita: seleziona il testo a mano','e');});
+  }else if(_p4CopiaVecchioModo(txt))fatto();else showToast('Copia non riuscita: seleziona il testo a mano','e');
 }
 
 // ── SAL (pagamenti cantiere) ──
