@@ -989,6 +989,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="sec" data-i18n="sec_situazione_timb">⏱ Timbrature da assegnare</div>
       <div id="sit-timb-content"></div>
     </div>
+    <div id="sit-foto-wrap" style="display:none;margin-bottom:16px">
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>📷 Foto da scaricare</span><span id="sit-foto-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div id="sit-foto-content"></div>
+    </div>
     <div id="sit-spreg-wrap" style="display:none;margin-bottom:16px">
       <div class="sec" style="display:flex;align-items:center;gap:8px"><span data-i18n="sec_spese_registrare">💲 Spese da registrare in Pre-contabilità</span><span id="sit-spreg-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-spreg-content"></div>
@@ -1338,10 +1342,11 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <option value="Ditta esterna">
       </datalist></div>
     <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
+    <div id="o-acc-stato" style="font-size:11px;color:var(--t2);margin:-6px 0 10px"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" autocomplete="off" placeholder="es. +41 79 123 45 67"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" autocomplete="off" placeholder="es. Patente gru, specializzazioni..."></div>
     <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:13px"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px"></div>
+    <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><div style="display:flex;gap:8px;align-items:center"><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:13px;flex:1"><button type="button" class="btn btn-s btn-sm" style="white-space:nowrap;width:auto;padding:8px 10px;font-size:12px" onclick="p5TempoIndeterminato()">✕ Tempo indeterminato</button></div></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
     <div class="toggle-wrap" style="margin-bottom:8px">
       <div><div class="toggle-lbl" data-i18n="txt_collab_agenzia">Collaboratore di agenzia (interinale)</div><div class="toggle-sub" data-i18n="txt_collab_agenzia_sub">Mostra badge AGZ, filtrabile nel report</div></div>
@@ -1385,6 +1390,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         <button class="btn btn-g" style="margin-top:4px;padding:8px 16px;font-size:13px" onclick="addDocumentoOp()" data-i18n="btn_aggiungi_doc">➕ Aggiungi documento</button>
       </div>
     </div>
+    <div id="o-acc-msg" style="display:none;font-size:13px;line-height:1.5;border-radius:var(--rsm);padding:10px 12px;margin-top:10px;white-space:pre-wrap"></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op')" data-i18n="btn_annulla">Annulla</button>
@@ -2032,7 +2038,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='4';
+const APP_VERSIONE='5';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4048,8 +4054,8 @@ async function afterLogin(){
     // P23/P24: check ?timbra=1
     if(new URLSearchParams(window.location.search).get('timbra')==='1'){mostraTimbratura();}
     else{controllaTimbraturaSerale();}
-    // PE: alert settimanale foto archivio
-    controllaAlertFoto();
+    // PE: alert settimanale foto archivio — P5: sostituito da "📷 Foto da scaricare" in Da sistemare
+    // (il vecchio avviso eliminava le foto senza controllare scaricamento ed esito)
     // PUNTO_59: verifica tabella ore_contrattuali e alert dicembre
     verificaOreContrattuali();
     const _dicNow=new Date();
@@ -4522,12 +4528,15 @@ async function renderFotoCantiere(filtro){
       <div class="sec" style="margin:0">📷 Foto cantiere</div>
       <button class="btn-icon btn-sm" onclick="downloadFotoZip()" id="btn-dl-foto">⬇️ Scarica ZIP</button>
     </div>
+    <div id="p5-zip-azioni"></div>
+    <div id="p5-spazio"></div>
     ${filtroHtml}
     <div class="security-badge">
       <span style="font-size:16px;flex-shrink:0">🔒</span>
       <span>Le foto sono al sicuro su Supabase (cloud AWS). Non dipendono dal telefono — finché il progetto è attivo, ci sono sempre. Scarica lo ZIP per averle anche sul PC.</span>
     </div>
     <div class="empty"><div class="spin" style="margin:0 auto"></div></div>`;
+  _p5AggiornaAzioniZip();_p5MostraSpazio(); // P5
   try{
     const {data:foto,error}=await sb.from('foto').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}).order('created_at',{ascending:false});
     if(error)throw error;
@@ -4628,7 +4637,7 @@ async function downloadFotoZip(){
     await caricaJSZip();
     const zip=new JSZip();
     const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
-    let ok=0,fail=0;
+    let ok=0,fail=0;const inclusi=[]; // P5: le foto davvero messe nello ZIP
     showToast(t('lbl_scarico_foto'));
     for(const f of foto){
       try{
@@ -4641,7 +4650,7 @@ async function downloadFotoZip(){
         const dataFoto=f.data||'senza_data';
         const chi=(f.caricato_da||'op').replace(/[^a-zA-Z0-9]/g,'_');
         zip.folder(dataFoto).file(`${dataFoto}_${chi}_${ok+1}.${ext}`,blob);
-        ok++;
+        ok++;inclusi.push({id:f.id,path:f.storage_path});
       }catch(fe){fail++;}
     }
     if(ok===0){showToast('Nessuna foto scaricabile','e');return;}
@@ -4652,6 +4661,7 @@ async function downloadFotoZip(){
     a.click();
     URL.revokeObjectURL(a.href);
     showToast(t('lbl_zip_foto')+ok+t('lbl_zip_foto2')+(fail?' ('+fail+t('lbl_errori')+')':''));
+    await _p5DopoZip(curCant.id,inclusi); // P5: data di scaricamento + tasto "Elimina le foto scaricate"
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{if(btn){btn.textContent='⬇️ Scarica ZIP';btn.disabled=false;}}
 }
@@ -4862,7 +4872,7 @@ function aggiungiMgFoto(e){
   const files=Array.from(e.target.files);if(!files.length)return;
   e.target.value='';
   const grid=document.getElementById('mg-foto-nuove');
-  files.forEach(f=>{compressImg(f,800,compressed=>{mgFotoFiles.push(compressed);const r=new FileReader();r.onload=ev=>{const div=document.createElement('div');div.style.cssText='position:relative';div.innerHTML=`<img src="${ev.target.result}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm)"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">🆕 ${f.name.substring(0,15)}</div>`;grid.appendChild(div);};r.readAsDataURL(compressed);});});
+  files.forEach(f=>{p5ComprimiFoto(f,compressed=>{mgFotoFiles.push(compressed);const r=new FileReader();r.onload=ev=>{const div=document.createElement('div');div.style.cssText='position:relative';div.innerHTML=`<img src="${ev.target.result}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--rsm)"><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:3px 5px;border-radius:0 0 var(--rsm) var(--rsm)">🆕 ${f.name.substring(0,15)}</div>`;grid.appendChild(div);};r.readAsDataURL(compressed);});});
 }
 function calcOreModifica(){
   const ini=document.getElementById('mg-ini').value,fine=document.getElementById('mg-fine').value;
@@ -6125,6 +6135,7 @@ function openModalOp(id){
     delW.appendChild(delBtn);
   }
   _p4CompilaVisibilitaScheda(o); // P4
+  _p5MsgScheda('');_p5StatoAccountScheda(o); // C4
   openModal('mod-op');
 }
 async function saveOp(){
@@ -6155,26 +6166,48 @@ async function saveOp(){
       agenzia:isAgenzia,
       nome_agenzia:isAgenzia?(document.getElementById('o-nome-agenzia')?.value.trim()||null):null
     };
-    // P1-A: fine rapporto vuota = persona attiva (serve anche a riattivare un rimosso);
-    // fine gia' passata = non attiva; fine oggi o futura = stato invariato.
+    // C4: regola unica per "Fine rapporto", ricalcolata a ogni salvataggio:
+    // vuota = tempo indeterminato = attivo; oggi o futura = attivo; passata = non attivo.
+    // Eccezione: chi e' stato rimosso OGGI e si salva senza toccare la data resta rimosso
+    // (altrimenti "data oggi = attivo" lo riattiverebbe a ogni salvataggio).
     const _oggiOp=new Date().toISOString().split('T')[0];
-    if(!fine)p.attivo=true;else if(fine<_oggiOp)p.attivo=false;
-    // P4: accesso app PRIMA di salvare la scheda. Se non riesce, la scheda non si salva.
-    let _p4Avviso='';
+    const prima=editOid?((OPERAI_TUTTI||[]).find(x=>x.id===editOid)||{}):{};
+    const _rimossoOggi=!!editOid&&prima.attivo===false&&prima.data_fine_rapporto===_oggiOp&&fine===_oggiOp;
+    p.attivo=!fine||fine>_oggiOp||(fine===_oggiOp&&!_rimossoOggi);
+    // P4 + C4: accesso app PRIMA di salvare la scheda. Se non riesce, la scheda non si salva.
+    let _p4Avviso='';const _avvisi=[];
     if(editOid){
-      const prima=(OPERAI_TUTTI||[]).find(x=>x.id===editOid)||{};
       if(_p4PuoGestireVisibilita()&&('vede_tutti_cantieri' in prima))p.vede_tutti_cantieri=!!document.getElementById('o-vede-tutti')?.checked;
       const emPrima=String(prima.email||'').trim().toLowerCase(),emDopo=String(p.email||'').trim().toLowerCase();
+      const attPrima=_opAttivo(prima),attDopo=p.attivo;
+      let sbloccato=false;
+      // 1. torna attiva: PRIMA si sblocca (sull'email di prima), poi il resto
+      if(attDopo&&!attPrima&&emPrima){
+        const r=await _p4GestisciAccesso('sblocca',editOid);
+        if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON riattivato, la scheda non è stata salvata.\n'+r.errore);
+        if(r.nessunAccount)_avvisi.push('Nessun account app con l\'email '+emPrima+': riattivata solo la scheda.');
+        sbloccato=r.ok;
+      }
+      // 2. cambio email (account e scheda insieme, nella funzione)
       if(emPrima&&emDopo!==emPrima){
         const r=await _p4GestisciAccesso('cambia-email',editOid,{nuova_email:emDopo});
-        if(!r.ok&&!r.nessunAccount)throw new Error('email NON cambiata, la scheda non è stata salvata. '+r.errore);
+        if(!r.ok&&!r.nessunAccount){
+          let nota='';
+          if(sbloccato){ // si rimette com'era: l'account torna bloccato
+            const rb=await _p4GestisciAccesso('blocca',editOid);
+            nota=rb.ok?'\nL\'account è stato bloccato di nuovo, come prima.':'\nATTENZIONE: l\'account era stato sbloccato e NON si è riusciti a bloccarlo di nuovo: '+rb.errore;
+          }
+          throw new Error('email NON cambiata, la scheda non è stata salvata.\n'+r.errore+nota);
+        }
         if(r.ok)p.email=emDopo;
+        else _avvisi.push('Nessun account app con l\'email '+emPrima+': è cambiata solo l\'email della scheda, nessun accesso è stato modificato.\nSe questa persona ha un account con un\'altra email, la scheda NON è collegata.');
       }
-      const attPrima=_opAttivo(prima),attDopo=_opAttivo(Object.assign({},prima,p));
-      if(attPrima!==attDopo&&(emDopo||emPrima)){
-        const r=await _p4GestisciAccesso(attDopo?'sblocca':'blocca',editOid);
-        if(!r.ok&&!r.nessunAccount)throw new Error((attDopo?'accesso app NON riattivato':'accesso app NON bloccato')+', la scheda non è stata salvata. '+r.errore);
+      // 3. non attiva (data passata): ogni salvataggio chiama "blocca"
+      if(!attDopo&&(emPrima||emDopo)){
+        const r=await _p4GestisciAccesso('blocca',editOid);
+        if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON bloccato, la scheda non è stata salvata.\n'+r.errore);
         if(r.avviso)_p4Avviso=r.avviso;
+        if(r.nessunAccount&&attPrima)_avvisi.push('Nessun account app con l\'email '+(emDopo||emPrima)+': non c\'era un accesso da bloccare.');
       }
     }
     if(editOid){
@@ -6194,7 +6227,8 @@ async function saveOp(){
     }
     await loadOperai();closeModal('mod-op');renderPersonale();showToast(t('toast_salvato'));
     if(_p4Avviso)setTimeout(function(){showToast(_p4Avviso);},2600);
-  }catch(e){showToast('Errore: '+e.message,'e');}
+    if(_avvisi.length)setTimeout(function(){alert(_avvisi.join('\n\n'));},300); // C4: mai in silenzio
+  }catch(e){showToast('Errore: '+e.message,'e');_p5MsgScheda('Errore: '+e.message,'e');}
   finally{if(btnSalva){btnSalva.disabled=false;btnSalva.textContent=txtSalva;}}
 }
 // P1-A: "Rimuovi" non cancella: segna la persona come non attiva e mette la fine
@@ -6206,10 +6240,12 @@ async function deleteOp(id){
     const o=(OPERAI_TUTTI||[]).find(x=>x.id===id);
     // P4: chi ha un account viene bloccato PRIMA; solo se riesce diventa non attivo
     let _p4Avviso='';
+    let _avvisoNA='';
     if(o&&o.email){
       const r=await _p4GestisciAccesso('blocca',id);
-      if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON bloccato, la persona resta attiva. '+r.errore);
+      if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON bloccato, la persona resta attiva.\n'+r.errore);
       if(r.avviso)_p4Avviso=r.avviso;
+      if(r.nessunAccount)_avvisoNA='Nessun account app con l\'email '+o.email+': rimossa solo la scheda (non c\'era un accesso da bloccare).';
     }
     const oggi=new Date().toISOString().split('T')[0];
     const upd={attivo:false};
@@ -6221,7 +6257,8 @@ async function deleteOp(id){
     if(document.getElementById('scr-personale')?.classList.contains('on'))renderPersonale();else renderAdmin();
     showToast('Rimosso ✓ — lo storico resta');
     if(_p4Avviso)setTimeout(function(){showToast(_p4Avviso);},2600);
-  }catch(e){showToast('Errore: '+e.message,'e');}
+    if(_avvisoNA)setTimeout(function(){alert(_avvisoNA);},300); // C4: mai in silenzio
+  }catch(e){showToast('Errore: '+e.message,'e');_p5MsgScheda('Errore: '+e.message,'e');}
 }
 
 // ── DOCUMENTI OPERAI ──
@@ -6242,7 +6279,7 @@ async function renderDocumentiOp(operaioId){
       +'<div><div style="font-size:13px;font-weight:600;color:'+cl+'">'+escHtml(d.tipo)+badge+'</div>'
       +(d.scadenza?'<div style="font-size:11px;color:var(--t2)">'+t('lbl_scade')+': '+fmtDate(d.scadenza)+'</div>':'<div style="font-size:11px;color:var(--t2)">'+t('empty_scadenza')+'</div>')
       +(d.note?'<div style="font-size:11px;color:var(--t2)">'+escHtml(d.note)+'</div>':'')
-      +'</div><button onclick="eliminaDocumentoOp(\''+d.id+'\')" style="background:none;border:1px solid rgba(224,85,85,.3);border-radius:5px;color:var(--red);font-size:11px;padding:3px 8px;cursor:pointer;flex-shrink:0">🗑️</button></div>';
+      +'</div>'+(_ruoloApp()==='titolare'?'<button onclick="eliminaDocumentoOp(\''+d.id+'\')" style="background:none;border:1px solid rgba(224,85,85,.3);border-radius:5px;color:var(--red);font-size:11px;padding:3px 8px;cursor:pointer;flex-shrink:0">🗑️</button>':'')+'</div>';
   }).join('');
 }
 async function addDocumentoOp(){
@@ -6261,8 +6298,10 @@ async function addDocumentoOp(){
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
 async function eliminaDocumentoOp(docId){
+  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare può eliminare i documenti','e');return;} // P5
   if(!confirm(t('conf_elimina_doc')))return;
-  await sb.from('documenti_operai').delete().eq('id',docId);
+  const{data,error}=await sb.from('documenti_operai').delete().eq('id',docId).select('id');
+  if(error||!data||!data.length){showToast('Documento NON eliminato: '+(error?error.message:'il database ha rifiutato (0 righe)'),'e');return;}
   renderDocumentiOp(editOid);
   showToast(t('toast_eliminato'));
 }
@@ -6272,7 +6311,7 @@ function apriFotoCamera(){document.getElementById('foto-inp-cam').click();}
 function apriFotoGalleria(){document.getElementById('foto-inp').click();}
 function addFoto(e){
   const files=Array.from(e.target.files);e.target.value='';
-  files.forEach(f=>{compressImg(f,800,compressed=>{fFiles.push(compressed);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(compressed);});});
+  files.forEach(f=>{p5ComprimiFoto(f,compressed=>{fFiles.push(compressed);const r=new FileReader();r.onload=ev=>{fB64.push(ev.target.result);renderFoto();};r.readAsDataURL(compressed);});});
 }
 function renderFoto(){document.getElementById('foto-prv').innerHTML=fB64.map((b,i)=>`<div class="fthumb"><img src="${b}"><button class="fdel" onclick="delFoto(${i})">×</button></div>`).join('');}
 function delFoto(i){fFiles.splice(i,1);fB64.splice(i,1);renderFoto();}
@@ -6320,7 +6359,7 @@ async function aggiornaBadgeSituazione(){
       sb.from('assenze').select('id',{count:'exact'}).eq('stato','in_attesa'),
       sb.from('giornate').select('id',{count:'exact'}).eq('cantiere_da_assegnare',true)
     ]);
-    const tot=(await _p3ContaDaRegistrare())+(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0)+(timb?.length||0);
+    const tot=(await _p5ContaFotoDaScaricare())+(await _p3ContaDaRegistrare())+(spese?.length||0)+(regia?.length||0)+(assInAttesa?.length||0)+(timb?.length||0);
     const badge=document.getElementById('sit-badge');if(!badge)return;
     if(tot>0){badge.textContent=tot>99?'99+':tot;badge.style.display='inline-flex';}else badge.style.display='none';
   }catch(e){}
@@ -6990,6 +7029,161 @@ function compressImg(file,maxKB,callback){
   reader.readAsDataURL(file);
 }
 
+// ══════════════════════════════════════════════════
+// P5 — FOTO: compressione, scarica ed elimina, foto da scaricare, spazio
+// ══════════════════════════════════════════════════
+const P5_LATO_MAX=1600;      // lato lungo massimo in pixel
+const P5_KB_OBIETTIVO=420;   // "circa 400 KB"
+const P5_QUALITA_MIN=0.6;    // sotto questa qualita' scritte e metri diventano illeggibili: ci si ferma
+// Riduce il lato lungo a 1600 px e abbassa la qualita' solo quanto serve per stare intorno ai 400 KB.
+function p5ComprimiFoto(file,callback){
+  if(!file||!file.type||!file.type.startsWith('image/')){callback(file);return;}
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=function(){
+    URL.revokeObjectURL(url);
+    const lato=Math.max(img.naturalWidth,img.naturalHeight)||1;
+    const k=Math.min(1,P5_LATO_MAX/lato);
+    const w=Math.max(1,Math.round(img.naturalWidth*k)),h=Math.max(1,Math.round(img.naturalHeight*k));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h); // PNG trasparenti: fondo bianco invece di nero
+    ctx.drawImage(img,0,0,w,h);
+    const qualita=[0.86,0.8,0.74,0.68,P5_QUALITA_MIN];
+    let i=0;
+    const prova=function(){
+      canvas.toBlob(function(blob){
+        if(!blob){callback(file);return;}
+        if(blob.size<=P5_KB_OBIETTIVO*1024||i>=qualita.length-1){
+          callback(new File([blob],(file.name||'foto').replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg',lastModified:Date.now()}));
+        }else{i++;prova();}
+      },'image/jpeg',qualita[i]);
+    };
+    prova();
+  };
+  img.onerror=function(){URL.revokeObjectURL(url);callback(file);};
+  img.src=url;
+}
+
+// ── Scarica ZIP → elimina SOLO le foto di quello ZIP (solo titolare) ──
+let _p5UltimoZip=null; // {cantId, foto:[{id,path}]} — esiste solo dopo uno ZIP scaricato davvero
+async function _p5DopoZip(cantId,inclusi){
+  // la data di scaricamento la prende ogni foto scaricata dall'ufficio (titolare o responsabile)
+  if(['titolare','responsabile'].includes(_ruoloApp())&&inclusi.length){
+    const ora=new Date().toISOString();const ids=inclusi.map(x=>x.id);let segnate=0,errore='';
+    for(let i=0;i<ids.length;i+=100){
+      const blocco=ids.slice(i,i+100);
+      const{data,error}=await sb.from('foto').update({scaricata_il:ora,scaricata_da:USER.id}).in('id',blocco).select('id');
+      if(error){errore=error.message;break;}
+      segnate+=(data||[]).length;
+    }
+    if(errore||segnate!==ids.length)showToast('ZIP scaricato, ma la data di scaricamento NON è stata salvata su '+(ids.length-segnate)+' foto'+(errore?' ('+errore+')':''),'e');
+  }
+  _p5UltimoZip=_ruoloApp()==='titolare'&&inclusi.length?{cantId,foto:inclusi}:null;
+  _p5AggiornaAzioniZip();
+}
+function _p5AggiornaAzioniZip(esito){
+  const el=document.getElementById('p5-zip-azioni');if(!el)return;
+  const z=_p5UltimoZip;
+  let h=esito?'<div style="font-size:12px;margin-bottom:8px;padding:8px 12px;border-radius:var(--rsm);background:var(--s2)">'+esito+'</div>':'';
+  if(z&&curCant&&z.cantId===curCant.id&&z.foto.length){
+    h+='<button class="btn btn-d" style="margin-bottom:12px;font-size:13px;padding:10px" onclick="p5EliminaFotoScaricate(this)">🗑️ Elimina le foto scaricate ('+z.foto.length+')</button>';
+  }
+  el.innerHTML=h;
+}
+async function p5EliminaFotoScaricate(btn){
+  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare può eliminare le foto','e');return;}
+  const z=_p5UltimoZip;
+  if(!z||!curCant||z.cantId!==curCant.id||!z.foto.length){showToast('Prima scarica lo ZIP','e');return;}
+  const n=z.foto.length;
+  if(!confirm('Eliminare '+n+' foto dal cloud?\n\nHai salvato lo ZIP sul PC?\n\nSi eliminano solo le foto di quello ZIP. Una volta eliminate non si recuperano.'))return;
+  if(btn){btn.disabled=true;btn.textContent='⏳ Eliminazione…';}
+  let ok=0,nonStorage=0,nonRiga=0;const rimaste=[];
+  for(const f of z.foto){
+    // 1° il file nello Storage: se non si cancella, la riga resta (la foto e' ancora li')
+    let sOk=false;
+    try{const{data,error}=await sb.storage.from('cantiere-foto').remove([f.path]);sOk=!error&&Array.isArray(data)&&data.length>0;}catch(e){sOk=false;}
+    if(!sOk){nonStorage++;rimaste.push(f);continue;}
+    // 2° la riga
+    const{data:d,error:e2}=await sb.from('foto').delete().eq('id',f.id).select('id');
+    if(e2||!d||!d.length){nonRiga++;continue;}
+    ok++;
+  }
+  _p5UltimoZip=rimaste.length?{cantId:z.cantId,foto:rimaste}:null;
+  let msg='🗑️ Eliminate <strong>'+ok+'</strong> foto su '+n+'.';
+  if(nonStorage)msg+='<br><span style="color:var(--red)">⚠️ '+nonStorage+' NON eliminate: il file nello Storage non si è cancellato, la foto resta.</span>';
+  if(nonRiga)msg+='<br><span style="color:var(--red)">⚠️ '+nonRiga+' file cancellati ma la riga è rimasta: comparirà come ⚠️, segnalalo.</span>';
+  showToast(nonStorage||nonRiga?'Eliminazione incompleta: leggi il riepilogo':'Foto eliminate ✓',nonStorage||nonRiga?'e':undefined);
+  await renderFotoCantiere();
+  _p5AggiornaAzioniZip(msg);
+  _p5MostraSpazio();aggiornaBadgeSituazione();
+}
+
+// ── Spazio usato dalle foto rispetto a 1 GB (solo titolare) ──
+async function _p5MostraSpazio(){
+  const el=document.getElementById('p5-spazio');if(!el)return;
+  if(_ruoloApp()!=='titolare'){el.innerHTML='';return;}
+  const{data,error}=await sb.rpc('app_spazio_foto');
+  const el2=document.getElementById('p5-spazio');if(!el2)return;
+  if(error||!data){el2.innerHTML='<div style="font-size:11px;color:var(--t3);margin-bottom:10px">Spazio non disponibile'+(error?' ('+escHtml(error.message)+')':'')+'</div>';return;}
+  const GB=1024*1024*1024,mb=b=>(b/1024/1024).toFixed(0);
+  const foto=Number(data.foto||0),tot=Number(data.totale||0),pct=Math.min(100,tot/GB*100);
+  const allarme=pct>=70;
+  el2.innerHTML='<div style="background:var(--s2);border-radius:var(--rsm);padding:10px 12px;margin-bottom:12px'+(allarme?';border:1px solid var(--orange)':'')+'">'
+    +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>💾 Foto: <strong>'+mb(foto)+' MB</strong> ('+(data.n_foto||0)+' file)</span><span>Storage totale: <strong>'+mb(tot)+' MB</strong> su 1 GB · '+pct.toFixed(0)+'%</span></div>'
+    +'<div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct.toFixed(1)+'%;background:'+(allarme?'var(--orange)':'var(--green)')+'"></div></div>'
+    +(allarme?'<div style="font-size:12px;color:var(--orange);font-weight:700;margin-top:6px">⚠️ Spazio oltre il 70%: scarica lo ZIP delle foto vecchie ed eliminale.</div>':'')
+    +'</div>';
+}
+
+// ── "📌 Da sistemare": foto più vecchie di 30 giorni non ancora scaricate ──
+function _p5Soglia30(){const d=new Date();d.setDate(d.getDate()-30);return d.toISOString().split('T')[0];}
+async function _p5ContaFotoDaScaricare(){
+  if(!['titolare','responsabile'].includes(_ruoloApp()))return 0;
+  const{count,error}=await sb.from('foto').select('id',{count:'exact',head:true}).is('scaricata_il',null).lt('data',_p5Soglia30());
+  if(error){console.warn('Foto da scaricare:',error.message);return 0;}
+  return count||0;
+}
+async function renderFotoDaScaricare(){
+  const wrap=document.getElementById('sit-foto-wrap'),el=document.getElementById('sit-foto-content');
+  if(!wrap||!el)return;
+  if(!['titolare','responsabile'].includes(_ruoloApp())){wrap.style.display='none';return;}
+  const{data,error}=await sb.from('foto').select('cantiere_id').is('scaricata_il',null).lt('data',_p5Soglia30());
+  if(error){wrap.style.display='block';el.innerHTML='<div class="warn on">Foto da scaricare non disponibili: '+escHtml(error.message)+'</div>';return;}
+  const righe=data||[];
+  if(!righe.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const perCant={};righe.forEach(r=>{perCant[r.cantiere_id]=(perCant[r.cantiere_id]||0)+1;});
+  document.getElementById('sit-foto-n').textContent=righe.length;
+  el.innerHTML='<div style="font-size:13px;color:var(--t2);margin-bottom:8px">'+righe.length+' foto da scaricare: più vecchie di 30 giorni e mai scaricate in uno ZIP.</div>'
+    +Object.entries(perCant).sort((a,b)=>b[1]-a[1]).map(([cid,n])=>{
+      const c=(CANTIERI||[]).find(x=>x.id===cid);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:6px">'
+        +'<span style="font-size:13px"><strong>'+escHtml(c?c.nome:'Cantiere')+'</strong> · '+n+' foto</span>'
+        +(c?'<button class="btn btn-s btn-sm" onclick="enterCantiere(\''+cid+'\').then(apriFotoCantiere)">📷 Apri</button>':'')+'</div>';
+    }).join('');
+}
+
+// ── C4: messaggi della scheda collaboratore (accesso app), sempre a schermo ──
+function _p5MsgScheda(testo,tipo){
+  const el=document.getElementById('o-acc-msg');if(!el)return;
+  if(!testo){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='block';
+  el.style.background=tipo==='e'?'rgba(224,85,85,.12)':'var(--s2)';
+  el.style.border='1px solid '+(tipo==='e'?'var(--red)':'var(--border)');
+  el.style.color=tipo==='e'?'var(--red)':'var(--text)';
+  el.textContent=testo;
+  if(tipo==='e')try{el.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(_e){}
+}
+function _p5StatoAccountScheda(o){
+  const el=document.getElementById('o-acc-stato');if(!el)return;
+  const em=String(o?.email||'').trim().toLowerCase();
+  if(!o){el.textContent='';return;}
+  if(!em){el.textContent='Senza email: nessun accesso app collegato.';return;}
+  if(_ruoloApp()!=='titolare'||!_profiliAppCache){el.textContent='';return;}
+  el.textContent=_profiliAppCache[em]?'🔑 Account app collegato a questa email.':'⚠️ Nessun account app con questa email: la scheda non è collegata a un accesso.';
+}
+
 async function controllaAlertFoto(){
   try{
     if(PROF?.ruolo!=='titolare'){
@@ -7117,7 +7311,7 @@ const MENU_TASTI={home:'nb-home',nuova:'nb-giornata',spese:'nb-spese',situazione
 function _ruoloApp(){const r=PROF&&PROF.ruolo;return MENU_RUOLO[r]?r:'operaio';}
 // P2b: sezioni tolte per tutti, titolare compreso. Il codice e i dati restano:
 // per riattivarne una basta toglierla da questa lista.
-const SEZIONI_TOLTE=['pagamenti','contabilita'];
+const SEZIONI_TOLTE=['pagamenti','contabilita','sal'];
 function puoAprire(dest){
   if(SEZIONI_TOLTE.includes(MENU_PADRE[dest]||dest))return false;
   const m=MENU_RUOLO[_ruoloApp()];
@@ -7233,6 +7427,7 @@ function navTo(dest){
 // ── SITUAZIONE ──
 async function renderSituazione(){
   renderSpeseDaRegistrare(); // P3
+  renderFotoDaScaricare(); // P5
   // Timbrature da assegnare (P23/P24 — solo titolare/responsabile)
   if(['titolare','responsabile'].includes(PROF?.ruolo)){
     const elTimbW=document.getElementById('sit-timb-wrap');
@@ -7522,17 +7717,25 @@ async function _p4SalvaCantieriInPiu(opId){
 }
 
 // ── Accesso app: funzione "gestisci-accesso" (cambia-email, blocca, sblocca) ──
+const P5_NON_RAGGIUNGIBILE='Funzione gestisci-accesso non raggiungibile: è installata su Supabase?';
+function p5TempoIndeterminato(){
+  const f=document.getElementById('o-fine');if(f)f.value='';
+  const w=document.getElementById('o-fine-warn');if(w)w.style.display='none';
+}
 async function _p4GestisciAccesso(azione,operaioId,extra){
   try{
     const{data,error}=await sb.functions.invoke('gestisci-accesso',{body:Object.assign({azione,operaio_id:operaioId},extra||{})});
     if(error){
+      // C4: funzione assente o irraggiungibile → lo si dice chiaramente
+      if(error.name==='FunctionsFetchError'||error.name==='FunctionsRelayError'||/Failed to send a request/i.test(error.message||''))return{ok:false,errore:P5_NON_RAGGIUNGIBILE};
       let j=null;try{j=await error.context?.json?.();}catch(_je){}
       if(j&&j.codice==='nessun_account')return{ok:false,nessunAccount:true};
-      return{ok:false,errore:(j&&j.error)||error.message||'Errore sconosciuto'};
+      if(!j||(!j.error&&(error.context?.status===404)))return{ok:false,errore:P5_NON_RAGGIUNGIBILE};
+      return{ok:false,errore:j.error||j.message||error.message||'Errore sconosciuto'};
     }
     if(data&&data.error)return{ok:false,errore:data.error,nessunAccount:data.codice==='nessun_account'};
     return{ok:true,avviso:data?.avviso||''};
-  }catch(e){return{ok:false,errore:e.message};}
+  }catch(e){return{ok:false,errore:P5_NON_RAGGIUNGIBILE+' ('+e.message+')'};}
 }
 // All'avvio e a ogni ritorno sull'app: se la persona collegata non e' piu' attiva, si esce.
 // Il titolare e' escluso: non si chiude fuori da solo.
@@ -9800,6 +10003,7 @@ async function resetPasswordOperaio(email){
 let editSalId=null;
 
 function apriModalSal(cantId){
+  if(!puoAprire('sal')){showToast('Sezione non disponibile','e');return;} // P5: SAL tolto (la tabella non esiste)
   editSalId=null;
   const sc=document.getElementById('sal-cant-sel');
   if(sc)sc.innerHTML=(CANTIERI||[]).map(c=>'<option value="'+c.id+'"'+(c.id===cantId?' selected':'')+'>'+c.nome+'</option>').join('');
