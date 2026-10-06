@@ -997,6 +997,10 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
       <div class="sec" style="display:flex;align-items:center;gap:8px"><span>📷 Foto da scaricare</span><span id="sit-foto-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-foto-content"></div>
     </div>
+    <div id="sit-senzacant-wrap" style="display:none;margin-bottom:16px">
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>🚧 Persone senza cantiere</span><span id="sit-senzacant-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div id="sit-senzacant-content"></div>
+    </div>
     <div id="sit-spreg-wrap" style="display:none;margin-bottom:16px">
       <div class="sec" style="display:flex;align-items:center;gap:8px"><span data-i18n="sec_spese_registrare">💲 Spese da registrare in Pre-contabilità</span><span id="sit-spreg-n" style="background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-spreg-content"></div>
@@ -2071,7 +2075,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='5c';
+const APP_VERSIONE='6';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4467,6 +4471,7 @@ async function renderCantiere(){
           ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="uploadCapitolato('${curCant.id}')" class="btn btn-s" style="font-size:13px">${t('btn_carica_capitolato')}</button>`:''}
         `}
       </div>`:''}
+      <div id="p6-chi-lavora" style="display:none;margin-bottom:14px"></div>
       <div style="margin-bottom:16px">
         ${puoAprire('contabilita')?`<button class="btn btn-g" style="background:linear-gradient(135deg,#1e4d2b,#2d7a42);margin-bottom:8px" onclick="apriContabilita()">${t('btn_contabilita_cant')}</button>`:''}
         <button class="btn btn-g" style="background:linear-gradient(135deg,#1b3a4b,#2a607a)" onclick="apriBudget()">${t('btn_budget_reale')}</button>
@@ -4521,6 +4526,7 @@ async function renderCantiere(){
       ${giornatePerData.length>15?`<div style="text-align:center;font-size:13px;color:var(--t3);padding:10px">... e altre ${giornatePerData.length-15} giornate — esporta Excel per vedere tutto</div>`:''}
       ${!giornatePerData.length?`<div class="empty"><div class="empty-i">📋</div><p>${t('empty_attivita')}<br>${t('empty_tocca_init')}</p></div>`:''}
     `;
+    _p6RenderChiLavora(); // P6: "👷 Chi lavora qui" (solo titolare e responsabile)
   }catch(err){
     el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>${t('lbl_errore_car')}:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">${t('lbl_riprova')}</button></div>`;
   }
@@ -7460,6 +7466,7 @@ function navTo(dest){
 async function renderSituazione(){
   renderSpeseDaRegistrare(); // P3
   renderFotoDaScaricare(); // P5
+  renderPersoneSenzaCantiere(); // P6
   // Timbrature da assegnare (P23/P24 — solo titolare/responsabile)
   if(['titolare','responsabile'].includes(PROF?.ruolo)){
     const elTimbW=document.getElementById('sit-timb-wrap');
@@ -7840,6 +7847,184 @@ function _p4OggiLaSquadra(el,ultime){
       }).join('');
     el.appendChild(c);
   });
+}
+
+// ══════════════════════════════════════════════════
+// P6 — "👷 CHI LAVORA QUI" (scheda cantiere) e PERSONE SENZA CANTIERE (Da sistemare)
+// ══════════════════════════════════════════════════
+// Stessa regola di visibilita' del passaggio 4: ultima assegnazione del Piano
+// (data <= oggi), Piano da 7 giorni fa a 7 avanti, "Cantieri in piu'",
+// "Vede tutti i cantieri"; i finti cantieri non contano. Solo titolare e responsabile.
+function _p6NomeOp(o){return ((o?.nome||'')+' '+(o?.cognome||'')).replace(/\s+/g,' ').trim()||'—';}
+function _p6Norm(s){return String(s||'').toLowerCase().replace(/\s+/g,' ').trim();}
+
+async function _p6RenderChiLavora(){
+  const box=document.getElementById('p6-chi-lavora');if(!box)return;
+  if(!_p4PuoGestireVisibilita()||!curCant){box.style.display='none';return;}
+  const cantId=curCant.id;
+  const hdr='<div class="sec" style="margin-top:4px">👷 Chi lavora qui</div>';
+  box.style.display='block';
+  box.innerHTML=hdr+'<div style="font-size:12px;color:var(--t2);padding:4px 0">Caricamento…</div>';
+  const oggi=nowZurich().date;
+  let ultime,vis;
+  try{
+    const[u,v]=await Promise.all([
+      _p4UltimeAssegnazioni(),
+      sb.from('cantieri_visibili').select('operaio_id').eq('cantiere_id',cantId)
+    ]);
+    if(v.error)throw v.error;
+    ultime=u;vis=v.data||[];
+  }catch(e){
+    if(!curCant||curCant.id!==cantId||!document.body.contains(box))return;
+    box.innerHTML=hdr+'<div class="warn on">Non disponibile: '+escHtml(e.message)+'</div>';return;
+  }
+  if(!curCant||curCant.id!==cantId||!document.body.contains(box))return; // nel frattempo aperta un'altra scheda
+  const opDi=id=>(OPERAI_TUTTI||[]).find(x=>x.id===id);
+  // 1. persone attive la cui ultima assegnazione e' questo cantiere
+  const qui=[];
+  ultime.forEach(function(righe,opId){
+    const o=opDi(opId);if(!o||!_opAttivo(o,oggi))return;
+    const r=righe.find(x=>x.cantiere_id===cantId);
+    if(r)qui.push({o,dal:r.data});
+  });
+  qui.sort((a,b)=>_p6NomeOp(a.o).localeCompare(_p6NomeOp(b.o)));
+  // 2. persone con questo cantiere in "Cantieri in piu'"
+  const quiId=new Set(qui.map(x=>x.o.id));
+  const extra=[...new Set(vis.map(r=>r.operaio_id))].map(id=>({id,o:opDi(id)}))
+    .sort((a,b)=>_p6NomeOp(a.o).localeCompare(_p6NomeOp(b.o)));
+  const riga='display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:13px';
+  const opzioni=(OPERAI_TUTTI||[]).filter(o=>_opAttivo(o,oggi)).map(o=>'<option value="'+o.id+'">'+escHtml(_p6NomeOp(o))+'</option>').join('');
+  box.innerHTML=hdr
+    +'<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">'
+    +'<div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">In cantiere da oggi</div>'
+    +(qui.length?qui.map(x=>'<div style="'+riga+'"><span>👷 '+escHtml(_p6NomeOp(x.o))+'</span><span style="color:var(--t3);font-size:11px;white-space:nowrap">dal '+_p4Dal(x.dal)+'</span></div>').join('')
+      :'<div style="font-size:13px;color:var(--t2);padding:4px 0">Nessuno: nel Piano nessuno ha questo cantiere come ultima assegnazione.</div>')
+    +'<button class="btn btn-s" style="margin-top:8px" onclick="_p6MostraMetti(true)">➕ Metti in questo cantiere da oggi</button>'
+    +'<div id="p6-metti-w" style="display:none;margin-top:8px">'
+    +'<select class="fs" id="p6-metti-op"><option value="">— Scegli la persona —</option>'+opzioni+'</select>'
+    +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-g" id="p6-metti-ok" onclick="_p6MettiQui()">💾 Metti da oggi</button>'
+    +'<button class="btn btn-s" onclick="_p6MostraMetti(false)">Annulla</button></div>'
+    +'<div style="font-size:11px;color:var(--t3);margin-top:6px">Crea nel Piano di oggi una riga con questo cantiere, senza mezzo.</div></div>'
+    +'<div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 4px">Può vederlo, ma lavora altrove</div>'
+    +(extra.length?extra.map(x=>'<div style="'+riga+'"><span>👁 '+escHtml(x.o?_p6NomeOp(x.o):'Scheda non trovata')
+        +(x.o&&!_opAttivo(x.o,oggi)?' <span style="color:var(--t3)">(non attivo)</span>':'')
+        +(quiId.has(x.id)?' <span style="color:var(--t3)">(lavora anche qui)</span>':'')+'</span>'
+        +'<button onclick="_p6TogliVisibile(\''+x.id+'\')" title="Togli l\'accesso a questo cantiere" style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.25);border-radius:var(--rsm);padding:4px 10px;cursor:pointer;color:var(--red);font-weight:700">✕</button></div>').join('')
+      :'<div style="font-size:13px;color:var(--t2);padding:4px 0">Nessuno ha questo cantiere in "Cantieri in più".</div>')
+    +'</div>';
+}
+function _p6MostraMetti(on){
+  const w=document.getElementById('p6-metti-w');if(w)w.style.display=on?'block':'none';
+}
+// Mette una persona in questo cantiere da oggi: una riga nel Piano di oggi.
+// Se la persona ha gia' righe oggi su altri cantieri, chiede prima di sostituirle.
+async function _p6MettiQui(){
+  if(!_p4PuoGestireVisibilita()||!curCant)return;
+  const opId=document.getElementById('p6-metti-op')?.value;
+  if(!opId){showToast('Scegli una persona','e');return;}
+  const cantId=curCant.id,cantNome=curCant.nome||'questo cantiere';
+  const nome=_p6NomeOp((OPERAI_TUTTI||[]).find(x=>x.id===opId));
+  const oggi=nowZurich().date;
+  const btn=document.getElementById('p6-metti-ok');if(btn)btn.disabled=true;
+  try{
+    const{data:esist,error:e1}=await sb.from('piano_giorno').select('id,cantiere_id,cantieri(nome)').eq('operaio_id',opId).eq('data',oggi);
+    if(e1)throw e1;
+    const righe=esist||[];
+    if(righe.length&&righe.every(r=>r.cantiere_id===cantId)){showToast(nome+' è già in questo cantiere oggi');_p6MostraMetti(false);return;}
+    if(righe.length){
+      const altrove=[...new Set(righe.filter(r=>r.cantiere_id!==cantId).map(r=>r.cantieri?.nome||'altro cantiere'))].join(', ');
+      if(!confirm(nome+' oggi è già nel Piano su: '+altrove+'.\n\nSostituire con '+cantNome+'?'))return;
+      // resta una riga sola (quella di questo cantiere, se c'e'); le altre si tolgono
+      const tieni=righe.find(r=>r.cantiere_id===cantId)||righe[0];
+      if(tieni.cantiere_id!==cantId){
+        // mezzo, note e albergo erano del cantiere di prima: si svuotano
+        const{data:u,error:e2}=await sb.from('piano_giorno').update({cantiere_id:cantId,mezzo_id:null,squadra:null,annotazioni:null,
+          note_caposquadra:null,nota_titolare:null,nota_titolare_letta:null,hotel_nome:null,hotel_indirizzo:null}).eq('id',tieni.id).select('id');
+        if(e2)throw e2;
+        if(!u||u.length!==1)throw new Error('assegnazione NON aggiornata (0 righe)');
+      }
+      const togli=righe.filter(r=>r.id!==tieni.id).map(r=>r.id);
+      if(togli.length){
+        const{data:d,error:e3}=await sb.from('piano_giorno').delete().in('id',togli).select('id');
+        if(e3)throw e3;
+        if(!d||d.length!==togli.length)throw new Error('le altre assegnazioni di oggi NON sono state tolte ('+(d?d.length:0)+' su '+togli.length+')');
+      }
+    }else{
+      const{data:ins,error:e4}=await sb.from('piano_giorno').insert({data:oggi,operaio_id:opId,cantiere_id:cantId,mezzo_id:null,
+        ruolo_giorno:'operaio',ordine:0,created_by:USER.id}).select('id');
+      if(e4)throw e4;
+      if(!ins||ins.length!==1)throw new Error('assegnazione NON salvata (0 righe)');
+    }
+    showToast('✓ '+nome+' in '+cantNome+' da oggi');
+    if(curCant&&curCant.id===cantId)_p6RenderChiLavora();
+  }catch(e){showToast('NON salvato: '+e.message,'e');}
+  finally{if(btn)btn.disabled=false;}
+}
+// Toglie questo cantiere dai "Cantieri in piu'" di una persona
+async function _p6TogliVisibile(opId){
+  if(!_p4PuoGestireVisibilita()||!curCant)return;
+  const cantId=curCant.id;
+  const nome=_p6NomeOp((OPERAI_TUTTI||[]).find(x=>x.id===opId));
+  if(!confirm('Togliere a '+nome+' l\'accesso a '+(curCant.nome||'questo cantiere')+'?\n\nSe nel Piano ci lavora, continua a vederlo.'))return;
+  try{
+    const{data,error}=await sb.from('cantieri_visibili').delete().eq('operaio_id',opId).eq('cantiere_id',cantId).select('id');
+    if(error)throw error;
+    if(!data||!data.length)throw new Error('accesso NON tolto (0 righe)');
+    showToast('Accesso tolto ✓');
+    if(curCant&&curCant.id===cantId)_p6RenderChiLavora();
+  }catch(e){showToast('NON tolto: '+e.message,'e');}
+}
+
+// "📌 Da sistemare": persone attive con account che non vedono nessun cantiere
+// (esclusi titolare, responsabile e chi ha "Vede tutti i cantieri").
+async function renderPersoneSenzaCantiere(){
+  const wrap=document.getElementById('sit-senzacant-wrap'),el=document.getElementById('sit-senzacant-content');
+  if(!wrap||!el)return;
+  if(!_p4PuoGestireVisibilita()){wrap.style.display='none';return;}
+  const oggi=nowZurich().date;
+  try{
+    const[ultime,fin,extra,prof,pmap]=await Promise.all([
+      _p4UltimeAssegnazioni(),
+      sb.from('piano_giorno').select('operaio_id,cantiere_id').gte('data',_p4Giorno(oggi,-7)).lte('data',_p4Giorno(oggi,7)),
+      sb.from('cantieri_visibili').select('operaio_id,cantiere_id'),
+      sb.from('profili').select('id,nome,ruolo'),
+      _caricaProfiliApp() // solo il titolare ha l'elenco degli account per email; per gli altri null
+    ]);
+    if(fin.error)throw fin.error;
+    if(extra.error)throw extra.error;
+    if(prof.error)throw prof.error;
+    const validi=new Set((CANTIERI||[]).filter(c=>!_p3CantiereFinto(c)).map(c=>c.id));
+    // account della persona: stessa email (elenco del titolare), altrimenti stesso nome e cognome (come il passaggio 4)
+    const accountDi=function(o){
+      const em=String(o.email||'').trim().toLowerCase();
+      if(pmap&&em&&pmap[em])return{ruolo:pmap[em].ruolo};
+      const n=_p6Norm(_p6NomeOp(o));
+      const p=(prof.data||[]).find(x=>_p6Norm(x.nome)===n);
+      return p?{ruolo:p.ruolo}:null;
+    };
+    const visDi=new Map();
+    const aggiungi=(opId,cid)=>{if(!opId||!cid||!validi.has(cid))return;if(!visDi.has(opId))visDi.set(opId,new Set());visDi.get(opId).add(cid);};
+    ultime.forEach((righe,opId)=>righe.forEach(r=>aggiungi(opId,r.cantiere_id)));
+    (fin.data||[]).forEach(r=>aggiungi(r.operaio_id,r.cantiere_id));
+    (extra.data||[]).forEach(r=>aggiungi(r.operaio_id,r.cantiere_id));
+    const senza=(OPERAI_TUTTI||[]).filter(function(o){
+      if(!_opAttivo(o,oggi)||o.vede_tutti_cantieri)return false;
+      const acc=accountDi(o);
+      if(!acc||['titolare','responsabile'].includes(acc.ruolo))return false;
+      return !visDi.has(o.id);
+    }).sort((a,b)=>_p6NomeOp(a).localeCompare(_p6NomeOp(b)));
+    if(!senza.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    document.getElementById('sit-senzacant-n').textContent=senza.length;
+    el.innerHTML='<div style="font-size:13px;color:var(--t2);margin-bottom:8px">'+senza.length+(senza.length===1?' persona':' persone')+' senza cantiere: '
+      +escHtml(senza.map(_p6NomeOp).join(', '))+(senza.length===1?'. Ha un account ma nell\'app non vede nessun cantiere.':'. Hanno un account ma nell\'app non vedono nessun cantiere.')+'</div>'
+      +senza.map(o=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:6px">'
+        +'<span style="font-size:13px;font-weight:600">👷 '+escHtml(_p6NomeOp(o))+'</span>'
+        +'<button class="btn btn-s btn-sm" onclick="openModalOp(\''+o.id+'\')">👤 Apri scheda</button></div>').join('');
+  }catch(e){
+    wrap.style.display='block';
+    el.innerHTML='<div class="warn on">Persone senza cantiere non disponibili: '+escHtml(e.message)+'</div>';
+  }
 }
 
 // ── SPESE — con download ──
