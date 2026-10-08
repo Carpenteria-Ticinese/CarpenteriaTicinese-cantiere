@@ -527,6 +527,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
         </div>
         <div class="fg">
           <label class="fl" data-i18n="lbl_lavori_svolti">Lavori svolti</label>
+          <div style="font-size:11px;color:var(--t2);line-height:1.4;margin:0 0 8px">Per ogni voce scrivi le <b>ore</b> lavorate (obbligatorie). La <b>quantità</b> è quanto ha fatto la squadra quel giorno: se la scrivono più persone si conta una volta sola.</div>
           <div id="g2-voci"></div>
           <div class="warn" id="g2-warn" data-i18n="warn_ore">⚠️ Somma ore lavori supera le ore totali dell'operaio</div>
           <button class="btn btn-s" style="margin-top:8px" onclick="apriSelezioneMultipla()" data-i18n="btn_aggiungi_lavorazioni">➕ Aggiungi lavorazioni</button>
@@ -2110,7 +2111,7 @@ input:checked+.toggle-sl:before{transform:translateX(20px)}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='7';
+const APP_VERSIONE='7b';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -3849,11 +3850,13 @@ async function renderBudget(cantId){
     if(ve)throw ve;
     // somme per voce
     const per={};const senza={};
+    // P7b: quantita' una volta sola per voce e giorno; ore per persona
+    _p7bQtaUnaVolta(voci,v=>v.lavorazione_id||('_'+(v.lavorazione_nome||'—')),v=>v.giornate?.data||'');
     (voci||[]).forEach(function(v){
       const d=v.giornate?.data||null;
       const k=v.lavorazione_id;
-      const box=k?(per[k]=per[k]||{ore:0,q:0,ultimo:null}):(senza[v.lavorazione_nome||'—']=senza[v.lavorazione_nome||'—']||{ore:0,q:0,ultimo:null});
-      box.ore+=parseFloat(v.ore)||0;box.q+=parseFloat(v.quantita)||0;
+      const box=k?(per[k]=per[k]||{ore:0,q:0,ultimo:null,diverse:0}):(senza[v.lavorazione_nome||'—']=senza[v.lavorazione_nome||'—']||{ore:0,q:0,ultimo:null,diverse:0});
+      box.ore+=parseFloat(v.ore)||0;box.q+=v._q;if(v._qDiverse)box.diverse++;
       if(d&&(!box.ultimo||d>box.ultimo))box.ultimo=d;
     });
     const num=x=>{const n=parseFloat(String(x??'').replace(/[^0-9.]/g,''));return isNaN(n)?1e9:n;};
@@ -3877,9 +3880,11 @@ async function renderBudget(cantId){
       const hu=(q>0&&ore>0)?ore/q:null;
       const barra=pct===null?'':'<div style="height:6px;border-radius:3px;background:var(--s3);margin:6px 0 2px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+(pct>100?'var(--red)':'var(--green)')+'"></div></div>';
       const nome=nomeLibero||(l.nome||'—');
+      const oltre=(prev>0&&q>prev+1e-9)?'<div style="background:rgba(224,85,85,.12);border:1px solid var(--red);color:var(--red);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-weight:700;margin:6px 0 2px">⚠️ OLTRE IL PREVENTIVO: fatta '+f2(q)+' '+escHtml(um)+' su '+f2(prev)+' previsti (+'+f2(q-prev)+')</div>':'';
+      const div=(a&&a.diverse)?'<div style="font-size:11px;color:var(--orange);margin-top:3px">ℹ️ In '+a.diverse+(a.diverse===1?' giorno':' giorni')+' più persone hanno scritto quantità diverse: contata la più alta del giorno</div>':'';
       const et=l?((l.origine==='libera'?(l.stato==='confermata'?' <span class="chip">voce libera</span>':' <span class="chip" style="color:var(--orange)">da confermare</span>'):'')+(l.archiviata?' <span class="chip">tolta dal preventivo</span>':'')+(l.eventuale?' <span class="chip">eventuale</span>':'')):' <span class="chip">senza voce</span>';
-      return '<div style="padding:10px 0;border-top:1px solid var(--border)">'
-        +'<div style="font-size:13px;font-weight:700;line-height:1.35">'+escHtml(_p2Corta(nome,160))+et+'</div>'+barra
+      return '<div style="padding:10px 0;border-top:1px solid var(--border)'+(oltre?';background:linear-gradient(90deg,rgba(224,85,85,.07),transparent)':'')+'">'
+        +'<div style="font-size:13px;font-weight:700;line-height:1.35">'+escHtml(_p2Corta(nome,160))+et+'</div>'+barra+oltre+div
         +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 8px;font-size:11px;color:var(--t2);margin-top:4px">'
         +'<div>Prevista<br><b style="color:var(--text);font-family:\'DM Mono\',monospace">'+(prev>0?f2(prev)+' '+escHtml(um):'—')+'</b></div>'
         +'<div>Fatta<br><b style="color:var(--text);font-family:\'DM Mono\',monospace">'+(q>0?f2(q)+' '+escHtml(um):'—')+'</b></div>'
@@ -3902,10 +3907,12 @@ async function renderBudget(cantId){
       html+='<div style="'+_capitoloCss(0)+'">Lavoro registrato senza voce</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:0 12px;margin-bottom:12px">'
         +sz.map(n=>card(null,senza[n],n)).join('')+'</div>';
     }
-    const kpi='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+    const superate=righe.filter(l=>{const p=parseFloat(l.quantita_prevista),a=per[l.id];return p>0&&a&&a.q>p+1e-9;});
+    const avvisoOltre=superate.length?'<div style="background:rgba(224,85,85,.12);border:1px solid var(--red);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;color:var(--red);font-size:13px"><b>⚠️ '+superate.length+(superate.length===1?' voce ha':' voci hanno')+' superato la quantità prevista dal preventivo</b><div style="font-size:12px;margin-top:4px;color:var(--text)">'+superate.map(l=>'• '+escHtml(_p2Corta(l.nome,70))+': '+f2(per[l.id].q)+' su '+f2(parseFloat(l.quantita_prevista))+' '+escHtml(l.um||'')).join('<br>')+'</div></div>':'';
+    const kpi=avvisoOltre+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
       +'<div class="kpi-box"><div style="font-size:22px;font-weight:900;color:var(--gold)">'+f1(totOre)+' h</div><div style="font-size:11px;color:var(--t2)">Ore spese sulle voci</div></div>'
       +'<div class="kpi-box"><div style="font-size:22px;font-weight:900">'+conLavoro+' / '+(righe.length+sz.length)+'</div><div style="font-size:11px;color:var(--t2)">Voci con lavoro</div></div></div>';
-    el.innerHTML=kpi+html+'<div style="font-size:11px;color:var(--t3);padding:6px 2px 12px">"Fatta" e "ore" vengono dalle giornate registrate. "Ore previste": spazio pronto per quando le ore previste saranno nel preventivo.</div>';
+    el.innerHTML=kpi+html+'<div style="font-size:11px;color:var(--t3);padding:6px 2px 12px">"Fatta" e "ore" vengono dalle giornate registrate. La quantità di una voce in un giorno si conta una volta sola, anche se l\'hanno scritta più persone; le ore si sommano per persona. "Ore previste": spazio pronto per quando le ore previste saranno nel preventivo.</div>';
   }catch(e){
     el.innerHTML='<div class="empty"><div class="empty-i">⚠️</div><p>Errore: '+escHtml(e.message)+'</p></div>';
   }
@@ -4405,7 +4412,7 @@ async function renderCantiere(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const [{data:giornate,error:ge},{data:spese},{data:regia},{data:materialiList}]=await Promise.all([
-      sb.from('giornate').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
+      sb.from('giornate').select('*, operai(nome,cognome,ruolo), voci_lavoro(lavorazione_nome,ore,quantita,um,lavorazioni(nome,um))').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
       _p3Filtra(sb.from('spese').select('*').eq('cantiere_id',curCant.id)).order('data',{ascending:false}),
       sb.from('regia').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}),
       sb.from('materiali').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:false}).limit(20),
@@ -4503,7 +4510,7 @@ async function renderCantiere(){
         <button class="btn btn-g" style="background:linear-gradient(135deg,#3a2a1b,#7a5a2a);margin-top:8px" onclick="exportPdfCantiere(curCant.id)">${t('btn_pdf_cant')}</button>
         ${['titolare','responsabile','caposquadra'].includes(_ruoloApp())?`<button class="btn btn-g" style="background:linear-gradient(135deg,#1e3a2b,#2d6a4a);margin-top:8px" onclick="p7ApriRapporto()">📄 Esporta rapporto cantiere</button>`:''}
       </div>
-      ${prev?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
+      ${prev&&parseInt(prev.n_voci)>0?`<div style="background:rgba(76,175,125,.08);border:1px solid rgba(76,175,125,.2);border-radius:var(--rsm);padding:8px 14px;font-size:12px;color:var(--green);margin-bottom:14px">✅ Preventivo caricato — ${prev.n_voci} voci · ${new Date(prev.created_at).toLocaleDateString('it-IT')}</div>`:''}
       ${Object.values(byOp).length?`
       <div class="sec">${t('sec_ore_op_cant')}</div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
@@ -4530,6 +4537,7 @@ async function renderCantiere(){
               <div style="cursor:pointer;flex:1" onclick="openCantLog('${g.id}')">
                 <span style="font-size:13px;font-weight:600">👷 ${g.operai?.nome||''} ${g.operai?.cognome||''}</span>
                 ${g.meteo?`<span style="font-size:12px;margin-left:8px">${g.meteo.split(' ')[0]}</span>`:''}
+                ${_p7bRiassuntoLavori(g)}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 ${g.ore_originali?`<span style="font-family:'DM Mono';font-size:11px;color:var(--t3);text-decoration:line-through">${parseFloat(g.ore_originali).toFixed(2)}h</span><span style="font-family:'DM Mono';font-size:12px;color:var(--green)">${parseFloat(g.ore_totali||0).toFixed(2)}h ✅</span>`:`<span style="font-family:'DM Mono';font-size:12px;color:var(--t2)">${parseFloat(g.ore_totali||0).toFixed(2)}h</span>`}
@@ -4788,6 +4796,7 @@ async function renderLavoriCantiere(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const {data:voci,error}=await sb.from('voci_lavoro').select('*, lavorazioni(nome,um,categoria), giornate!inner(id,data,operaio_id,pausa_minuti,ora_inizio,ora_fine,operai(nome,cognome,ruolo))').eq('giornate.cantiere_id',curCant.id).gt('ore',0).order('giornate.data',{ascending:false});
   if(error||!voci?.length){el.innerHTML='<div class="empty"><div class="empty-i">📐</div><p>'+t('empty_lav')+'</p></div>';return;}
+  _p7bQtaUnaVolta(voci,v=>v.lavorazione_id||('__'+(v.lavorazioni?.nome||v.lavorazione_nome||'Voce libera')),v=>v.giornate?.data||''); // P7b
   const byLav={};
   voci.forEach(v=>{
     const nome=v.lavorazioni?.nome||v.lavorazione_nome||'Voce libera';
@@ -4799,7 +4808,7 @@ async function renderLavoriCantiere(){
     const opNome=op?(op.nome+' '+op.cognome):'—';
     byLav[key].righe.push({data:v.giornate?.data,gid:v.giornate?.id,opNome,isCapo:op?.ruolo==='Caposquadra',ruolo:op?.ruolo||'',ore:parseFloat(v.ore||0),qty:parseFloat(v.quantita||0)||null});
     byLav[key].totOre+=parseFloat(v.ore||0);
-    byLav[key].totQty+=(parseFloat(v.quantita||0)||0);
+    byLav[key].totQty+=v._q; // P7b: una volta per voce e giorno
   });
   const capoPerGiornata={};
   voci.forEach(v=>{const gid=v.giornate?.id;const op=v.giornate?.operai;if(gid&&op&&(op.ruolo==='Caposquadra'||!capoPerGiornata[gid]))capoPerGiornata[gid]=op.nome+' '+op.cognome;});
@@ -4918,6 +4927,7 @@ async function apriModificaGiornata(gid){
   calcOreModifica();
   // Popola voci lavoro editabili
   mgRenderVoci(vociEsist||[]);
+  _p7bMgData=g.data;_p7bCaricaFatte(g.cantiere_id).then(()=>_p7bAvvisiTutti('#mg-voci-list',g.data,gid)); // P7b
   openModal('mod-modifica-g');
   const _mgPWrap=document.getElementById('mg-pasto-wrap');const _mgPCb=document.getElementById('mg-pasto');
   if(_mgPWrap&&_mgPCb){const _isTit=PROF?.ruolo==='titolare';const _soloTit=IMPOSTAZIONI.pasto_solo_titolare==='1';if(IMPOSTAZIONI.pasti_abilitati==='1'&&(_isTit||!_soloTit)){_mgPWrap.style.display='block';_mgPCb.checked=!!g.pasto_riconosciuto;}else{_mgPWrap.style.display='none';}}
@@ -5044,6 +5054,8 @@ function mgAggiungiVoce(){
 
 async function salvaModificaGiornata(){
   if(!modificaGid)return;
+  const _p7bErr=_p7bControllaVoci('#mg-voci-list .voce-row');if(_p7bErr){showToast(_p7bErr,'e');return;} // P7b
+  const _p7bOltre=_p7bAvvisiTutti('#mg-voci-list',_p7bMgData,modificaGid);
   const btn=document.getElementById('btn-salva-modifica');btn.textContent='⏳...';btn.disabled=true;
   try{
     const meteoEl=document.querySelector('#mod-modifica-g .meteo-b.on');
@@ -5134,6 +5146,7 @@ async function salvaModificaGiornata(){
     }
     logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
 closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
+    if(_p7bOltre.length&&!_p2KoMg)showToast('Giornata aggiornata. ⚠️ OLTRE IL PREVENTIVO: '+_p7bTestoOltre(_p7bOltre),'e');
     if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
   }catch(err){showToast('Giornata NON salvata, riprova. ('+err.message+')','e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
@@ -5427,7 +5440,7 @@ async function _p7RapportoDati(){
   if(!dal||!al||dal>al)throw new Error('Scegli un periodo valido (dal ≤ al)');
   const cantId=curCant.id;
   const[{data:gior,error:ge},{data:lavs,error:le}]=await Promise.all([
-    sb.from('giornate').select('id,data,ora_inizio,ora_fine,pausa_minuti,ore_totali,note,operaio_id,operai(nome,cognome),voci_lavoro(lavorazione_id,lavorazione_nome,ore,quantita,um)')
+    sb.from('giornate').select('id,data,ora_inizio,ora_fine,pausa_minuti,ore_totali,note,materiale_giorno,attrezzatura_giorno,operaio_id,operai(nome,cognome),voci_lavoro(lavorazione_id,lavorazione_nome,ore,quantita,um)')
       .eq('cantiere_id',cantId).gte('data',dal).lte('data',al).order('data',{ascending:true}),
     sb.from('lavorazioni').select('id,codice,nome,categoria,um,quantita_prevista').eq('cantiere_id',cantId)
   ]);
@@ -5435,6 +5448,9 @@ async function _p7RapportoDati(){
   const lavById={};(lavs||[]).forEach(l=>{lavById[l.id]=l;});
   const persona=g=>((g.operai?.nome||'')+' '+(g.operai?.cognome||'')).trim()||'—';
   const righe=[];const perVoce={};const perPersona={};
+  // P7b: quantita' una volta per voce e giorno
+  const tutte=[];(gior||[]).forEach(g=>(g.voci_lavoro||[]).forEach(v=>{v._data=g.data;tutte.push(v);}));
+  _p7bQtaUnaVolta(tutte,v=>v.lavorazione_id||('_'+(v.lavorazione_nome||'—')),v=>v._data);
   (gior||[]).forEach(function(g){
     const p=persona(g);
     perPersona[p]=perPersona[p]||{giorni:new Set(),ore:0};perPersona[p].giorni.add(g.data);perPersona[p].ore+=parseFloat(g.ore_totali)||0;
@@ -5445,8 +5461,8 @@ async function _p7RapportoDati(){
       const voce=(l?l.nome:v.lavorazione_nome)||'—';const um=(l&&l.um)||v.um||'';
       const k=v.lavorazione_id||('_'+voce);
       perVoce[k]=perVoce[k]||{voce,capitolo:(l&&l.categoria)||'',um,prevista:l?parseFloat(l.quantita_prevista):NaN,q:0,ore:0};
-      perVoce[k].q+=parseFloat(v.quantita)||0;perVoce[k].ore+=parseFloat(v.ore)||0;
-      righe.push({data:g.data,persona:p,voce,capitolo:(l&&l.categoria)||'',ore:parseFloat(v.ore)||0,quantita:v.quantita!=null?parseFloat(v.quantita):null,um,note:g.note||''});
+      perVoce[k].q+=v._q;perVoce[k].ore+=parseFloat(v.ore)||0;
+      righe.push({data:g.data,persona:p,voce,capitolo:(l&&l.categoria)||'',ore:parseFloat(v.ore)||0,quantita:v.quantita!=null?parseFloat(v.quantita):null,qContata:v._q||null,um,note:g.note||''});
     });
   });
   return{dal,al,gior:gior||[],righe,perVoce:Object.values(perVoce).sort((a,b)=>b.ore-a.ore),perPersona,persona};
@@ -5458,12 +5474,14 @@ async function p7RapportoExcel(){
     const d=await _p7RapportoDati();
     if(!d.gior.length){showToast('Nessuna giornata nel periodo','e');return;}
     const wb=XLSX.utils.book_new();
-    const det=[['Data','Persona','Voce','Capitolo','Ore','Quantità','Unità','Note giornata']]
-      .concat(d.righe.map(r=>[r.data,r.persona,r.voce,r.capitolo,r.ore,r.quantita,r.um,r.note]));
+    const det=[['Data','Persona','Voce','Capitolo','Ore','Quantità scritta','Quantità contata nel totale','Unità','Note giornata']]
+      .concat(d.righe.map(r=>[r.data,r.persona,r.voce,r.capitolo,r.ore,r.quantita,r.qContata,r.um,r.note]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),'Giornata x voce x persona');
-    const rv=[['Voce','Capitolo','Unità','Quantità prevista','Quantità fatta','Ore','Ore per unità']]
-      .concat(d.perVoce.map(v=>[v.voce,v.capitolo,v.um,isNaN(v.prevista)?null:v.prevista,v.q||null,Math.round(v.ore*100)/100,(v.q>0&&v.ore>0)?Math.round(v.ore/v.q*100)/100:null]));
+    const rv=[['Voce','Capitolo','Unità','Quantità prevista','Quantità fatta (una volta per giorno)','Ore','Ore per unità','Avviso']]
+      .concat(d.perVoce.map(v=>[v.voce,v.capitolo,v.um,isNaN(v.prevista)?null:v.prevista,v.q||null,Math.round(v.ore*100)/100,(v.q>0&&v.ore>0)?Math.round(v.ore/v.q*100)/100:null,(v.prevista>0&&v.q>v.prevista+1e-9)?'OLTRE IL PREVENTIVO (+'+Math.round((v.q-v.prevista)*100)/100+')':'']));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rv),'Riepilogo per voce');
+    const mm=[['Data','Persona','Materiale utilizzato','Attrezzatura / macchinari']].concat(d.gior.filter(g=>g.materiale_giorno||g.attrezzatura_giorno).map(g=>[g.data,d.persona(g),g.materiale_giorno||'',g.attrezzatura_giorno||'']));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(mm),'Materiali e macchinari');
     const rp=[['Persona','Giornate','Ore']].concat(Object.entries(d.perPersona).map(([p,x])=>[p,x.giorni.size,Math.round(x.ore*100)/100]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rp),'Riepilogo per persona');
     const cn=(curCant.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
@@ -5490,7 +5508,7 @@ async function p7RapportoPdf(){
     const e=escHtml,f2=x=>(Math.round(x*100)/100).toLocaleString('it-CH');
     const totOre=d.gior.reduce((t2,g)=>t2+(parseFloat(g.ore_totali)||0),0);
     const tab=(int,rows)=>'<table><thead><tr>'+int.map(h=>'<th>'+e(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
-    const vociHtml=tab(['Voce','Capitolo','Prevista','Fatta','Ore','Ore/unità'],d.perVoce.map(v=>'<tr><td>'+e(v.voce)+'</td><td>'+e(v.capitolo)+'</td><td class="n">'+(isNaN(v.prevista)?'—':f2(v.prevista)+' '+e(v.um))+'</td><td class="n">'+(v.q>0?f2(v.q)+' '+e(v.um):'—')+'</td><td class="n">'+f2(v.ore)+'</td><td class="n">'+((v.q>0&&v.ore>0)?f2(v.ore/v.q):'—')+'</td></tr>'));
+    const vociHtml=tab(['Voce','Capitolo','Prevista','Fatta','Ore','Ore/unità'],d.perVoce.map(v=>'<tr'+((v.prevista>0&&v.q>v.prevista+1e-9)?' style="background:#fde8e8"':'')+'><td>'+e(v.voce)+((v.prevista>0&&v.q>v.prevista+1e-9)?' <b style="color:#c62828">⚠️ oltre il preventivo</b>':'')+'</td><td>'+e(v.capitolo)+'</td><td class="n">'+(isNaN(v.prevista)?'—':f2(v.prevista)+' '+e(v.um))+'</td><td class="n">'+(v.q>0?f2(v.q)+' '+e(v.um):'—')+'</td><td class="n">'+f2(v.ore)+'</td><td class="n">'+((v.q>0&&v.ore>0)?f2(v.ore/v.q):'—')+'</td></tr>'));
     const persHtml=tab(['Persona','Giornate','Ore'],Object.entries(d.perPersona).sort((a,b)=>b[1].ore-a[1].ore).map(([p,x])=>'<tr><td>'+e(p)+'</td><td class="n">'+x.giorni.size+'</td><td class="n">'+f2(x.ore)+'</td></tr>'));
     const perData={};d.gior.forEach(g=>{(perData[g.data]=perData[g.data]||[]).push(g);});
     const gHtml=Object.keys(perData).sort().map(function(dt){
@@ -5498,7 +5516,9 @@ async function p7RapportoPdf(){
       return '<div class="giorno"><h3>'+e(fmtDate(dt))+' · '+f2(gg.reduce((t2,g)=>t2+(parseFloat(g.ore_totali)||0),0))+' h</h3>'
         +gg.map(g=>'<div class="pers"><b>'+e(d.persona(g))+'</b> <span class="mut">'+e(String(g.ora_inizio||'').slice(0,5))+'–'+e(String(g.ora_fine||'').slice(0,5))+' · '+f2(parseFloat(g.ore_totali)||0)+' h</span>'
           +((g.voci_lavoro||[]).length?'<ul>'+(g.voci_lavoro||[]).map(v=>'<li>'+e(v.lavorazione_nome||'—')+' — '+f2(parseFloat(v.ore)||0)+' h'+(v.quantita!=null?' · '+f2(parseFloat(v.quantita))+' '+e(v.um||''):'')+'</li>').join('')+'</ul>':'')
-          +(g.note?'<div class="nota">📝 '+e(g.note)+'</div>':'')+'</div>').join('')
+          +(g.note?'<div class="nota">📝 '+e(g.note)+'</div>':'')
+          +(g.materiale_giorno?'<div class="nota">🧱 '+e(g.materiale_giorno)+'</div>':'')
+          +(g.attrezzatura_giorno?'<div class="nota">🔧 '+e(g.attrezzatura_giorno)+'</div>':'')+'</div>').join('')
         +(foto.filter(x=>x.data===dt).length?'<div class="foto">'+foto.filter(x=>x.data===dt).map(x=>'<img src="'+e(x.url)+'">').join('')+'</div>':'')
         +'</div>';
     }).join('');
@@ -5541,8 +5561,10 @@ async function _p7TmCalcola(){
   const lavById={};lavs.forEach(l=>{lavById[l.id]=l;});
   const nomeCant=id=>((CANTIERI||[]).find(c=>c.id===id)?.nome)||'Cantiere';
   const medie={},corpo={},nonConf=[];
+  // P7b: quantita' una volta per voce, cantiere e giorno (le ore invece per persona)
+  _p7bQtaUnaVolta(voci,v=>v.lavorazione_id||('_'+(v.lavorazione_nome||'')),v=>(v.giornate?.cantiere_id||'')+'|'+(v.giornate?.data||''));
   voci.forEach(function(v){
-    const ore=parseFloat(v.ore)||0,q=parseFloat(v.quantita)||0;
+    const ore=parseFloat(v.ore)||0,q=v._q||0;
     if(!ore&&!q)return;
     const cant=v.giornate?.cantiere_id;const l=v.lavorazione_id?lavById[v.lavorazione_id]:null;
     let motivo=null;
@@ -5600,7 +5622,7 @@ function _p7TmDisegna(){
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+chip('inizio',!d.dal)+chip('anno',false)+chip('12mesi',false)
     +'<button class="btn btn-s btn-sm" style="width:auto;margin-left:auto" onclick="p7TmPeriodo(\'scelto\')">Calcola</button>'
     +'<button class="btn btn-g btn-sm" style="width:auto" onclick="p7TmExcel()">📊 Excel</button></div></div>'
-    +'<div style="font-size:11px;color:var(--t3);margin:-4px 2px 10px">Stessa voce = stesso codice e stessa unità. Ore per unità = ore totali ÷ quantità totale (media pesata). Tocca una voce per il dettaglio.</div>';
+    +'<div style="font-size:11px;color:var(--t3);margin:-4px 2px 10px">Stessa voce = stesso codice e stessa unità. Ore per unità = ore totali ÷ quantità totale (media pesata). La quantità di una voce in un giorno si conta una volta sola; le ore di tutte le persone. Tocca una voce per il dettaglio.</div>';
   h+='<div class="sec">Voci confrontabili ('+d.righe.length+')</div>';
   if(!d.righe.length)h+='<div class="empty" style="padding:14px">Nessuna voce con codice nel periodo.</div>';
   d.righe.forEach(function(r,i){
@@ -5714,6 +5736,7 @@ function setupStep2(){
   document.getElementById('g2-ore').textContent=ore.toFixed(2)+'h';
   document.getElementById('g2-ini').value=GIO.ini;document.getElementById('g2-fine').value=GIO.fine;document.getElementById('g2-pausa').value=GIO.pausa;
   calcOre2();refreshOperaiSelect();
+  _p7bCaricaFatte(GIO.cantId); // P7b: per l'avviso "oltre il preventivo"
   document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
   fFiles=[];fB64=[];renderSalvati();showScr('giornata-2');
   document.getElementById('top-title').textContent=t('sec_operai_giornata');
@@ -5836,6 +5859,8 @@ async function salvaOperaio(){
   const attrezzaturaG=document.getElementById('g2-attrezzatura-g')?.value.trim()||'';
   const oreStr=parseFloat(document.getElementById('g2-straordinari').value)||0;
   const zonaTrasferta=document.getElementById('g2-trasferta')?.checked?'trasferta':null;
+  const _p7bErr=_p7bControllaVoci('#g2-voci .voce-row');if(_p7bErr){showToast(_p7bErr,'e');return;} // P7b
+  const _p7bOltre=_p7bAvvisiTutti('#g2-voci',GIO.data,null);
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
     const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
@@ -5854,10 +5879,13 @@ async function salvaOperaio(){
       const lib=await _p2VoceLibera(GIO.cantId,v.lavorazione_nome,v.um);
       if(lib){v.lavorazione_id=lib.id;v.lavorazione_nome=lib.nome;if(lib.nuova){_p2Nuove++;if(lib.daConfermare)_p2DaConf++;}}else _p2Ko=true;
     }
-    if(vociRows.length){const{error:_ve}=await sb.from('voci_lavoro').insert(vociRows);if(_ve)_p2ErrVoci=_ve.message;}
+    if(vociRows.length){const{data:_vs,error:_ve}=await sb.from('voci_lavoro').insert(vociRows).select('id');if(_ve)_p2ErrVoci=_ve.message;else if(!_vs||_vs.length!==vociRows.length)_p2ErrVoci='salvati '+(_vs?_vs.length:0)+' lavori su '+vociRows.length;}
+    // P7b: le quantita' appena salvate contano per gli avvisi delle persone successive
+    if(!_p2ErrVoci&&_p7bCtx&&_p7bCtx.cantId===GIO.cantId)vociRows.forEach(v=>{if(v.lavorazione_id&&v.quantita>0)_p7bCtx.righe.push({lav:v.lavorazione_id,q:v.quantita,gid:newG.id,data:GIO.data});});
     if(_p2DaConf)_p2AvvisaCapisquadra(_p2DaConf,curCant?.nome,GIO.cantId);
     if(_p2Nuove)await loadLavs(GIO.cantId);
-    if(GIO.mat&&GIO.operaiSalvati.length===0)await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id});
+    let _p7bErrMat='';
+    if(GIO.mat&&GIO.operaiSalvati.length===0){const{data:_mr,error:_me}=await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id}).select('id');if(_me||!_mr||!_mr.length)_p7bErrMat=_me?_me.message:'0 righe';}
     for(const file of fFiles){
       const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
       const path=`${cn}/${GIO.data}/${Date.now()}_${file.name}`;
@@ -5889,6 +5917,8 @@ async function salvaOperaio(){
     fFiles=[];fB64=[];showToast((op?.nome||'')+t('lbl_salvato_op'));
     if(_p2ErrVoci)showToast('Attenzione: giornata salvata ma i lavori svolti NON sono stati salvati ('+_p2ErrVoci+'). Aprila con ✏️ e reinseriscili.','e');
     else if(_p2Ko)showToast('Salvato. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
+    else if(_p7bErrMat)showToast('Salvato, ma i "Materiali ricevuti" NON sono stati salvati ('+_p7bErrMat+')','e');
+    else if(_p7bOltre.length)showToast('Salvato. ⚠️ OLTRE IL PREVENTIVO: '+_p7bTestoOltre(_p7bOltre),'e');
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent='💾 Salva operaio';btn.disabled=false;}
 }
@@ -6234,15 +6264,48 @@ async function p2SpostaVoce(id,dest,btn){
 // ── EXPORT ──
 async function exportCantiere(){
   if(!curCant){showToast('Seleziona un cantiere','e');return;}
-  const {data:giornate}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), voci_lavoro(*, lavorazioni(nome))').eq('cantiere_id',curCant.id).order('data');
+  // P7b: oltre alle ore anche cosa e' stato fatto (quantita'), materiali e macchinari
+  const[{data:giornate,error:ge},{data:lavs},{data:mats}]=await Promise.all([
+    sb.from('giornate').select('*, operai(nome,cognome,ruolo), voci_lavoro(*, lavorazioni(nome,um))').eq('cantiere_id',curCant.id).order('data'),
+    sb.from('lavorazioni').select('id,codice,nome,um,quantita_prevista,categoria').eq('cantiere_id',curCant.id),
+    sb.from('materiali').select('data,descrizione').eq('cantiere_id',curCant.id).order('data')
+  ]);
+  if(ge){showToast('Errore: '+ge.message,'e');return;}
   if(!giornate?.length){showToast('Nessun dato da esportare','e');return;}
-  const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)',t('kpi_ore_tot'),'Lavorazione','Ore lavoro','Quantità','UM','Note']];
+  const lavById={};(lavs||[]).forEach(l=>{lavById[l.id]=l;});
+  const tutte=[];giornate.forEach(g=>(g.voci_lavoro||[]).forEach(v=>{v._data=g.data;v._op=((g.operai?.nome||'')+' '+(g.operai?.cognome||'')).trim();tutte.push(v);}));
+  const kV=v=>v.lavorazione_id||('_'+(v.lavorazione_nome||'—'));
+  _p7bQtaUnaVolta(tutte,kV,v=>v._data);
+  const r2=x=>Math.round(x*100)/100;
+  const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)',t('kpi_ore_tot'),'Lavorazione','Ore lavoro','Quantità scritta','Quantità contata nel totale','UM','Note','Materiale utilizzato','Attrezzatura / macchinari']];
   giornate.forEach(g=>{
     const opNome=(g.operai?.nome||'')+' '+(g.operai?.cognome||'');
-    if(!(g.voci_lavoro||[]).length)rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2),'','','','',g.note||'']);
-    else g.voci_lavoro.forEach((v,i)=>rows.push([g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,i===0?parseFloat(g.ore_totali||0).toFixed(2):'',v.lavorazioni?.nome||v.lavorazione_nome||'',parseFloat(v.ore||0).toFixed(2),v.quantita||'',v.um||'',i===0?g.note||'':'']));
+    const base=[g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60];
+    if(!(g.voci_lavoro||[]).length)rows.push([...base,parseFloat(g.ore_totali||0).toFixed(2),'','','','','',g.note||'',g.materiale_giorno||'',g.attrezzatura_giorno||'']);
+    else g.voci_lavoro.forEach((v,i)=>rows.push([...base,i===0?parseFloat(g.ore_totali||0).toFixed(2):'',v.lavorazioni?.nome||v.lavorazione_nome||'',parseFloat(v.ore||0).toFixed(2),v.quantita||'',v._q||'',v.um||'',i===0?g.note||'':'',i===0?g.materiale_giorno||'':'',i===0?g.attrezzatura_giorno||'':'']));
   });
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),t('kpi_giornate'));
+  // lavori per giorno: una riga per voce e giorno (quantita' una volta, ore di tutti)
+  const perGiorno={};
+  tutte.forEach(v=>{const k=v._data+'|'+kV(v);const l=lavById[v.lavorazione_id];
+    const x=perGiorno[k]=perGiorno[k]||{data:v._data,voce:(l?l.nome:(v.lavorazioni?.nome||v.lavorazione_nome))||'—',um:(l&&l.um)||v.um||'',q:0,ore:0,pers:new Set(),diverse:false};
+    x.q+=v._q||0;x.ore+=parseFloat(v.ore)||0;if(v._op)x.pers.add(v._op);if(v._qDiverse)x.diverse=true;});
+  const lg=[['Data','Voce','Unità','Quantità fatta (contata una volta)','Ore (tutte le persone)','Persone','Nota']]
+    .concat(Object.values(perGiorno).sort((a,b)=>a.data.localeCompare(b.data)||a.voce.localeCompare(b.voce)).map(x=>[x.data,x.voce,x.um,x.q||null,r2(x.ore),[...x.pers].join(', '),x.diverse?'quantità diverse tra le persone: contata la più alta':'']));
+  // lavori per voce: prevista, fatta, avviso
+  const perVoce={};
+  tutte.forEach(v=>{const k=kV(v);const l=lavById[v.lavorazione_id];
+    const x=perVoce[k]=perVoce[k]||{voce:(l?l.nome:(v.lavorazioni?.nome||v.lavorazione_nome))||'—',um:(l&&l.um)||v.um||'',prev:l?parseFloat(l.quantita_prevista):NaN,q:0,ore:0};
+    x.q+=v._q||0;x.ore+=parseFloat(v.ore)||0;});
+  const lv=[['Voce','Unità','Quantità prevista','Quantità fatta','%','Ore','Ore per unità','Avviso']]
+    .concat(Object.values(perVoce).sort((a,b)=>b.ore-a.ore).map(x=>[x.voce,x.um,isNaN(x.prev)?null:x.prev,x.q||null,(x.prev>0)?Math.round(x.q/x.prev*100):null,r2(x.ore),(x.q>0&&x.ore>0)?r2(x.ore/x.q):null,(x.prev>0&&x.q>x.prev+1e-9)?'OLTRE IL PREVENTIVO (+'+r2(x.q-x.prev)+')':'']));
+  const mm=[['Data','Persona','Materiale utilizzato','Attrezzatura / macchinari','Materiali ricevuti']];
+  giornate.filter(g=>g.materiale_giorno||g.attrezzatura_giorno).forEach(g=>mm.push([g.data,((g.operai?.nome||'')+' '+(g.operai?.cognome||'')).trim(),g.materiale_giorno||'',g.attrezzatura_giorno||'','']));
+  (mats||[]).forEach(m=>mm.push([m.data,'','','',m.descrizione||'']));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),t('kpi_giornate'));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(lg),'Lavori per giorno');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(lv),'Lavori per voce');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(mm),'Materiali e macchinari');
   XLSX.writeFile(wb,`CT_${curCant.nome.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
   showToast('Excel scaricato ✓');
 }
@@ -6331,15 +6394,24 @@ async function renderReport(){
     const byOpA={};assenze.forEach(a=>{if(!byOpA[a.operaio_id])byOpA[a.operaio_id]={op:a.operai,ass:[],totGiorni:0};byOpA[a.operaio_id].ass.push(a);byOpA[a.operaio_id].totGiorni+=parseFloat(a.giorni)||1;});
     el.innerHTML=Object.values(byOpA).map(({op,ass,totGiorni})=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><div style="font-size:16px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:12px;color:var(--t2)">${op?.ruolo||''}</div></div><div style="font-family:'DM Mono';font-size:22px;color:var(--orange);font-weight:500">${totGiorni}<span style="font-size:13px"> gg</span></div></div>${ass.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)"><span style="font-size:20px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1"><div style="font-size:13px;font-weight:600;color:${motivoColor[a.motivo]||'var(--t2)'}">${a.motivo}</div><div style="font-size:12px;color:var(--t2)">${fmtDate(a.data)} · ${parseFloat(a.giorni)===1?t('lbl_giorno_intero'):t('lbl_mezza_giornata')}</div>${a.note?`<div style="font-size:11px;color:var(--t3)">${a.note}</div>`:''}</div></div>`).join('')}</div>`).join('');
   }else{
-    const {data:voci}=await sb.from('voci_lavoro').select('ore,quantita,um,lavorazione_id,lavorazione_nome,lavorazioni(nome,um,categoria),giornate!inner(operaio_id,operai(nome,cognome))').gte('giornate.data',from).lte('giornate.data',to).gt('ore',0);
+    const {data:voci}=await sb.from('voci_lavoro').select('ore,quantita,um,lavorazione_id,lavorazione_nome,lavorazioni(nome,um,categoria),giornate!inner(data,cantiere_id,operaio_id,operai(nome,cognome))').gte('giornate.data',from).lte('giornate.data',to).gt('ore',0);
     if(!voci?.length){el.innerHTML='<div class="empty"><div class="empty-i">📐</div><p>'+t('empty_dato')+'</p></div>';return;}
-    const byL={};voci.forEach(v=>{
+    // P7b: una misura = una voce in un giorno su un cantiere: ore di tutte le persone / quantita' contata una volta.
+    // La classifica per persona usa solo i giorni in cui su quella voce ha lavorato da sola.
+    _p7bQtaUnaVolta(voci,v=>v.lavorazione_id||'_'+(v.lavorazioni?.nome||v.lavorazione_nome||'—'),v=>(v.giornate?.cantiere_id||'')+'|'+(v.giornate?.data||''));
+    const byL={},gruppi={};voci.forEach(v=>{
       const n=v.lavorazioni?.nome||v.lavorazione_nome||'—';const k=v.lavorazione_id||'_'+n;const um=v.lavorazioni?.um||v.um||'h';
       if(!byL[k])byL[k]={nome:n,um,cat:v.lavorazioni?.categoria||'',misure:[],byOp:{}};
-      const hpu=v.quantita>0?parseFloat(v.ore)/parseFloat(v.quantita):null;
+      const gk=k+'|'+(v.giornate?.cantiere_id||'')+'|'+(v.giornate?.data||'');
+      const G=gruppi[gk]=gruppi[gk]||{k,ore:0,q:0,ops:{}};
+      G.ore+=parseFloat(v.ore||0);G.q+=v._q||0;
       const opId=v.giornate?.operaio_id,opN=v.giornate?.operai?v.giornate.operai.nome+' '+v.giornate.operai.cognome:'—';
-      byL[k].misure.push({ore:parseFloat(v.ore||0),hpu});
-      if(opId&&hpu!==null){if(!byL[k].byOp[opId])byL[k].byOp[opId]={nome:opN,vals:[]};byL[k].byOp[opId].vals.push(hpu);}
+      if(opId)G.ops[opId]=opN;
+    });
+    Object.values(gruppi).forEach(G=>{
+      const hpu=G.q>0?G.ore/G.q:null;byL[G.k].misure.push({ore:G.ore,hpu});
+      const ids=Object.keys(G.ops);
+      if(ids.length===1&&hpu!==null){const id=ids[0];if(!byL[G.k].byOp[id])byL[G.k].byOp[id]={nome:G.ops[id],vals:[]};byL[G.k].byOp[id].vals.push(hpu);}
     });
     el.innerHTML=Object.entries(byL).sort((a,b)=>a[1].nome.localeCompare(b[1].nome)).map(([k,d])=>{
       const cQ=d.misure.filter(m=>m.hpu!==null);const med=cQ.length?cQ.reduce((s,m)=>s+m.hpu,0)/cQ.length:null;
@@ -11485,6 +11557,96 @@ function _p7Righe(r,cosa){
   showToast(msg,'e');
   const e=new Error(msg);e.giaMostrato=true;throw e;
 }
+// P7b: la QUANTITA' di una voce in un giorno si conta UNA volta sola, anche se l'hanno scritta
+// piu' persone (e' quanto ha fatto la squadra); le ORE invece si sommano per persona.
+// Per ogni voce e giorno si tiene la quantita' piu' alta; se le persone hanno scritto valori
+// diversi si segna (_qDiverse). Mette in ogni riga v._q = quantita' da sommare (0 = gia' contata).
+function _p7bQtaUnaVolta(voci,chiave,giorno){
+  const grp={};let diverse=0;
+  (voci||[]).forEach(function(v){
+    v._q=0;v._qDiverse=false;v._qPersone=0;
+    const q=parseFloat(v.quantita);if(!(q>0))return;
+    const k=chiave(v)+'|'+giorno(v);(grp[k]=grp[k]||[]).push(v);
+  });
+  Object.values(grp).forEach(function(rr){
+    let best=rr[0];rr.forEach(function(r){if(parseFloat(r.quantita)>parseFloat(best.quantita))best=r;});
+    best._q=parseFloat(best.quantita);best._qPersone=rr.length;
+    if(new Set(rr.map(r=>parseFloat(r.quantita))).size>1){best._qDiverse=true;diverse++;}
+  });
+  return diverse;
+}
+// P7b: controllo delle righe "lavori svolti" prima di salvare: una voce scelta senza ore
+// veniva scartata in silenzio (quantita' persa). Ora si ferma e lo dice.
+function _p7bControllaVoci(sel){
+  for(const row of document.querySelectorAll(sel)){
+    const s=row.querySelector('.voce-sel');const v=s?s.value:'';
+    const ore=parseFloat(row.querySelector('.voce-ore-inp')?.value)||0;
+    const q=parseFloat(row.querySelector('.voce-qty-inp')?.value)||0;
+    const nomeLib=(row.querySelector('.nuova-voce-nome')?.value||'').trim();
+    if(!v&&!ore&&!q)continue; // riga vuota: si ignora
+    const nome=v==='__nuova__'?(nomeLib||'voce libera'):(s&&s.selectedIndex>=0?s.options[s.selectedIndex].text:'');
+    if(!v)return 'C\'è una riga di lavoro senza lavorazione scelta ('+(ore?ore+' h':q+' di quantità')+'): scegli la voce oppure togli la riga con ✕. Non è stato salvato niente.';
+    if(v==='__nuova__'&&!nomeLib)return 'Scrivi il nome della voce libera (o togli la riga con ✕). Non è stato salvato niente.';
+    if(!(ore>0))return 'Voce «'+_p2Corta(nome,60)+'»: mancano le ORE lavorate su questa voce'+(q?' (la quantità '+q+' da sola non basta)':'')+'. Scrivi le ore oppure togli la riga con ✕. Non è stato salvato niente.';
+  }
+  return null;
+}
+// P7b: avviso (non blocco) quando la quantita' fatta supera quella prevista dal preventivo.
+// _p7bCtx = voci del cantiere con la quantita' prevista + quantita' gia' registrate.
+let _p7bCtx=null,_p7bMgData=null;
+async function _p7bCaricaFatte(cantId){
+  try{
+    const[{data:l,error:le},{data:v,error:ve}]=await Promise.all([
+      sb.from('lavorazioni').select('id,nome,um,quantita_prevista').eq('cantiere_id',cantId),
+      sb.from('voci_lavoro').select('lavorazione_id,quantita,giornata_id,giornate!inner(data,cantiere_id)').eq('giornate.cantiere_id',cantId).not('quantita','is',null)
+    ]);
+    if(le||ve)throw (le||ve);
+    const lavs={};(l||[]).forEach(x=>{lavs[x.id]=x;});
+    _p7bCtx={cantId,lavs,righe:(v||[]).map(x=>({lav:x.lavorazione_id,q:parseFloat(x.quantita)||0,gid:x.giornata_id,data:x.giornate?.data}))};
+  }catch(e){console.warn('quantità fatte:',e.message);_p7bCtx=null;}
+}
+function _p7bAvvisoRiga(row,data,escludiGid){
+  let box=row.querySelector('.p7b-avviso');
+  if(!box){box=document.createElement('div');box.className='p7b-avviso';box.style.cssText='display:none;font-size:12px;line-height:1.4;margin-top:6px;padding:8px 10px;border-radius:var(--rsm);background:var(--s2)';row.appendChild(box);}
+  box.innerHTML='';box.style.display='none';box.style.border='none';
+  if(!_p7bCtx)return null;
+  const lavId=row.querySelector('.voce-sel')?.value||'';const q=parseFloat(row.querySelector('.voce-qty-inp')?.value)||0;
+  const l=_p7bCtx.lavs[lavId];if(!l||!(q>0))return null;
+  const perDay={};let altriOggi=0;
+  _p7bCtx.righe.forEach(function(r){
+    if(r.lav!==lavId||(escludiGid&&r.gid===escludiGid)||!(r.q>0))return;
+    perDay[r.data]=Math.max(perDay[r.data]||0,r.q);if(r.data===data)altriOggi=Math.max(altriOggi,r.q);
+  });
+  perDay[data]=Math.max(perDay[data]||0,q);
+  const tot=Object.values(perDay).reduce((a,x)=>a+x,0);const prev=parseFloat(l.quantita_prevista);
+  const um=l.um||'';const f=x=>(Math.round(x*100)/100).toLocaleString('it-CH');
+  let h='',oltre=null;
+  if(altriOggi>0)h+='<div style="color:var(--blue)">ℹ️ Quel giorno su questa voce c\'è già '+f(altriOggi)+' '+escHtml(um)+' scritta da un altro: la quantità del giorno si conta una volta sola (la più alta).</div>';
+  if(prev>0&&tot>prev+1e-9){
+    oltre={nome:l.nome,tot,prev,um};
+    h+='<div style="color:var(--red);font-weight:700">⚠️ OLTRE IL PREVENTIVO: con questa giornata si arriva a '+f(tot)+' '+escHtml(um)+' su '+f(prev)+' '+escHtml(um)+' previsti (+'+f(tot-prev)+'). Puoi salvare lo stesso.</div>';
+    box.style.border='1px solid var(--red)';
+  }
+  if(h){box.innerHTML=h;box.style.display='block';}
+  return oltre;
+}
+function _p7bAvvisiTutti(cont,data,escludiGid){const out=[];document.querySelectorAll(cont+' .voce-row').forEach(function(r){const o=_p7bAvvisoRiga(r,data,escludiGid);if(o)out.push(o);});return out;}
+function _p7bTestoOltre(oo){const f=x=>(Math.round(x*100)/100).toLocaleString('it-CH');return oo.map(o=>'«'+_p2Corta(o.nome,40)+'» '+f(o.tot)+' su '+f(o.prev)+' '+(o.um||'')).join('; ');}
+document.addEventListener('input',function(e){_p7bSuEvento(e);});
+document.addEventListener('change',function(e){_p7bSuEvento(e);});
+function _p7bSuEvento(e){
+  const row=e.target&&e.target.closest?e.target.closest('.voce-row'):null;if(!row)return;
+  if(row.closest('#g2-voci'))_p7bAvvisoRiga(row,(typeof GIO!=='undefined'&&GIO)?GIO.data:null,null);
+  else if(row.closest('#mg-voci-list'))_p7bAvvisoRiga(row,_p7bMgData,modificaGid);
+}
+// P7b: riassunto dei lavori di una giornata (cronologia del cantiere)
+function _p7bRiassuntoLavori(g){
+  const f=x=>(Math.round(x*100)/100).toLocaleString('it-CH');
+  const parti=(g.voci_lavoro||[]).map(function(v){const q=parseFloat(v.quantita);return escHtml(_p2Corta(v.lavorazioni?.nome||v.lavorazione_nome||'—',55))+(q>0?' · <b style="color:var(--text)">'+f(q)+' '+escHtml(v.um||v.lavorazioni?.um||'')+'</b>':'')+' · '+f(parseFloat(v.ore)||0)+' h';});
+  const extra=[];if(g.materiale_giorno)extra.push('🧱 '+escHtml(_p2Corta(g.materiale_giorno,70)));if(g.attrezzatura_giorno)extra.push('🔧 '+escHtml(_p2Corta(g.attrezzatura_giorno,70)));
+  if(!parti.length&&!extra.length)return '<div style="font-size:11px;color:var(--t3);margin-top:2px">nessun lavoro registrato</div>';
+  return '<div style="font-size:11px;color:var(--t2);line-height:1.45;margin-top:2px">'+parti.join('<br>')+(extra.length?(parti.length?'<br>':'')+extra.join('<br>'):'')+'</div>';
+}
 function _matNome(m){return (m&&(m.descrizione||m.nome))||'';} // P7
 async function segnalaCosaManca(cantId){
   const txt=document.getElementById('cosa-manca-txt');
@@ -12221,16 +12383,21 @@ async function geocodifica(cantiere){
   return null;
 }
 
+let _p7bGeoFallito=new Set(); // indirizzi non trovati in questa sessione (non si richiedono di continuo)
 async function renderMappa(){
   const filtro = document.getElementById('mappa-filtro')?.value || 'oggi';
   const status = document.getElementById('mappa-status');
   const lista  = document.getElementById('mappa-lista');
   if(status) status.textContent = '⏳ Caricamento…';
+  const puo = ['titolare','responsabile'].includes(_ruoloApp());
+  const indir = c => [c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
-  // Cantieri attivi (P7: mai i finti "Spese ditta" e "Materiale Magazzino")
-  let cantAttivi = (CANTIERI || []).filter(c => (c.stato === 'Attivo' || c.stato === 'In pausa' || c.stato === 'attivo') && !_p3CantiereFinto(c));
+  // P7b: TUTTI i cantieri attivi (mai i finti "Spese ditta" e "Materiale Magazzino").
+  // "Oggi" decide solo quali si disegnano sulla mappa: l'elenco sotto li mostra sempre tutti,
+  // e chi non ha posizione compare con l'avviso per metterla a mano.
+  const tuttiAttivi = (CANTIERI || []).filter(c => /^(attivo|in pausa)$/i.test(String(c.stato||'').trim()) && !_p3CantiereFinto(c));
 
-  // Filtro oggi (P7): chi lavora oggi = ultima assegnazione del Piano (come "Oggi la squadra")
+  // chi lavora oggi = ultima assegnazione del Piano (come "Oggi la squadra")
   let pianOggi = [];
   if(filtro === 'oggi'){
     const oggi = nowZurich().date;
@@ -12242,108 +12409,92 @@ async function renderMappa(){
         righe.forEach(r=>pianOggi.push(r));
       });
     }catch(e){ console.warn('piano_giorno:', e.message); }
-    const idCantOggi = new Set(pianOggi.map(p => p.cantiere_id));
-    cantAttivi = cantAttivi.filter(c => idCantOggi.has(c.id));
   }
+  const idOggi = new Set(pianOggi.map(p => p.cantiere_id));
 
-  if(!cantAttivi.length){
-    if(status) status.textContent = filtro==='oggi' ? 'Nessun cantiere attivo oggi' : 'Nessun cantiere attivo';
-    if(lista) lista.innerHTML = '<div style="color:var(--t2);font-size:13px;text-align:center;padding:20px">Nessun cantiere da mostrare</div>';
-    return;
-  }
-
-  // Geocodifica quelli senza lat/lng
+  // posizione dall'indirizzo per chi non ce l'ha (e non e' stata messa a mano)
   let geocCount = 0;
-  for(const c of cantAttivi){
-    if((!c.lat || !c.lng) && !c.posizione_manuale){
+  for(const c of tuttiAttivi){
+    if((!c.lat || !c.lng) && !c.posizione_manuale && !_p7bGeoFallito.has(c.id)){
       const pos = await geocodifica(c);
-      if(pos){ c.lat = pos.lat; c.lng = pos.lng; geocCount++; }
+      if(pos){ c.lat = pos.lat; c.lng = pos.lng; geocCount++; } else _p7bGeoFallito.add(c.id);
       await new Promise(r => setTimeout(r, 300)); // rispetta rate limit Nominatim
     }
   }
 
-  const conPos = cantAttivi.filter(c => c.lat && c.lng);
-  if(status) status.textContent = `${conPos.length} cantieri con posizione${geocCount > 0 ? ` (${geocCount} geocodificati)` : ''}`;
+  const sullaMappa = (filtro === 'oggi' ? tuttiAttivi.filter(c => idOggi.has(c.id)) : tuttiAttivi).filter(c => c.lat && c.lng);
+  const senzaPos = tuttiAttivi.filter(c => !(c.lat && c.lng));
+  const altri = filtro === 'oggi' ? tuttiAttivi.filter(c => !idOggi.has(c.id) && c.lat && c.lng) : [];
+  if(status) status.textContent = sullaMappa.length + (filtro==='oggi' ? ' oggi in mappa' : ' in mappa') + ' · ' + tuttiAttivi.length + ' attivi'
+    + (senzaPos.length ? ' · ⚠️ ' + senzaPos.length + ' senza posizione' : '') + (geocCount ? ' (' + geocCount + ' trovati ora)' : '');
 
-  // Inizializza o reimposta la mappa Leaflet
+  // mappa
   const mapEl = document.getElementById('leaflet-map');
-  if(!mapEl) return;
   if(_mappaLeaflet){ _mappaLeaflet.remove(); _mappaLeaflet = null; }
-
-  if(!conPos.length){
-    if(lista&&cantAttivi.length){ // P7: elenco dei cantieri senza posizione anche se la mappa e' vuota
-      const puo=['titolare','responsabile'].includes(_ruoloApp());
-      lista.innerHTML='<div style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">Senza posizione ('+cantAttivi.length+')</div>'
-        +cantAttivi.map(c=>'<div style="background:var(--s1);border:1px solid rgba(224,136,64,.35);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><div style="font-weight:700;font-size:14px">'+escHtml(c.nome||'—')+'</div></div>'
-          +(puo?'<button class="btn btn-s btn-sm" style="width:auto;flex-shrink:0" onclick="p7ApriPosizione(\''+c.id+'\')">📍 Metti a mano</button>':'')+'</div>').join('');
+  if(mapEl){
+    if(!sullaMappa.length){
+      mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#857f73;font-size:14px;text-align:center;padding:20px">'
+        + (!tuttiAttivi.length ? 'Nessun cantiere attivo.' : (filtro==='oggi' && !idOggi.size ? 'Oggi nessuno nel Piano. Scegli «Tutti attivi» per vederli tutti.' : 'Nessun cantiere da disegnare: guarda l\'elenco qui sotto.')) + '</div>';
+    }else{
+      mapEl.innerHTML = '';
+      _mappaLeaflet = L.map('leaflet-map');
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(_mappaLeaflet);
+      const bounds = [];
+      for(const cant of sullaMappa){
+        const righe = pianOggi.filter(p => p.cantiere_id === cant.id);
+        const squadraInfo = filtro === 'oggi'
+          ? (righe.length ? (righe.find(r => r.squadra)?.squadra ? '🏗️ ' + righe.find(r => r.squadra).squadra : righe.map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(Boolean).slice(0,3).join(', ')) : 'Nessuna squadra')
+          : (cant.stato || 'Attivo');
+        const icon = L.divIcon({
+          html: '<div style="background:#c8a84b;color:#1a1000;font-size:11px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">' + escHtml(cant.nome||'Cantiere') + '</div>',
+          className: '', iconAnchor: [0, 0]
+        });
+        const marker = L.marker([cant.lat, cant.lng], {icon}).addTo(_mappaLeaflet);
+        marker.bindPopup('<div style="font-family:sans-serif;min-width:180px">'
+          + '<div style="font-weight:700;font-size:14px;margin-bottom:6px">🏗️ ' + escHtml(cant.nome||'—') + '</div>'
+          + '<div style="font-size:12px;color:#555;margin-bottom:4px">📍 ' + escHtml(indir(cant)||'—') + (cant.posizione_manuale ? ' (posizione messa a mano)' : '') + '</div>'
+          + '<div style="font-size:12px;color:#555;margin-bottom:4px">👷 ' + escHtml(squadraInfo) + '</div>'
+          + (cant.responsabile ? '<div style="font-size:12px;color:#555">📋 ' + escHtml(cant.responsabile) + '</div>' : '')
+          + '<div style="margin-top:8px"><span style="background:' + (cant.stato==='Attivo'?'#e8f5e9':'#fff3e0') + ';color:' + (cant.stato==='Attivo'?'#2e7d32':'#e65100') + ';font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">' + escHtml(cant.stato||'—') + '</span></div></div>');
+        bounds.push([cant.lat, cant.lng]);
+      }
+      if(bounds.length === 1) _mappaLeaflet.setView(bounds[0], 14);
+      else _mappaLeaflet.fitBounds(bounds, {padding:[30,30]});
     }
-    mapEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#857f73;font-size:14px">Nessun cantiere con via/città trovato. Aggiungi l\'indirizzo nei dettagli cantiere.</div>';
-    return;
   }
 
-  _mappaLeaflet = L.map('leaflet-map');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-    maxZoom: 19
-  }).addTo(_mappaLeaflet);
-
-  const bounds = [];
-  for(const cant of conPos){
-    const squadraInfo = filtro === 'oggi'
-      ? (() => {
-          const righe = pianOggi.filter(p => p.cantiere_id === cant.id);
-          if(!righe.length) return 'Nessuna squadra';
-          const nomi = righe.map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(Boolean);
-          const squadra = righe.find(r => r.squadra)?.squadra;
-          return squadra ? `🏗️ ${squadra}` : nomi.slice(0,3).join(', ');
-        })()
-      : cant.stato || 'Attivo';
-
-    const icon = L.divIcon({
-      html: `<div style="background:#c8a84b;color:#1a1000;font-size:11px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">${cant.nome||'Cantiere'}</div>`,
-      className: '',
-      iconAnchor: [0, 0]
-    });
-
-    const marker = L.marker([cant.lat, cant.lng], {icon}).addTo(_mappaLeaflet);
-    marker.bindPopup(`
-      <div style="font-family:sans-serif;min-width:180px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px">🏗️ ${cant.nome||'—'}</div>
-        <div style="font-size:12px;color:#555;margin-bottom:4px">📍 ${[cant.via,[cant.cap,cant.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'—'}</div>
-        <div style="font-size:12px;color:#555;margin-bottom:4px">👷 ${squadraInfo}</div>
-        ${cant.responsabile ? `<div style="font-size:12px;color:#555">📋 ${cant.responsabile}</div>` : ''}
-        <div style="margin-top:8px"><span style="background:${cant.stato==='Attivo'?'#e8f5e9':'#fff3e0'};color:${cant.stato==='Attivo'?'#2e7d32':'#e65100'};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${cant.stato||'—'}</span></div>
-      </div>
-    `);
-    bounds.push([cant.lat, cant.lng]);
-  }
-
-  if(bounds.length === 1) _mappaLeaflet.setView(bounds[0], 14);
-  else _mappaLeaflet.fitBounds(bounds, {padding:[30,30]});
-
-  // Lista testuale sotto la mappa
+  // elenco sotto la mappa: sempre tutti i cantieri attivi
   if(lista){
-    // P7: i cantieri senza posizione si vedono lo stesso, con il tasto per metterla a mano
-    const senzaPos = cantAttivi.filter(c => !(c.lat && c.lng));
-    const puo = ['titolare','responsabile'].includes(_ruoloApp());
-    const htmlSenza = senzaPos.length ? '<div style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">Senza posizione ('+senzaPos.length+')</div>'
-      + senzaPos.map(c => '<div style="background:var(--s1);border:1px solid rgba(224,136,64,.35);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'
-        + '<div style="min-width:0"><div style="font-weight:700;font-size:14px">'+escHtml(c.nome||'—')+'</div><div style="font-size:11px;color:var(--t2)">'+escHtml([c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'Indirizzo mancante')+' · indirizzo non trovato</div></div>'
-        + (puo ? '<button class="btn btn-s btn-sm" style="width:auto;flex-shrink:0" onclick="p7ApriPosizione(\''+c.id+'\')">📍 Metti a mano</button>' : '')
-        + '</div>').join('') : '';
-    lista.innerHTML = htmlSenza + '<div style="font-size:11px;color:var(--t2);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">Cantieri su mappa</div>' +
-      conPos.map(c => {
-        const righe = filtro==='oggi' ? pianOggi.filter(p=>p.cantiere_id===c.id) : [];
-        const nomi  = righe.map(r=>(r.operai?.nome||'')+' '+(r.operai?.cognome||'')).filter(Boolean).join(', ');
-        return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="_mappaLeaflet.setView([${c.lat},${c.lng}],16)">
-          <div>
-            <div style="font-weight:700;font-size:14px">${c.nome||'—'}</div>
-            <div style="font-size:11px;color:var(--t2)">${[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'—'}</div>
-            ${nomi ? `<div style="font-size:11px;color:var(--gold);margin-top:2px">👷 ${nomi}</div>` : ''}
-          </div>
-          <div style="font-size:20px">📍</div>
-        </div>`;
-      }).join('');
+    const titolo = (txt, col) => '<div style="font-size:11px;color:' + (col||'var(--t2)') + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">' + txt + '</div>';
+    const nomiOggi = c => pianOggi.filter(p => p.cantiere_id === c.id).map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(x => x.trim()).join(', ');
+    let h = '';
+    if(senzaPos.length){
+      h += titolo('⚠️ Senza posizione (' + senzaPos.length + ')', 'var(--orange)');
+      h += senzaPos.map(c => '<div style="background:var(--s1);border:1px solid rgba(224,136,64,.5);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        + '<div style="min-width:0"><div style="font-weight:700;font-size:14px">' + escHtml(c.nome||'—') + '</div>'
+        + '<div style="font-size:11px;color:var(--t2)">' + escHtml(indir(c)||'Indirizzo mancante') + '</div>'
+        + '<div style="font-size:12px;color:var(--orange);font-weight:700;margin-top:2px">senza posizione — ' + (puo ? 'mettila a mano' : 'chiedi al titolare o al responsabile di metterla a mano') + '</div>'
+        + (idOggi.has(c.id) ? '<div style="font-size:11px;color:var(--gold);margin-top:2px">👷 oggi: ' + escHtml(nomiOggi(c)) + '</div>' : '') + '</div>'
+        + (puo ? '<button class="btn btn-s btn-sm" style="width:auto;flex-shrink:0" onclick="p7ApriPosizione(\'' + c.id + '\')">📍 Metti a mano</button>' : '')
+        + '</div>').join('');
+    }
+    h += titolo(filtro === 'oggi' ? 'In mappa — oggi al lavoro (' + sullaMappa.length + ')' : 'In mappa (' + sullaMappa.length + ')');
+    h += sullaMappa.length ? sullaMappa.map(c => {
+        const nomi = filtro === 'oggi' ? nomiOggi(c) : '';
+        return '<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="_mappaLeaflet&&_mappaLeaflet.setView([' + c.lat + ',' + c.lng + '],16)">'
+          + '<div><div style="font-weight:700;font-size:14px">' + escHtml(c.nome||'—') + '</div>'
+          + '<div style="font-size:11px;color:var(--t2)">' + escHtml(indir(c)||'—') + (c.posizione_manuale ? ' · posizione messa a mano' : '') + '</div>'
+          + (nomi ? '<div style="font-size:11px;color:var(--gold);margin-top:2px">👷 ' + escHtml(nomi) + '</div>' : '') + '</div>'
+          + '<div style="font-size:20px">📍</div></div>';
+      }).join('') : '<div style="font-size:12px;color:var(--t3);padding:4px 2px">Nessuno.</div>';
+    if(altri.length){
+      h += titolo('Altri cantieri attivi — oggi nessuno nel Piano (' + altri.length + ')');
+      h += altri.map(c => '<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;opacity:.8"><div style="font-weight:700;font-size:14px">' + escHtml(c.nome||'—') + '</div><div style="font-size:11px;color:var(--t2)">' + escHtml(indir(c)||'—') + ' · scegli «Tutti attivi» per vederlo in mappa</div></div>').join('');
+    }
+    lista.innerHTML = h;
   }
 }
 
