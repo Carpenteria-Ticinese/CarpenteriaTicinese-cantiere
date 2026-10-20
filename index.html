@@ -2147,7 +2147,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='7d';
+const APP_VERSIONE='8';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4403,7 +4403,7 @@ async function renderHome(){
   const {data:stats}=await sb.from('giornate').select('cantiere_id,ore_totali');
   const orePerCant={};
   (stats||[]).forEach(g=>{if(!orePerCant[g.cantiere_id])orePerCant[g.cantiere_id]=0;orePerCant[g.cantiere_id]+=parseFloat(g.ore_totali||0);});
-  const attivi=_cantVisibili().filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
+  const attivi=_cantVisibili().filter(_cantSceglibileOre); // P2: commesse in corso + interni
   if(!attivi.length&&_p4FiltraCantieri()){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere assegnato. Chiedi al titolare.</p></div>';return;}
   if(!attivi.length){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>'+t('empty_cant_attivo')+'<br>'+t('empty_aggiungine')+'</p></div>';return;}
   // Carica anche tiri gru per cantiere
@@ -7168,7 +7168,7 @@ async function timbraUscita(gid){
   const totalMin=hh*60+mm;
   const arrotMin=Math.round(totalMin/passo)*passo;
   const ora=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
-  const cantOpts=_cantVisibili().filter(c=>c.stato!=='completato').map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join('');
+  const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join(''); // P2
   const el=document.getElementById('timb-content');
   if(!el)return;
   el.innerHTML=`
@@ -7320,7 +7320,7 @@ function calcOreTimbrManuale(){
 function cercaCantiereManuale(q){
   const res=document.getElementById('tm-cant-risultati');
   if(!q||q.length<2){res.style.display='none';return;}
-  const lista=_cantVisibili().filter(c=>(c.nome+' '+(c.luogo||'')).toLowerCase().includes(q.toLowerCase()));
+  const lista=_cantVisibili().filter(c=>_cantSceglibileOre(c)&&(c.nome+' '+(c.luogo||'')).toLowerCase().includes(q.toLowerCase())); // P2
   if(!lista.length){res.style.display='none';return;}
   res.innerHTML=lista.slice(0,8).map(c=>`<div onclick="selezionaCantiereManuale('${c.id}','${(c.nome+(c.luogo?' — '+c.luogo:'')).replace(/'/g,'&#39;')}')" style="padding:10px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid var(--border)">${c.nome}${c.luogo?' <span style=\'color:var(--t2);font-size:14px\'>'+c.luogo+'</span>':''}</div>`).join('');
   res.style.display='block';
@@ -8124,7 +8124,7 @@ async function renderSituazione(){
         const{data:timb}=await sb.from('giornate').select('id,data,ora_inizio_timbrata,ora_fine_timbrata,pausa_minuti_timbrata,operai(nome,cognome)').eq('cantiere_da_assegnare',true).order('data',{ascending:false});
         if(timb&&timb.length){
           if(elTimbW)elTimbW.style.display='block';
-          const cantOpts=_cantVisibili().filter(c=>c.stato!=='completato').map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join('');
+          const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join(''); // P2
           let html='';
           timb.forEach(g=>{
             const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||60);
@@ -8334,12 +8334,15 @@ async function _p4CaricaVisibilita(){
   _P4_VIS=vis;
 }
 // I cantieri che la persona collegata puo' vedere o scegliere.
-// I finti cantieri "Spese ditta" e "Materiale Magazzino" non compaiono mai a chi e' filtrato.
+// Punto 2: gli interni (tipo='interno') li vedono tutti i ruoli. Quali si possono SCEGLIERE lo decide chi usa l'elenco.
 function _cantVisibili(){
   const tutti=CANTIERI||[];
   if(!_p4FiltraCantieri())return tutti;
-  return tutti.filter(c=>!_p3CantiereFinto(c)&&(_P4_VEDE_TUTTI||(_P4_VIS&&_P4_VIS.has(c.id))));
+  return tutti.filter(c=>_cantInterno(c)||_P4_VEDE_TUTTI||(_P4_VIS&&_P4_VIS.has(c.id)));
 }
+// Come prima della v8, per gli elenchi che NON sono di ore (Magazzino, filtri, ricerca):
+// chi e' filtrato non vede gli interni; titolare e responsabile si'.
+function _cantVisibiliComePrima(){return _cantVisibili().filter(c=>!_p4FiltraCantieri()||!_cantInterno(c));}
 function _p4PuoVedereCantiere(id){
   if(!_p4FiltraCantieri())return true;
   return _cantVisibili().some(c=>c.id===id);
@@ -8384,7 +8387,7 @@ async function _p4CompilaVisibilitaScheda(o){
   if(editOid!==o.id)return; // nel frattempo e' stata aperta un'altra scheda
   if(error){lista.innerHTML='<div class="warn on">Elenco non disponibile: '+escHtml(error.message)+'</div>';lista.dataset.pronto='';return;}
   const spuntati=new Set((data||[]).map(r=>r.cantiere_id));
-  const cant=(CANTIERI||[]).filter(c=>!_p3CantiereFinto(c)&&(c.stato==='Attivo'||c.stato==='In pausa'||spuntati.has(c.id)));
+  const cant=(CANTIERI||[]).filter(c=>!_cantInterno(c)&&(_cantCommessaInCorso(c)||spuntati.has(c.id))); // P2: gli interni li vedono gia' tutti
   lista.dataset.pronto='1';
   lista.dataset.prima=JSON.stringify([...spuntati]);
   lista.innerHTML=cant.length?cant.map(c=>'<label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:15px">'
@@ -8654,7 +8657,7 @@ async function renderPersoneSenzaCantiere(){
     if(fin.error)throw fin.error;
     if(extra.error)throw extra.error;
     if(prof.error)throw prof.error;
-    const validi=new Set((CANTIERI||[]).filter(c=>!_p3CantiereFinto(c)).map(c=>c.id));
+    const validi=new Set((CANTIERI||[]).filter(c=>!_cantInterno(c)).map(c=>c.id)); // P2: interni da tipo
     // account della persona: stessa email (elenco del titolare), altrimenti stesso nome e cognome (come il passaggio 4)
     const accountDi=function(o){
       const em=String(o.email||'').trim().toLowerCase();
@@ -8701,9 +8704,24 @@ const P3_DEST_ETICHETTA={ditta_ufficio:'opt_spese_gen',attrezzature:'opt_dest_at
 function _p3SoloMie(){return !['titolare','responsabile'].includes(_ruoloApp());}
 function _p3Filtra(q){return _p3SoloMie()?q.eq('created_by',USER.id):q;}
 // I due finti cantieri non si propongono piu' (restano nel database con i loro dati)
-function _p3CantiereFinto(c){const n=String(c.nome||'').toLowerCase().replace(/\s+/g,' ').trim();return n==='spese ditta'||n==='materiale magazzino';}
+// Punto 2 (20.10.2026): gli interni si riconoscono SOLO da cantieri.tipo='interno', mai dal nome.
+function _cantInterno(c){return !!c&&c.tipo==='interno';}
+// Commessa sceglibile: stato_commessa «In corso» o vuoto. Da fare, Inviata, Persa: mai. Conclusa: solo storico e riepiloghi.
+// La colonna vecchia «stato» (Attivo, In pausa, Completato) qui non conta: l'app la scrive come prima.
+function _cantCommessaInCorso(c){const st=String(c?.stato_commessa||'').trim();return !!c&&!_cantInterno(c)&&(st===''||st==='In corso');}
+// Scelta del cantiere per le ORE: commesse in corso + interni (per tutti i ruoli). Spese e il resto: solo commesse in corso.
+function _cantSceglibileOre(c){return _cantInterno(c)||_cantCommessaInCorso(c);}
+// In modifica: se il cantiere gia' salvato non e' piu' nella scelta, lo si aggiunge e resta com'era.
+function _selTieniCantiere(sel,id){
+  if(!sel||!id)return;
+  _selTogliTenuti(sel);
+  if(![...sel.options].some(o=>o.value===id)){const c=(CANTIERI||[]).find(x=>x.id===id);const o=new Option((c?.nome||'Cantiere')+' (non più nella scelta)',id);o.dataset.tenuto='1';sel.add(o);}
+  sel.value=id;
+}
+// Toglie le voci «(non più nella scelta)» lasciate da una modifica precedente (prima di una riga nuova).
+function _selTogliTenuti(sel){if(sel)[...sel.querySelectorAll('option[data-tenuto]')].forEach(o=>o.remove());}
 function _p3OpzioniDestinazione(){
-  const cant=_cantVisibili().filter(c=>c.stato==='Attivo'&&!_p3CantiereFinto(c));
+  const cant=_cantVisibili().filter(_cantCommessaInCorso); // P2: mai gli interni
   return '<option value="">'+t('opt_scegli')+'</option>'
     +(cant.length?'<optgroup label="'+escHtml(t('grp_cant_attivi'))+'">'+cant.map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('')+'</optgroup>':'')
     +'<optgroup label="'+escHtml(t('grp_dest_interne'))+'">'
@@ -8718,11 +8736,7 @@ function _p3ImpostaDestinazione(s){
   const sel=document.getElementById('sp-cant-sel');if(!sel)return;
   let v;
   if(s.cantiere_id){
-    v=s.cantiere_id;
-    if(![...sel.options].some(o=>o.value===v)){
-      const c=(CANTIERI||[]).find(x=>x.id===v);
-      sel.add(new Option((c?.nome||'Cantiere')+' (non più nella scelta)',v));
-    }
+    _selTieniCantiere(sel,s.cantiere_id);return; // P2: stesso aiuto delle altre schede
   }else v=P3_VALORE_DA_DEST[s.destinazione||'ditta_ufficio']||'interno';
   sel.value=v;
 }
@@ -8844,15 +8858,15 @@ async function renderSpeseDaRegistrare(){
 function populateSpeseSel(){
   setTimeout(populatePagatoDa, 100); // P28
 
-  const opts='<option value="">Tutti i cantieri</option>'+_cantVisibili().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  const opts='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('sp-cantiere').innerHTML=opts;
   document.getElementById('sp-cant-sel').innerHTML=_p3OpzioniDestinazione(); // P3
   document.getElementById('sp-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
-  document.getElementById('reg-cant-sel').innerHTML=_cantVisibili().filter(c=>c.stato==='Attivo').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('reg-cant-sel').innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('reg-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
   document.getElementById('ass-op-sel').innerHTML=OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
-  document.getElementById('ass-cant-sel').innerHTML='<option value="">Nessuno</option>'+_cantVisibili().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  document.getElementById('reg-cantiere').innerHTML='<option value="">Tutti i cantieri</option>'+_cantVisibili().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('ass-cant-sel').innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('reg-cantiere').innerHTML='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   document.getElementById('ass-operaio').innerHTML='<option value="">Tutti gli operai</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
 }
 function toggleMetodoPag(sel){document.getElementById('sp-metodo-wrap').style.display=sel.value==='Pagato'?'block':'none';}
@@ -8984,7 +8998,8 @@ async function visualizzaRegia(id){
 }
 
 function openModalSpesa(id){
-  editSpId=id;spFotoFile=null;_p3FotoEsistente=false;
+  editSpId=id;spFotoFile=null;_p3FotoEsistente=false;_selTogliTenuti(document.getElementById('sp-cant-sel')); // P2
+ 
   document.getElementById('sp-foto-prv').innerHTML='';
   populateSpeseSel();
   if(!id){
@@ -9132,6 +9147,7 @@ async function renderRegia(){
 }
 function openModalRegia(id){
   editRegId=id;
+  _selTogliTenuti(document.getElementById('reg-cant-sel')); // P2
   if(!id){
     document.getElementById('mod-regia-t').textContent=t('modal_nuova_regia');
     document.getElementById('reg-data').value=new Date().toISOString().split('T')[0];
@@ -9141,7 +9157,7 @@ function openModalRegia(id){
   }else{
     sb.from('regia').select('*').eq('id',id).single().then(({data:r})=>{
       if(!r)return;document.getElementById('mod-regia-t').textContent=t('modal_modifica_regia');
-      document.getElementById('reg-cant-sel').value=r.cantiere_id||'';document.getElementById('reg-op-sel').value=r.operaio_id||'';
+      _selTieniCantiere(document.getElementById('reg-cant-sel'),r.cantiere_id);document.getElementById('reg-op-sel').value=r.operaio_id||''; // P2
       document.getElementById('reg-data').value=r.data||'';document.getElementById('reg-tipo').value=r.tipo||'Ore';
       document.getElementById('reg-desc').value=r.descrizione||'';document.getElementById('reg-qty').value=r.quantita||'';
       document.getElementById('reg-um').value=r.um||'h';document.getElementById('reg-costo').value=r.costo_unitario||'';
@@ -9295,9 +9311,10 @@ async function renderAssenzeOLD(){
 }
 function openModalAssenza(id){
   editAssId=id;
+  _selTogliTenuti(document.getElementById('ass-cant-sel')); // P2
   // P7: elenchi persone e cantieri pieni anche se non si e' passati dalle Spese (senza toccare i filtri)
   const _so=document.getElementById('ass-op-sel');if(_so&&!_so.options.length)_so.innerHTML=OPERAI.map(o=>`<option value="${o.id}">${escHtml(o.nome)} ${escHtml(o.cognome)}</option>`).join('');
-  const _sc=document.getElementById('ass-cant-sel');if(_sc&&!_sc.options.length)_sc.innerHTML='<option value="">Nessuno</option>'+_cantVisibili().map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('');
+  const _sc=document.getElementById('ass-cant-sel');if(_sc&&!_sc.options.length)_sc.innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('');
   if(!id){
     document.getElementById('mod-ass-t').textContent=t('modal_ass_titolo');
     document.getElementById('ass-data').value=new Date().toISOString().split('T')[0];
@@ -9308,7 +9325,7 @@ function openModalAssenza(id){
       if(!a)return;document.getElementById('mod-ass-t').textContent=t('modal_modifica_ass');
       document.getElementById('ass-op-sel').value=a.operaio_id||'';document.getElementById('ass-data').value=a.data||'';
       document.getElementById('ass-giorni').value=a.giorni||'1';document.getElementById('ass-motivo').value=a.motivo||'Malattia';
-      document.getElementById('ass-cant-sel').value=a.cantiere_id||'';document.getElementById('ass-note').value=a.note||'';
+      if(a.cantiere_id)_selTieniCantiere(document.getElementById('ass-cant-sel'),a.cantiere_id);else document.getElementById('ass-cant-sel').value='';document.getElementById('ass-note').value=a.note||''; // P2
       document.getElementById('del-ass-w').innerHTML=`<button class="btn btn-d" onclick="deleteAssenza('${id}')">🗑️ Elimina</button>`;
     });
   }
@@ -9543,7 +9560,7 @@ function initRicerca(){
   const cantSel=document.getElementById('ricerca-cant');
   if(cantSel){
     cantSel.innerHTML='<option value="">— '+t('opt_tutti')+' —</option>'
-      +_cantVisibili().map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>';}).join('');
+      +_cantVisibiliComePrima().map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>';}).join('');
   }
   const inp=document.getElementById('ricerca-input');
   if(inp)inp.value='';
@@ -9670,7 +9687,7 @@ function popolaDropdownPiano(){
     opSel.innerHTML='<option value="">— Seleziona operaio —</option>'+opList.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+(o.ruolo?' ('+o.ruolo+')':'')+'</option>').join('');
   }
   if(cantSel){
-    const cantList=(CANTIERI||[]).filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
+    const cantList=(CANTIERI||[]).filter(_cantCommessaInCorso); // P2
     cantSel.innerHTML='<option value="">— Seleziona cantiere —</option>'+cantList.map(c=>'<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>').join('');
   }
   if(mzSel){
@@ -9683,6 +9700,7 @@ function popolaDropdownPiano(){
 
 function openModalPianoAss(){
   editPaId=null;
+  _selTogliTenuti(document.getElementById('pa-cantiere')); // P2
   document.getElementById('mod-piano-t').textContent='Assegna operaio';
   document.getElementById('del-pa-w').innerHTML='';
   ['pa-squadra','pa-note','pa-note-cs','pa-hotel-nome','pa-hotel-ind'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -9700,7 +9718,7 @@ async function apriModificaAssegnazione(id){
     const{data:r,error}=await sb.from('piano_giorno').select('*').eq('id',id).single();
     if(error)throw error;
     document.getElementById('pa-operaio').value=r.operaio_id||'';
-    document.getElementById('pa-cantiere').value=r.cantiere_id||'';
+    if(r.cantiere_id)_selTieniCantiere(document.getElementById('pa-cantiere'),r.cantiere_id);else document.getElementById('pa-cantiere').value=''; // P2
     document.getElementById('pa-mezzo').value=r.mezzo_id||'';
     document.getElementById('pa-ruolo').value=r.ruolo_giorno||'operaio';
     document.getElementById('pa-squadra').value=r.squadra||'';
@@ -11057,11 +11075,11 @@ function openModalBolla(id){
   document.getElementById('bol-foto-prv').innerHTML='';
   document.getElementById('del-bol-w').innerHTML='';
   const sc=document.getElementById('bol-cant-sel');
-  if(sc)sc.innerHTML=_cantVisibili().filter(c=>c.stato==='Attivo'||c.stato==='In pausa').map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join('');
+  if(sc)sc.innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join(''); // P2
   const so=document.getElementById('bol-op-sel');
   if(so)so.innerHTML='<option value="">— Seleziona —</option>'+(OPERAI||[]).map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
   const sf=document.getElementById('bol-cantiere');
-  if(sf&&sf.options.length<=1)_cantVisibili().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
+  if(sf&&sf.options.length<=1)_cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
   if(!id){
     const{date,time}=nowZurich();
     document.getElementById('bol-data').value=date;
@@ -11074,7 +11092,7 @@ function openModalBolla(id){
   }else{
     sb.from('bolle_consegna').select('*').eq('id',id).single().then(({data:b})=>{
       if(!b)return;
-      if(sc)sc.value=b.cantiere_id||'';
+      if(sc)_selTieniCantiere(sc,b.cantiere_id); // P2
       if(so)so.value=b.operaio_id||'';
       document.getElementById('bol-data').value=b.data||'';
       document.getElementById('bol-ora').value=b.ora||'';
@@ -11344,7 +11362,7 @@ async function renderMagazzino(){
   if(!el)return;
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    const cantAttivi=_cantVisibili().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';});
+    const cantAttivi=_cantVisibiliComePrima().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';}); // P2: come prima
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo</p></div>';return;}
     const{data:tutti,error}=await sb.from('materiali_cantiere').select('*')
       .in('cantiere_id',cantAttivi.map(function(c){return c.id;}))
@@ -11398,7 +11416,7 @@ async function _toggleMatMagazzino(id, fatto, cantiereId, containerEl){
 
 async function aggiornaBadgeMagazzino(){
   try{
-    const cantAttivi=_cantVisibili().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';});
+    const cantAttivi=_cantVisibiliComePrima().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';}); // P2: come prima
     if(!cantAttivi.length)return;
     const{data}=await sb.from('materiali_cantiere').select('id')
       .in('cantiere_id',cantAttivi.map(function(c){return c.id;})).eq('fatto',false);
@@ -12204,10 +12222,10 @@ function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').repla
 function populateGruSel(){
   const s=document.getElementById('gru-cant-sel');if(!s)return;
   s.innerHTML='<option value="">Nessuno</option>';
-  _cantVisibili().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;s.appendChild(o);});
+  _cantVisibili().filter(_cantCommessaInCorso).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;s.appendChild(o);}); // P2
   const sf=document.getElementById('gru-cantiere');if(!sf)return;
   sf.innerHTML='<option value="">Tutti i cantieri</option>';
-  _cantVisibili().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
+  _cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
 }
 
 async function renderGru(){
@@ -12364,7 +12382,7 @@ function openModalGru(id){
       document.getElementById('gru-ntiri').value=r.n_tiri||'';
       document.getElementById('gru-importo').value=r.importo||'';
       document.getElementById('gru-note').value=r.note||'';
-      if(r.cantiere_id)document.getElementById('gru-cant-sel').value=r.cantiere_id;
+      if(r.cantiere_id)_selTieniCantiere(document.getElementById('gru-cant-sel'),r.cantiere_id); // P2
       document.getElementById('del-gru-w').innerHTML='<button class="btn btn-d" data-id="'+id+'" onclick="eliminaGruById(this)">🗑️ Elimina</button>';
       if(r.foto_path){
         document.getElementById('gru-foto-prv').innerHTML='<div style="font-size:14px;color:var(--t2);padding:4px 0">⏳ Caricamento...</div>';
@@ -12748,10 +12766,10 @@ async function renderMappa(){
   const puo = ['titolare','responsabile'].includes(_ruoloApp());
   const indir = c => [c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
-  // P7b: TUTTI i cantieri attivi (mai i finti "Spese ditta" e "Materiale Magazzino").
+  // P7b: TUTTI i cantieri attivi (mai gli interni, riconosciuti da tipo='interno').
   // "Oggi" decide solo quali si disegnano sulla mappa: l'elenco sotto li mostra sempre tutti,
   // e chi non ha posizione compare con l'avviso per metterla a mano.
-  const tuttiAttivi = (CANTIERI || []).filter(c => /^(attivo|in pausa)$/i.test(String(c.stato||'').trim()) && !_p3CantiereFinto(c));
+  const tuttiAttivi = (CANTIERI || []).filter(c => /^(attivo|in pausa)$/i.test(String(c.stato||'').trim()) && !_cantInterno(c)); // P2: interni da tipo
 
   // chi lavora oggi = ultima assegnazione del Piano (come "Oggi la squadra")
   let pianOggi = [];
@@ -12862,7 +12880,7 @@ function filtraCantieri(testo){
   const t = testo.toLowerCase().trim();
   if(!t) return [];
   return _cantVisibili()
-    .filter(c => (c.stato==='Attivo'||c.stato==='attivo'||c.stato==='In pausa') &&
+    .filter(c => _cantSceglibileOre(c) && // P2: commesse in corso + interni
                  c.nome && c.nome.toLowerCase().includes(t))
     .slice(0,5);
 }
@@ -12913,7 +12931,7 @@ function renderScegliCantiere(filtro){
   if(!el)return;
   const t=(filtro||'').toLowerCase().trim();
   const lista=_cantVisibili().filter(c=>
-    (c.stato==='Attivo'||c.stato==='In pausa')&&
+    _cantSceglibileOre(c)&& // P2: commesse in corso + interni
     (!t||(c.nome||'').toLowerCase().includes(t))
   );
   if(!lista.length){
