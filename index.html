@@ -1451,7 +1451,6 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <div id="o-acc-stato" style="font-size:14px;color:var(--t2);margin:-6px 0 10px"></div>
     <div id="o-pwd-wrap" style="display:none;margin:-4px 0 12px"><button type="button" class="btn btn-s" style="font-size:15px;padding:9px" onclick="p5bApriNuovaPassword()">🔑 Nuova password</button></div>
     <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" autocomplete="off" placeholder="es. +41 79 123 45 67"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_note">Note</label><input type="text" class="fi" id="o-note" autocomplete="off" placeholder="es. Patente gru, specializzazioni..."></div>
     <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:15px"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><div style="display:flex;gap:8px;align-items:center"><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:15px;flex:1"><button type="button" class="btn btn-s btn-sm" style="white-space:nowrap;width:auto;padding:8px 10px;font-size:14px" onclick="p5TempoIndeterminato()">✕ Tempo indeterminato</button></div></div>
     <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
@@ -2147,7 +2146,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='8';
+const APP_VERSIONE='9';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4089,7 +4088,9 @@ async function afterLogin(){
       if(!azErr && az) AZIENDA_ID=az.id;
       // azErr o az=null → AZIENDA_ID resta null, app continua senza bloccarsi
     }catch(e){console.warn('P25 azienda lookup:',e.message);}
-    await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
+    const[_p2CantOk,_p2OpOk]=await Promise.all([loadCantieri(),loadOperai(),loadImpostazioni()]);
+    if(_p2SessioneAvvisata)return; // P2 punto 5: sessione scaduta, si torna all'accesso
+    if(_p2OpOk)_p2AvvisoNonCollegato(); // P2 punto 4
     // P4: chi non e' piu' attivo esce subito; poi i cantieri che puo' vedere
     if(!(await _p4ControllaAccessoAttivo()))return;
     await _p4CaricaVisibilita();
@@ -4231,10 +4232,37 @@ async function cambiaPwd(){
 // ── RLS: eseguire UNA VOLTA su Supabase SQL Editor se le query cantieri danno 400 ──
 // CREATE POLICY cantieri_auth ON cantieri FOR ALL TO authenticated USING (true) WITH CHECK (true);
 // NOTIFY pgrst, 'reload schema';
+// P2 punto 5: prima di leggere cantieri e operai si controlla la sessione.
+// Sessione scaduta = avviso chiaro e ritorno all'accesso, MAI un elenco vuoto.
+let _p2SessioneAvvisata=false;
+function _erroreDiSessione(e){return /jwt|token|PGRST30[0-3]|not authenticated|401/i.test(String(e?.message||'')+' '+String(e?.code||'')+' '+String(e?.status||''));}
+async function _sessioneScaduta(){
+  if(_p2SessioneAvvisata)return;_p2SessioneAvvisata=true;
+  alert('Sessione scaduta: accedi di nuovo.');
+  try{await sb.auth.signOut({scope:'local'});}catch(e){}
+  location.reload();
+}
+async function _sessioneValida(){
+  try{
+    const{data}=await sb.auth.getSession();
+    const se=data&&data.session;
+    if(se&&(!se.expires_at||se.expires_at*1000>Date.now()))return true;
+  }catch(e){console.warn('Controllo sessione:',e.message);}
+  await _sessioneScaduta();
+  return false;
+}
+let _P2_CANTIERI_ERRORE=false;
 async function loadCantieri(){
+  if(!(await _sessioneValida()))return false;
   const {data,error}=await sb.from('cantieri').select('*').order('nome');
-  if(error){console.error('loadCantieri error:',error.message,'(code:',error.code+')');showToast('Errore DB cantieri ('+error.code+'): contatta l\'amministratore','e');}
+  if(error){
+    if(_erroreDiSessione(error)){await _sessioneScaduta();return false;}
+    console.error('loadCantieri error:',error.message,'(code:',error.code+')');showToast('Errore DB cantieri ('+error.code+'): contatta l\'amministratore','e');
+    _P2_CANTIERI_ERRORE=true;return false; // l'elenco di prima resta: mai vuoto per un errore
+  }
+  _P2_CANTIERI_ERRORE=false;
   CANTIERI=data||[];
+  return true;
 }
 
 // ── CATEGORIE MATERIALI (P-B) ──
@@ -4336,14 +4364,18 @@ function _opAttivo(o,giorno){
   return o.attivo!==false&&(!o.data_fine_rapporto||o.data_fine_rapporto>=g);
 }
 async function loadOperai(){
+  if(!(await _sessioneValida()))return false; // P2 punto 5
   try{
     const{data,error}=await sb.from('operai').select('*').order('cognome');
     if(error)throw error;
     OPERAI_TUTTI=data||[];
     OPERAI=OPERAI_TUTTI.filter(o=>_opAttivo(o));
+    return true;
   }catch(e){
+    if(_erroreDiSessione(e)){await _sessioneScaduta();return false;}
     console.warn('Errore loadOperai:',e.message);
-    OPERAI_TUTTI=[];OPERAI=[];
+    showToast('Elenco persone non caricato: riprova','e');
+    return false; // P2 punto 5: l'elenco di prima resta, mai vuoto per un errore
   }
 }
 // P2: solo le voci di questo cantiere (preventivo + libere), non archiviate.
@@ -4389,7 +4421,7 @@ function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.re
 function goTo(p){
   showScr(p==='home'?'home':p==='cantiere'?'cantiere':p==='giornata-1'?'giornata-1':p==='giornata-2'?'giornata-2':p==='report'?'report':'admin');
   document.getElementById('top-title').textContent=
-    p==='home'?'Cantieri':p==='cantiere'?(curCant?.nome||'Cantiere'):
+    p==='home'?'Cantieri':p==='cantiere'?(_cantEtichetta(curCant)||'Cantiere'):
     p==='giornata-1'?'Nuova giornata':p==='giornata-2'?'Registra operai':
     p==='report'?'Report':'Admin';
 }
@@ -4403,6 +4435,7 @@ async function renderHome(){
   const {data:stats}=await sb.from('giornate').select('cantiere_id,ore_totali');
   const orePerCant={};
   (stats||[]).forEach(g=>{if(!orePerCant[g.cantiere_id])orePerCant[g.cantiere_id]=0;orePerCant[g.cantiere_id]+=parseFloat(g.ore_totali||0);});
+  if(_P2_CANTIERI_ERRORE&&!(CANTIERI||[]).length){list.innerHTML='<div class="empty"><div class="empty-i">⚠️</div><p>Cantieri non caricati. Controlla la connessione e riapri l\'app.</p></div>';return;} // P2 punto 5
   const attivi=_cantVisibili().filter(_cantSceglibileOre); // P2: commesse in corso + interni
   if(!attivi.length&&_p4FiltraCantieri()){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere assegnato. Chiedi al titolare.</p></div>';return;}
   if(!attivi.length){list.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>'+t('empty_cant_attivo')+'<br>'+t('empty_aggiungine')+'</p></div>';return;}
@@ -4420,7 +4453,7 @@ async function renderHome(){
     const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
     return `<div class="cant-card" onclick="enterCantiere('${c.id}')">
       <span class="cant-status ${stCls}">${c.stato}</span>
-      <div class="cant-nome">${c.nome}</div>
+      <div class="cant-nome">${_cantEtichetta(c)}</div>
       <div class="cant-meta">${[c.luogo,utenteHaAccesso(PROF,'committente',null)&&c.committente?c.committente:null].filter(Boolean).join(' · ')||c.luogo||'—'}</div>
       ${(()=>{const _ia=[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');return _ia?`<div style="font-size:14px;color:var(--t2);margin-bottom:6px">${_ia}</div>`:'';})()}
       <div class="cant-stats">
@@ -4440,7 +4473,7 @@ async function enterCantiere(id){
   if(!curCant)return;
   await loadLavs(id);
   pushNav('cantiere');goTo('cantiere');
-  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,active:true}]);
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),active:true}]);
   renderCantiere();
 }
 function goHome(){curCant=null;_navHistory=['home'];const bb=document.getElementById('btn-back');if(bb)bb.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
@@ -4608,8 +4641,8 @@ async function renderCantiere(){
 function apriLavoriCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al cantiere
 
   showScr('lavori');
-  document.getElementById('top-title').textContent=t('top_lavorazioni')+' — '+curCant.nome;
-  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Lavorazioni'}]);
+  document.getElementById('top-title').textContent=t('top_lavorazioni')+' — '+_cantEtichetta(curCant);
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Lavorazioni'}]);
   renderLavoriCantiere();
 }
 
@@ -4619,8 +4652,8 @@ function apriFotoCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al 
   if(!curCant)return;
   window._fotoFiltroAttivo='tutti';
   showScr('foto');
-  document.getElementById('top-title').textContent=t('sett_foto')+' — '+curCant.nome;
-  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Foto'}]);
+  document.getElementById('top-title').textContent=t('sett_foto')+' — '+_cantEtichetta(curCant);
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Foto'}]);
   renderFotoCantiere();
 }
 
@@ -4708,8 +4741,8 @@ async function renderFotoCantiere(filtro){
 function apriAnagraficaCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al cantiere
 
   showScr('anagrafica');
-  document.getElementById('top-title').textContent=t('top_anagrafica')+' — '+curCant.nome;
-  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Figure cantiere'}]);
+  document.getElementById('top-title').textContent=t('top_anagrafica')+' — '+_cantEtichetta(curCant);
+  setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Figure cantiere'}]);
   renderAnagrafica();
 }
 
@@ -4954,7 +4987,7 @@ async function apriModificaGiornata(gid){
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
   const {data:fotoEsist}=await sb.from('foto').select('*').eq('giornata_id',gid);
   const {data:vociEsist}=await sb.from('voci_lavoro').select('*, lavorazioni(nome,um)').eq('giornata_id',gid);
-  document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${g.cantieri?.nome||''}`;
+  document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}`;
   document.getElementById('mg-ini').value=g.ora_inizio||'07:00';
   document.getElementById('mg-fine').value=g.ora_fine||'17:00';
   document.getElementById('mg-pausa').value=g.pausa_minuti||60;
@@ -5185,8 +5218,7 @@ async function salvaModificaGiornata(){
     if(_p2DaConfMg)_p2AvvisaCapisquadra(_p2DaConfMg,CANTIERI.find(c=>c.id===g.cantiere_id)?.nome,g.cantiere_id);
     if(curCant&&curCant.id===g.cantiere_id)await loadLavs(g.cantiere_id);
     if(mgFotoFiles.length){
-      const cant=CANTIERI.find(c=>c.id===g.cantiere_id);
-      const cn=(cant?.nome||'cantiere').replace(/[^a-zA-Z0-9]/g,'_');
+      const cn=g.cantiere_id||'senza-cantiere'; // P2 punto 6: id del cantiere nel percorso (i vecchi restano dove sono)
       for(const file of mgFotoFiles){
         try{
           const ext=file.name.split('.').pop().toLowerCase();
@@ -5230,9 +5262,9 @@ async function eliminaGiornataModifica(){
 }
 
 function apriRegiaCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al cantiere
-populateSpeseSel();showScr('regia');document.getElementById('top-title').textContent='Regia — '+curCant.nome;document.getElementById('reg-cantiere').value=curCant.id;renderRegia();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Regia'}]);}
+populateSpeseSel();showScr('regia');document.getElementById('top-title').textContent='Regia — '+_cantEtichetta(curCant);document.getElementById('reg-cantiere').value=curCant.id;renderRegia();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Regia'}]);}
 function apriSpeseCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al cantiere
-populateSpeseSel();showScr('spese');document.getElementById('top-title').textContent='Spese — '+curCant.nome;document.getElementById('sp-cantiere').value=curCant.id;renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Spese'}]);}
+populateSpeseSel();showScr('spese');document.getElementById('top-title').textContent='Spese — '+_cantEtichetta(curCant);document.getElementById('sp-cantiere').value=curCant.id;renderSpese();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Spese'}]);}
 
 async function openCantLog(gid){
   const {data:g}=await sb.from('giornate').select('*, operai(*), voci_lavoro(*, lavorazioni(nome,um))').eq('id',gid).single();
@@ -5342,7 +5374,7 @@ async function generaPdfGiornata(data){
       +'</div></div>'
       // Cantiere + data
       +'<div style="margin-bottom:16px">'
-      +'<div style="font-size:20px;font-weight:800;margin-bottom:2px">'+escHtml(curCant.nome)+'</div>'
+      +'<div style="font-size:20px;font-weight:800;margin-bottom:2px">'+escHtml(_cantEtichetta(curCant))+'</div>'
       +(indrStr?'<div style="font-size:14px;color:#666;margin-bottom:3px">'+escHtml(indrStr)+'</div>':'')
       +'<div style="font-size:17px;color:#444;font-weight:600">'+fmtD(data)+'</div>'
       +'</div>'
@@ -5431,7 +5463,7 @@ async function exportPdfCantiere(cantId){
       +'td{padding:5px 8px;border:1px solid #e8e8e8;vertical-align:top}'
       +'h2{font-size:17px;color:#1a1a1a;margin:20px 0 10px}'
       +'@media print{.no-print{display:none!important}body{padding:10px}@page{margin:1.5cm}}';
-    const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>PDF Cantiere '+escHtml(cant.nome)+'</title><style>'+cssBase+'</style></head><body>'
+    const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>PDF Cantiere '+escHtml(_cantEtichetta(cant))+'</title><style>'+cssBase+'</style></head><body>'
       +'<div class="no-print" style="background:#fffbef;border:1px solid #ddd;padding:10px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border-radius:6px"><span style="font-size:14px;color:#666">Anteprima — usa il pulsante per stampare o salvare come PDF</span><button onclick="window.print()" style="background:#c8a84b;border:none;color:#fff;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:15px;font-weight:700">🖨️ Stampa / Salva PDF</button></div>'
       +'<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px;padding-bottom:14px;border-bottom:3px solid #c8a84b">'
       +(logoDataUrl?'<img src="'+logoDataUrl+'" style="width:60px;height:60px;border-radius:8px;flex-shrink:0">':'')
@@ -5441,7 +5473,7 @@ async function exportPdfCantiere(cantId){
       +'<div style="font-size:14px;color:#888">ore totali cantiere</div>'
       +'<div style="font-size:14px;color:#c8a84b;font-weight:600;margin-top:2px">CHF '+totalSpese.toFixed(2)+' spese</div></div></div>'
       +'<div style="margin-bottom:20px">'
-      +'<div style="font-size:22px;font-weight:800;margin-bottom:3px">'+escHtml(cant.nome)+'</div>'
+      +'<div style="font-size:22px;font-weight:800;margin-bottom:3px">'+escHtml(_cantEtichetta(cant))+'</div>'
       +(indrCant?'<div style="font-size:14px;color:#666;margin-bottom:3px">'+escHtml(indrCant)+'</div>':'')
       +(cant.stato?'<span style="display:inline-block;font-size:14px;background:#e8e0cc;color:#7a6030;padding:2px 8px;border-radius:3px;font-weight:600;text-transform:uppercase">'+escHtml(cant.stato)+'</span>':'')
       +'</div>'
@@ -5477,7 +5509,7 @@ function p7ApriRapporto(){
       +'<button class="btn btn-s" style="margin-top:8px" onclick="closeModal(\'mod-p7-rapp\')">Chiudi</button></div>';
     document.body.appendChild(ov);
   }
-  document.getElementById('p7-rapp-nome').textContent=curCant.nome||'';
+  document.getElementById('p7-rapp-nome').textContent=_cantEtichetta(curCant)||'';
   document.getElementById('p7-rapp-tipo').value='inizio_oggi';p7RappPeriodo('inizio_oggi'); // P7c
   openModal('mod-p7-rapp');
 }
@@ -5535,7 +5567,7 @@ async function p7RapportoExcel(){
     if(!d.gior.length){showToast('Nessuna giornata nel periodo','e');return;}
     const wb=XLSX.utils.book_new();
     const R=await _p7cRiassunto(curCant.id,d.dal,d.al); // P7c: primo foglio = riassunto
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(_p7cRiassuntoFoglio(R,curCant.nome)),'Riassunto');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(_p7cRiassuntoFoglio(R,_cantEtichetta(curCant))),'Riassunto');
     const det=[['Data','Persona','Voce','Capitolo','Ore','Quantità scritta','Quantità contata nel totale','Unità','Note giornata']]
       .concat(d.righe.map(r=>[r.data,r.persona,r.voce,r.capitolo,r.ore,r.quantita,r.qContata,r.um,r.note]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(det),'Giornata x voce x persona');
@@ -5585,14 +5617,14 @@ async function p7RapportoPdf(){
         +(foto.filter(x=>x.data===dt).length?'<div class="foto">'+foto.filter(x=>x.data===dt).map(x=>'<img src="'+e(x.url)+'">').join('')+'</div>':'')
         +'</div>';
     }).join('');
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapporto '+e(curCant.nome||'')+'</title><style>'
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapporto '+e(_cantEtichetta(curCant)||'')+'</title><style>'
       +'body{font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;padding:24px;max-width:900px;margin:auto}h1{font-size:20px;margin:0}h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #c8a84b;padding-bottom:4px}'
       +'h3{font-size:15px;margin:0 0 6px;color:#7a5a2a}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{border-bottom:1px solid #e6e6e6;padding:5px 6px;text-align:left;vertical-align:top}th{background:#f6f3ea;font-size:14px}'
       +'td.n{text-align:right;font-family:monospace;white-space:nowrap}.giorno{border:1px solid #eee;border-radius:6px;padding:10px 12px;margin-bottom:10px;page-break-inside:avoid}.pers{margin:4px 0 6px}.mut{color:#777}.nota{color:#555;margin-top:2px}'
       +'ul{margin:3px 0 0 18px;padding:0}.foto{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.foto img{width:150px;height:110px;object-fit:cover;border-radius:4px}'
       +'.top{display:flex;justify-content:space-between;align-items:flex-end}.btn{background:#c8a84b;border:none;padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer}@media print{.no-print{display:none}body{padding:0}}'
       +'</style></head><body>'
-      +'<div class="top"><div><div style="font-size:13px;letter-spacing:2px;color:#c8a84b;font-weight:700">RAPPORTO CANTIERE</div><h1>'+e(curCant.nome||'')+'</h1>'
+      +'<div class="top"><div><div style="font-size:13px;letter-spacing:2px;color:#c8a84b;font-weight:700">RAPPORTO CANTIERE</div><h1>'+e(_cantEtichetta(curCant)||'')+'</h1>'
       +'<div class="mut">'+e([curCant.via,[curCant.cap,curCant.citta].filter(Boolean).join(' ')].filter(Boolean).join(', '))+'</div>'
       +'<div class="mut">Periodo: '+e(fmtDate(d.dal))+' – '+e(fmtDate(d.al))+' · '+Object.keys(perData).length+' giorni · '+f2(totOre)+' h</div></div>'
       +'<button class="btn no-print" onclick="window.print()">🖨️ Stampa / salva PDF</button></div>'
@@ -5645,7 +5677,7 @@ function p7cOreSquadra(){
 }
 function _p7cGiornataPerVoci(){
   const gg=_p7cGiorno.giornate||[];if(!gg.length)return null;
-  const io=(OPERAI_TUTTI||[]).find(o=>o.email&&USER&&String(o.email).toLowerCase()===String(USER.email||'').toLowerCase());
+  const io=_p4MioOperaio(); // P2 punto 4
   const mia=io&&gg.find(g=>g.operaio_id===io.id);if(mia)return mia.id;
   const salv=(GIO.operaiSalvati||[]).map(o=>o.gid).filter(Boolean);const s1=gg.find(g=>salv.includes(g.id));
   return (s1||gg[0]).id;
@@ -5678,7 +5710,7 @@ async function p7cSalvaSquadra(){
     if(error)throw error;
     if(!data||data.length!==rows.length)throw new Error('salvati '+(data?data.length:0)+' lavori su '+rows.length);
     if(_p7bCtx&&_p7bCtx.cantId===GIO.cantId)rows.forEach(v=>{if(v.lavorazione_id&&v.quantita>0)_p7bCtx.righe.push({lav:v.lavorazione_id,q:v.quantita,gid,data:GIO.data,sq:true});});
-    if(daConf)_p2AvvisaCapisquadra(daConf,curCant?.nome,GIO.cantId);
+    if(daConf)_p2AvvisaCapisquadra(daConf,_cantEtichetta(curCant),GIO.cantId);
     if(nuove)await loadLavs(GIO.cantId);
     document.getElementById('g2-voci').innerHTML='';
     await p7cCaricaSquadra();
@@ -5979,9 +6011,9 @@ function aggiungiOperaioAData(data, cantId){
     GIO={cantId:cantId,data,meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
     pushNav('giornata-1');showScr('giornata-1');
     document.getElementById('top-title').textContent=t('sec_aggiungi_op');
-    setBread([{label:'Cantieri',onclick:"goHome()"},{label:cant.nome,onclick:'goToCantiere()'},{label:'Aggiungi operaio'}]);
+    setBread([{label:'Cantieri',onclick:"goHome()"},{label:_cantEtichetta(cant),onclick:'goToCantiere()'},{label:'Aggiungi operaio'}]);
     document.getElementById('g1-data').value=data;
-    const _g1cd=document.getElementById('g1-cant-display');if(_g1cd)_g1cd.textContent=cant.nome;
+    const _g1cd=document.getElementById('g1-cant-display');if(_g1cd)_g1cd.textContent=_cantEtichetta(cant);
     // g1-cant-picker rimosso
     // Disabilita cambio data (è aggiunta a giornata esistente)
     const dataInp=document.getElementById('g1-data');
@@ -5994,21 +6026,21 @@ function aggiungiOperaioAData(data, cantId){
 // ── NUOVA GIORNATA ──
 function startNuovaGiornata(){
   // P27: aggiorna display cantiere nel widget search
-  setTimeout(()=>{ const d=document.getElementById('g1-cant-display'); if(d&&curCant){d.textContent=curCant.nome||'—';d.style.display='block';const w=document.getElementById('g1-cant-search-wrap');if(w)w.style.display='none';} },50);
+  setTimeout(()=>{ const d=document.getElementById('g1-cant-display'); if(d&&curCant){d.textContent=_cantEtichetta(curCant)||'—';d.style.display='block';const w=document.getElementById('g1-cant-search-wrap');if(w)w.style.display='none';} },50);
   const now=new Date();
   GIO={cantId:curCant.id,data:now.toISOString().split('T')[0],meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
   const g1DataEl=document.getElementById('g1-data');
   g1DataEl.value=GIO.data;
   g1DataEl.max=GIO.data; // non si può andare nel futuro
   g1DataEl.removeAttribute('min');
-  if(document.getElementById('g1-cant-display'))document.getElementById('g1-cant-display').textContent=curCant.nome;
+  if(document.getElementById('g1-cant-display'))document.getElementById('g1-cant-display').textContent=_cantEtichetta(curCant);
   document.getElementById('g1-ini').value='07:00';document.getElementById('g1-fine').value='17:00';document.getElementById('g1-pausa').value='60';
   document.getElementById('g1-mat').value='';document.getElementById('g1-visite').value='';
   document.querySelectorAll('.meteo-b').forEach(b=>b.classList.remove('on'));
   calcOre1();showScr('giornata-1');
   ['g1-mat','g1-visite'].forEach(function(id){const f=document.getElementById(id)?.closest('.fg');if(f)f.style.display=_p7cCapo()?'':'none';}); // P7c
-  document.getElementById('top-title').textContent=t('top_nuova')+' — '+curCant.nome;
-  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Nuova giornata'}]);
+  document.getElementById('top-title').textContent=t('top_nuova')+' — '+_cantEtichetta(curCant);
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Nuova giornata'}]);
 }
 function calcOre1(){
   const ini=document.getElementById('g1-ini').value,fine=document.getElementById('g1-fine').value;
@@ -6032,7 +6064,7 @@ function goStep2(){
 function setupStep2(){
   const ore=calcOreRaw(GIO.ini,GIO.fine,GIO.pausa);
   document.getElementById('g2-meteo-icon').textContent=GIO.meteo?GIO.meteo.split(' ')[0]:'—';
-  document.getElementById('g2-cant-nome').textContent=curCant.nome;
+  document.getElementById('g2-cant-nome').textContent=_cantEtichetta(curCant);
   document.getElementById('g2-info').textContent=`${GIO.data} · ${GIO.ini} → ${GIO.fine} · -${GIO.pausa}min`;
   document.getElementById('g2-ore').textContent=ore.toFixed(2)+'h';
   document.getElementById('g2-ini').value=GIO.ini;document.getElementById('g2-fine').value=GIO.fine;document.getElementById('g2-pausa').value=GIO.pausa;
@@ -6043,7 +6075,7 @@ function setupStep2(){
   document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
   fFiles=[];fB64=[];renderSalvati();showScr('giornata-2');
   document.getElementById('top-title').textContent=t('sec_operai_giornata');
-  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
   _aggiornaCheckboxPasto();
   _aggiornaCheckboxTrasferta();
 }
@@ -6117,7 +6149,7 @@ function refreshOperaiSelect(){
   const salvIds=GIO.operaiSalvati.map(o=>o.opId);
   const disponibili=OPERAI.filter(o=>!salvIds.includes(o.id));
   document.getElementById('g2-operaio').innerHTML=disponibili.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome} · ${o.ruolo}</option>`).join('');
-  {const io=(OPERAI_TUTTI||[]).find(o=>o.email&&USER&&String(o.email).toLowerCase()===String(USER.email||'').toLowerCase());if(io&&disponibili.some(o=>o.id===io.id))document.getElementById('g2-operaio').value=io.id;} // P7c: io per primo
+  {const io=_p4MioOperaio();if(io&&disponibili.some(o=>o.id===io.id))document.getElementById('g2-operaio').value=io.id;} // P7c: io per primo
   document.getElementById('g2-form-wrap').style.display=disponibili.length>0?'block':'none';
 }
 function renderSalvati(){
@@ -6167,7 +6199,7 @@ async function salvaOperaio(){
     let _p7bErrMat='';
     if(GIO.mat&&GIO.operaiSalvati.length===0){const{data:_mr,error:_me}=await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id}).select('id');if(_me||!_mr||!_mr.length)_p7bErrMat=_me?_me.message:'0 righe';}
     for(const file of fFiles){
-      const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
+      const cn=GIO.cantId||curCant.id; // P2 punto 6: id del cantiere nel percorso (i vecchi restano dove sono)
       const path=`${cn}/${GIO.data}/${Date.now()}_${file.name}`;
       const {error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
       const _tipoFoto=document.getElementById('foto-tipo-upload')?.value||'durante';
@@ -6595,7 +6627,7 @@ async function exportCSV(){
   const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('operaio_id').order('data');
   if(!data?.length){showToast('Nessun dato','e');return;}
   const rows=[['Data','Cantiere','Operaio','Ruolo','Inizio','Fine','Pausa','Ore']];
-  data.forEach(g=>rows.push([g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2)]));
+  data.forEach(g=>rows.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2)]));
   const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`CT_Stipendi_${mese}.csv`;a.click();
@@ -6629,7 +6661,7 @@ async function exportExcel(){
   Object.values(byOp).sort((a,b)=>(a.op?.cognome||'').localeCompare(b.op?.cognome||'')).forEach(({op,giorni,ore})=>rstip.push([`${op?.nome||''} ${op?.cognome||''}`,op?.ruolo||'',giorni.size,ore.toFixed(2)]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rstip),'Stipendi');
   const rdet=[['Data','Cantiere','Operaio','Ore','Lavorazione','Ore lavoro']];
-  data.forEach(g=>{(g.voci_lavoro||[{}]).forEach(v=>rdet.push([g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2),v.lavorazioni?.nome||v.lavorazione_nome||'',v.ore?parseFloat(v.ore).toFixed(2):'']));});
+  data.forEach(g=>{(g.voci_lavoro||[{}]).forEach(v=>rdet.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2),v.lavorazioni?.nome||v.lavorazione_nome||'',v.ore?parseFloat(v.ore).toFixed(2):'']));});
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rdet),'Dettaglio');
   XLSX.writeFile(wb,`CT_Report_${mese}.xlsx`);showToast('Excel scaricato ✓');
 }
@@ -6658,7 +6690,7 @@ async function renderReport(){
           <div style="font-family:'DM Mono';font-size:28px;color:var(--gold);font-weight:500">${ore.toFixed(2)}<span style="font-size:16px">h</span></div>
         </div>
         <div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Orario</th><th>Ore</th><th>Straord.</th><th>Trasferta</th></tr></thead>
-        <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${g.cantieri?.nome||'—'}</td><td style="font-family:'DM Mono';font-size:14px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td><td class="mono" style="color:${g.ore_straordinari>0?'var(--orange)':'var(--t3)'}">${g.ore_straordinari>0?'+'+parseFloat(g.ore_straordinari).toFixed(2)+'h':'—'}</td><td style="font-size:14px;color:var(--t2)">${g.zona_trasferta?'Sì':'—'}</td></tr>`).join('')}</tbody></table></div>
+        <tbody>${giorni.map(g=>`<tr><td>${fmtDate(g.data)}</td><td>${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—'}</td><td style="font-family:'DM Mono';font-size:14px">${g.ora_inizio||'—'}→${g.ora_fine||'—'}</td><td class="mono">${parseFloat(g.ore_totali||0).toFixed(2)}h</td><td class="mono" style="color:${g.ore_straordinari>0?'var(--orange)':'var(--t3)'}">${g.ore_straordinari>0?'+'+parseFloat(g.ore_straordinari).toFixed(2)+'h':'—'}</td><td style="font-size:14px;color:var(--t2)">${g.zona_trasferta?'Sì':'—'}</td></tr>`).join('')}</tbody></table></div>
         ${ass.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:6px">Assenze</div>${ass.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:15px;color:var(--t2)">${motivoIcon[a.motivo]||'❓'} <span>${fmtDate(a.data)}</span> <span style="color:var(--text)">${a.motivo}</span></div>`).join('')}</div>`:''}
       </div>`).join('');
   }else if(tipo==='cantieri'){
@@ -6715,7 +6747,7 @@ async function renderAdmin(){
   const _admc=document.getElementById('adm-cantieri');
   const _admo=document.getElementById('adm-operai');
   if(!_admc||!_admo)return; // screen non nel DOM
-  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${c.nome}</div><div style="font-size:14px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
+  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
   const oggi_adm=new Date().toISOString().split('T')[0];
   _admo.innerHTML=OPERAI_TUTTI.map(o=>{
     const exAt=!_opAttivo(o,oggi_adm);
@@ -6766,7 +6798,7 @@ function openModalCantiere(id){
   document.getElementById('c-paese').value=c?.paese||'CH';
   document.getElementById('c-comm').value=c?.committente||'';
   document.getElementById('c-stato').value=c?.stato||'Attivo';
-  document.getElementById('del-cant-w').innerHTML=c?`<button class="btn btn-d" onclick="deleteCant('${id}')">🗑️ Elimina</button>`:'';
+  document.getElementById('del-cant-w').innerHTML=''; // P2 punto 7: i cantieri non si cancellano (si archiviano in Anagrafiche: Conclusa o Persa)
   openModal('mod-cant');
 }
 async function saveCant(){
@@ -6778,7 +6810,8 @@ async function saveCant(){
   }catch(e){showToast('Errore: '+e.message,'e');return;}
   await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast(t('toast_salvato'));
 }
-async function deleteCant(id){if(!confirm(t('conf_elimina_cant')))return;const _cDel=CANTIERI.find(x=>x.id===id);_p7Righe(await sb.from('cantieri').delete().eq('id',id).select('id'),'cantieri');logAzione('cantieri',id,'DELETE',{nome:_cDel?.nome}); // P29
+async function deleteCant(id){showToast('I cantieri non si cancellano: si archiviano in Anagrafiche (Conclusa o Persa).','e');return; // P2 punto 7
+  if(!confirm(t('conf_elimina_cant')))return;const _cDel=CANTIERI.find(x=>x.id===id);_p7Righe(await sb.from('cantieri').delete().eq('id',id).select('id'),'cantieri');logAzione('cantieri',id,'DELETE',{nome:_cDel?.nome}); // P29
 await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();}
 function openModalOp(id){
   editOid=id;
@@ -6791,7 +6824,6 @@ function openModalOp(id){
   // Nuovi campi
   const eEl=document.getElementById('o-email');if(eEl)eEl.value=o?.email||'';
   const tEl=document.getElementById('o-telefono');if(tEl)tEl.value=o?.telefono||'';
-  const nEl=document.getElementById('o-note');if(nEl)nEl.value=o?.note||'';
   const iEl=document.getElementById('o-inizio');if(iEl)iEl.value=o?.data_assunzione||'';
   // P1c: campi "Aggiungi documento" vuoti a ogni apertura (non resta la data della persona precedente)
   const dtEl=document.getElementById('doc-tipo');if(dtEl)dtEl.selectedIndex=0;
@@ -6848,7 +6880,6 @@ async function saveOp(){
       ruolo:document.getElementById('o-ruolo').value,
       email:document.getElementById('o-email')?.value.trim()||null,
       telefono:document.getElementById('o-telefono')?.value.trim()||null,
-      note:document.getElementById('o-note')?.value.trim()||null,
       data_assunzione:inizio||null,
       data_fine_rapporto:fine||null,
       agenzia:isAgenzia,
@@ -7066,15 +7097,9 @@ function mostraTimbratura(){
 }
 
 async function _getOpId(){
-  const{data:op}=await sb.from('operai').select('id').ilike('email',USER.email).maybeSingle();
-  if(op?.id)return op.id;
-  // fallback: cerca per nome da profilo
-  if(PROF?.nome){
-    const parti=PROF.nome.trim().split(' ');
-    const{data:op2}=await sb.from('operai').select('id').ilike('nome',parti[0]+'%').maybeSingle();
-    if(op2?.id)return op2.id;
-  }
-  return null;
+  // P2 punto 4: solo con operai.user_id
+  const{data:op}=await sb.from('operai').select('id').eq('user_id',USER.id).maybeSingle();
+  return op?.id||null;
 }
 
 async function renderTimbratura(){
@@ -7122,7 +7147,7 @@ async function renderTimbratura(){
           <div><div style="font-size:14px;color:var(--t2)">Uscita</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)">${g.ora_fine_timbrata}</div></div>
         </div>
         <div style="font-size:16px;color:var(--t2);margin-bottom:12px">Ore lavorate: <strong style="color:var(--text)">${ore}h</strong> &nbsp;(pausa ${g.pausa_minuti_timbrata||pausaDef} min)</div>
-        ${g.cantiere_da_assegnare?`<div style="background:rgba(200,168,75,0.15);border:1px solid var(--gold);border-radius:8px;padding:10px;font-size:15px;color:var(--gold)">⏳ Cantiere da assegnare dal responsabile</div>`:`<div style="font-size:15px;color:var(--t2)">${g.cantieri?.nome||''}</div>`}
+        ${g.cantiere_da_assegnare?`<div style="background:rgba(200,168,75,0.15);border:1px solid var(--gold);border-radius:8px;padding:10px;font-size:15px;color:var(--gold)">⏳ Cantiere da assegnare dal responsabile</div>`:`<div style="font-size:15px;color:var(--t2)">${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}</div>`}
       </div>`;
   }
 }
@@ -7168,7 +7193,7 @@ async function timbraUscita(gid){
   const totalMin=hh*60+mm;
   const arrotMin=Math.round(totalMin/passo)*passo;
   const ora=String(Math.floor(arrotMin/60)%24).padStart(2,'0')+':'+String(arrotMin%60).padStart(2,'0');
-  const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join(''); // P2
+  const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${_cantEtichetta(c)||c.id}</option>`).join(''); // P2
   const el=document.getElementById('timb-content');
   if(!el)return;
   el.innerHTML=`
@@ -7322,7 +7347,7 @@ function cercaCantiereManuale(q){
   if(!q||q.length<2){res.style.display='none';return;}
   const lista=_cantVisibili().filter(c=>_cantSceglibileOre(c)&&(c.nome+' '+(c.luogo||'')).toLowerCase().includes(q.toLowerCase())); // P2
   if(!lista.length){res.style.display='none';return;}
-  res.innerHTML=lista.slice(0,8).map(c=>`<div onclick="selezionaCantiereManuale('${c.id}','${(c.nome+(c.luogo?' — '+c.luogo:'')).replace(/'/g,'&#39;')}')" style="padding:10px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid var(--border)">${c.nome}${c.luogo?' <span style=\'color:var(--t2);font-size:14px\'>'+c.luogo+'</span>':''}</div>`).join('');
+  res.innerHTML=lista.slice(0,8).map(c=>`<div onclick="selezionaCantiereManuale('${c.id}','${(_cantEtichetta(c)+(c.luogo?' — '+c.luogo:'')).replace(/'/g,'&#39;')}')" style="padding:10px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid var(--border)">${_cantEtichetta(c)}${c.luogo?' <span style=\'color:var(--t2);font-size:14px\'>'+c.luogo+'</span>':''}</div>`).join('');
   res.style.display='block';
 }
 function selezionaCantiereManuale(id,nome){
@@ -7442,7 +7467,7 @@ async function initReportAvanzato(){
   const cantSel=document.getElementById('ra-cant');
   if(cantSel&&cantSel.options.length<=1){
     (CANTIERI||[]).forEach(c=>{
-      const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.nome;cantSel.appendChild(opt);
+      const opt=document.createElement('option');opt.value=c.id;opt.textContent=_cantEtichetta(c);cantSel.appendChild(opt);
     });
   }
   // Date default per custom
@@ -7519,7 +7544,7 @@ async function _raOre(el,from,to,opF,cantF){
   // Per operaio
   const byOp={};lista.forEach(g=>{const k=g.operaio_id;if(!byOp[k])byOp[k]={op:g.operai,ore:0,str:0,giorni:0};byOp[k].ore+=parseFloat(g.ore_totali||0);byOp[k].str+=parseFloat(g.ore_straordinari||0);byOp[k].giorni++;});
   // Per cantiere
-  const byCant={};lista.forEach(g=>{const k=g.cantiere_id;if(!byCant[k])byCant[k]={nome:g.cantieri?.nome||'—',ore:0};byCant[k].ore+=parseFloat(g.ore_totali||0);});
+  const byCant={};lista.forEach(g=>{const k=g.cantiere_id;if(!byCant[k])byCant[k]={nome:_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—',ore:0};byCant[k].ore+=parseFloat(g.ore_totali||0);});
   const opKeys=Object.keys(byOp);const cantKeys=Object.keys(byCant);
   el.innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
@@ -7560,7 +7585,7 @@ async function _raMateriali(el,from,to,opF,cantF){
       <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Materiali utilizzati (${lista.length} giornate)</div>
       ${!lista.length?'<div style="color:var(--t2);font-size:15px">Nessun materiale registrato nel periodo.</div>':
         '<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Collaboratore</th><th>Materiale</th></tr></thead><tbody>'+
-        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(g.cantieri?.nome||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.materiale_giorno||'')}</td></tr>`).join('')+
+        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.materiale_giorno||'')}</td></tr>`).join('')+
         '</tbody></table></div>'}
     </div>`;
 }
@@ -7576,7 +7601,7 @@ async function _raAttrezzatura(el,from,to,opF,cantF){
       <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Attrezzatura utilizzata (${lista.length} giornate)</div>
       ${!lista.length?'<div style="color:var(--t2);font-size:15px">Nessuna attrezzatura registrata nel periodo.</div>':
         '<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Collaboratore</th><th>Attrezzatura</th></tr></thead><tbody>'+
-        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(g.cantieri?.nome||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.attrezzatura_giorno||'')}</td></tr>`).join('')+
+        lista.map(g=>`<tr><td class="mono">${fmtDate(g.data)}</td><td>${escHtml(_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—')}</td><td>${escHtml((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''))}</td><td style="white-space:pre-line">${escHtml(g.attrezzatura_giorno||'')}</td></tr>`).join('')+
         '</tbody></table></div>'}
     </div>`;
 }
@@ -7625,7 +7650,7 @@ async function _raSpese(el,from,to,cantF){
     </div>
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
       <table class="rtable"><thead><tr><th>Data</th><th>Cantiere</th><th>Descrizione</th><th>Tipo</th><th>Importo</th><th>Stato</th></tr></thead><tbody>
-      ${lista.map(s=>`<tr><td class="mono">${fmtDate(s.data)}</td><td>${escHtml(s.cantieri?.nome||'—')}</td><td>${escHtml(s.descrizione||'')}</td><td>${escHtml(s.tipo_spesa||'—')}</td><td class="mono">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</td><td><span style="font-size:13px;padding:2px 6px;border-radius:8px;background:${s.stato_pag==='Da pagare'?'rgba(224,85,85,.15)':'rgba(76,175,125,.15)'};color:${s.stato_pag==='Da pagare'?'var(--red)':'var(--green)'}">${escHtml(s.stato_pag||'—')}</span></td></tr>`).join('')}
+      ${lista.map(s=>`<tr><td class="mono">${fmtDate(s.data)}</td><td>${escHtml(_cantEtichettaDaId(s.cantiere_id,s.cantieri?.nome)||'—')}</td><td>${escHtml(s.descrizione||'')}</td><td>${escHtml(s.tipo_spesa||'—')}</td><td class="mono">${parseFloat(s.importo||0).toFixed(2)} ${s.valuta||'CHF'}</td><td><span style="font-size:13px;padding:2px 6px;border-radius:8px;background:${s.stato_pag==='Da pagare'?'rgba(224,85,85,.15)':'rgba(76,175,125,.15)'};color:${s.stato_pag==='Da pagare'?'var(--red)':'var(--green)'}">${escHtml(s.stato_pag||'—')}</span></td></tr>`).join('')}
       </tbody></table>
     </div>`;
   if(Object.keys(byTipo).length&&typeof Chart!=='undefined'){
@@ -7651,19 +7676,19 @@ async function exportRaExcel(){
         const{data}=await q.order('data');let lista=data||[];
         if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
         if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
-        rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari','Trasferta'],...lista.map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0),g.zona_trasferta?'Sì':'No'])];
+        rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari','Trasferta'],...lista.map(g=>[g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0),g.zona_trasferta?'Sì':'No'])];
       }else if(tab==='materiali'){
         let q=sb.from('giornate').select('data,materiale_giorno,operai(nome,cognome),cantieri(nome)').gte('data',from).lte('data',to).not('materiale_giorno','is',null);
         if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
-        rows=[['Data','Cantiere','Collaboratore','Materiale'],...(data||[]).map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.materiale_giorno||''])];
+        rows=[['Data','Cantiere','Collaboratore','Materiale'],...(data||[]).map(g=>[g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.materiale_giorno||''])];
       }else if(tab==='attrezzatura'){
         let q=sb.from('giornate').select('data,attrezzatura_giorno,operai(nome,cognome),cantieri(nome)').gte('data',from).lte('data',to).not('attrezzatura_giorno','is',null);
         if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
-        rows=[['Data','Cantiere','Collaboratore','Attrezzatura'],...(data||[]).map(g=>[g.data,g.cantieri?.nome||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.attrezzatura_giorno||''])];
+        rows=[['Data','Cantiere','Collaboratore','Attrezzatura'],...(data||[]).map(g=>[g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.attrezzatura_giorno||''])];
       }else if(tab==='spese'){
         let q=sb.from('spese').select('data,descrizione,tipo_spesa,importo,valuta,stato_pag,cantieri(nome)').gte('data',from).lte('data',to);
         if(cantF)q=q.eq('cantiere_id',cantF);const{data}=await q.order('data',{ascending:false});
-        rows=[['Data','Cantiere','Descrizione','Tipo','Importo','Valuta','Stato'],...(data||[]).map(s=>[s.data,s.cantieri?.nome||'',s.descrizione||'',s.tipo_spesa||'',parseFloat(s.importo||0),s.valuta||'CHF',s.stato_pag||''])];
+        rows=[['Data','Cantiere','Descrizione','Tipo','Importo','Valuta','Stato'],...(data||[]).map(s=>[s.data,_cantEtichettaDaId(s.cantiere_id,s.cantieri?.nome)||'',s.descrizione||'',s.tipo_spesa||'',parseFloat(s.importo||0),s.valuta||'CHF',s.stato_pag||''])];
       }
       XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),sheetName);
     }catch(e){}
@@ -7844,7 +7869,7 @@ async function renderFotoDaScaricare(){
     +Object.entries(perCant).sort((a,b)=>b[1]-a[1]).map(([cid,n])=>{
       const c=(CANTIERI||[]).find(x=>x.id===cid);
       return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:6px">'
-        +'<span style="font-size:15px"><strong>'+escHtml(c?c.nome:'Cantiere')+'</strong> · '+n+' foto</span>'
+        +'<span style="font-size:15px"><strong>'+escHtml(c?_cantEtichetta(c):'Cantiere')+'</strong> · '+n+' foto</span>'
         +(c?'<button class="btn btn-s btn-sm" onclick="enterCantiere(\''+cid+'\').then(apriFotoCantiere)">📷 Apri</button>':'')+'</div>';
     }).join('');
 }
@@ -7862,11 +7887,11 @@ function _p5MsgScheda(testo,tipo){
 }
 function _p5StatoAccountScheda(o){
   const el=document.getElementById('o-acc-stato');if(!el)return;
-  const em=String(o?.email||'').trim().toLowerCase();
   if(!o){el.textContent='';return;}
-  if(!em){el.textContent='Senza email: nessun accesso app collegato.';return;}
+  // P2 punto 4: collegamento solo con operai.user_id
+  if(!o.user_id){el.textContent='⚠️ Scheda non collegata a un account app.';return;}
   if(_ruoloApp()!=='titolare'||!_profiliAppCache){el.textContent='';return;}
-  el.textContent=_profiliAppCache[em]?'🔑 Account app collegato a questa email.':'⚠️ Nessun account app con questa email: la scheda non è collegata a un accesso.';
+  el.textContent=_profiliAppCache[o.user_id]?'🔑 Account app collegato a questa scheda.':'⚠️ La scheda indica un account che non c\'è più.';
 }
 
 async function controllaAlertFoto(){
@@ -8124,7 +8149,7 @@ async function renderSituazione(){
         const{data:timb}=await sb.from('giornate').select('id,data,ora_inizio_timbrata,ora_fine_timbrata,pausa_minuti_timbrata,operai(nome,cognome)').eq('cantiere_da_assegnare',true).order('data',{ascending:false});
         if(timb&&timb.length){
           if(elTimbW)elTimbW.style.display='block';
-          const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join(''); // P2
+          const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${_cantEtichetta(c)||c.id}</option>`).join(''); // P2
           let html='';
           timb.forEach(g=>{
             const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||60);
@@ -8157,7 +8182,7 @@ async function renderSituazione(){
     if(errSp)throw errSp;
     if(!spese||!spese.length){elSp.innerHTML='<div class="empty"><div class="empty-i">✅</div><p>'+t('empty_spese_sosp')+'</p></div>';}
     else{
-      const byCant={};spese.forEach(s=>{const cn=s.cantieri?.nome||'Cantiere non specificato';if(!byCant[cn])byCant[cn]={items:[],tot:0};byCant[cn].items.push(s);byCant[cn].tot+=(parseFloat(s.importo)||0);});
+      const byCant={};spese.forEach(s=>{const cn=_cantEtichettaDaId(s.cantiere_id,s.cantieri?.nome)||'Cantiere non specificato';if(!byCant[cn])byCant[cn]={items:[],tot:0};byCant[cn].items.push(s);byCant[cn].tot+=(parseFloat(s.importo)||0);});
       const totGlobale=spese.reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
       const tipoDocIcon={'Scontrino':'🧾','Bolla di consegna':'📦','Fattura fornitore':'📄','Altro':'📋'};
       let html=`<div style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:1px">Totale da pagare</span><span style="font-family:'DM Mono';font-size:20px;color:var(--red)">${totGlobale.toFixed(2)} CHF</span></div>`;
@@ -8178,7 +8203,7 @@ async function renderSituazione(){
     if(errReg)throw errReg;
     if(!regia||!regia.length){elReg.innerHTML='<div class="empty"><div class="empty-i">✅</div><p>'+t('empty_regia2')+'</p></div>';}
     else{
-      const byCant={};regia.forEach(r=>{const cn=r.cantieri?.nome||'Cantiere non specificato';const cid=r.cantiere_id;if(!byCant[cid])byCant[cid]={nome:cn,items:[],totDaFatt:0,totFatt:0};const tot=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));byCant[cid].items.push({...r,_tot:tot});if(r.fatturato)byCant[cid].totFatt+=tot;else byCant[cid].totDaFatt+=tot;});
+      const byCant={};regia.forEach(r=>{const cn=_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'Cantiere non specificato';const cid=r.cantiere_id;if(!byCant[cid])byCant[cid]={nome:cn,items:[],totDaFatt:0,totFatt:0};const tot=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));byCant[cid].items.push({...r,_tot:tot});if(r.fatturato)byCant[cid].totFatt+=tot;else byCant[cid].totDaFatt+=tot;});
       const totGlobale=regia.filter(r=>!r.fatturato).reduce((a,r)=>a+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
       const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
       let html=`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px">${t('lbl_tot_fatt')}</span><span style="font-family:'DM Mono';font-size:20px;color:var(--gold)">${totGlobale.toFixed(2)} CHF</span></div>`;
@@ -8236,7 +8261,7 @@ async function renderSituazione(){
         gruDaPag.forEach(g=>{
           hg+=`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
             <div><div style="font-size:16px;font-weight:700">🏗️ ${escHtml(g.ditta||'—')}</div>
-            <div style="font-size:14px;color:var(--t2)">${g.cantieri?.nome||'—'} · ${g.data||''} · ${g.n_tiri||0} tiri</div></div>
+            <div style="font-size:14px;color:var(--t2)">${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—'} · ${g.data||''} · ${g.n_tiri||0} tiri</div></div>
             <div style="text-align:right">
               <div style="font-family:'DM Mono';font-size:17px;color:var(--red)">${parseFloat(g.importo||0).toFixed(2)} CHF</div>
               <button onclick="apriDettaglioGru('${g.id}')" style="font-size:13px;padding:2px 8px;border-radius:10px;background:rgba(76,175,125,.15);color:var(--green);border:1px solid rgba(76,175,125,.3);cursor:pointer;margin-top:3px">✓ Segna pagato</button>
@@ -8297,16 +8322,19 @@ let _P4_VIS=null;          // Set di id cantiere visibili alla persona collegata
 let _P4_VEDE_TUTTI=false;  // interruttore "Vede tutti i cantieri"
 // Titolare e responsabile vedono sempre tutto; gli altri ruoli sono filtrati.
 function _p4FiltraCantieri(){return !['titolare','responsabile'].includes(_ruoloApp());}
-// La scheda in `operai` collegata all'account (per email; in mancanza, per nome e cognome)
+// La scheda in `operai` collegata all'account: SOLO con operai.user_id (P2 punto 4; niente email, niente nome)
 function _p4MioOperaio(){
-  const em=String(USER?.email||'').toLowerCase();
-  const tutti=OPERAI_TUTTI||[];
-  let me=em?tutti.find(o=>String(o.email||'').toLowerCase()===em):null;
-  if(!me&&PROF?.nome){
-    const n=String(PROF.nome).toLowerCase().replace(/\s+/g,' ').trim();
-    me=tutti.find(o=>((o.nome||'')+' '+(o.cognome||'')).toLowerCase().replace(/\s+/g,' ').trim()===n)||null;
-  }
-  return me||null;
+  if(!USER?.id)return null;
+  return (OPERAI_TUTTI||[]).find(o=>o.user_id===USER.id)||null;
+}
+// P2 punto 4: account senza scheda collegata → avviso fisso, chiaro
+function _p2AvvisoNonCollegato(){
+  const vecchio=document.getElementById('p2-non-collegato');if(vecchio)vecchio.remove();
+  if(_p4MioOperaio())return;
+  const b=document.createElement('div');b.id='p2-non-collegato';b.setAttribute('role','alert');
+  b.style.cssText='position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));z-index:150;background:#e05555;color:#fff;text-align:center;padding:12px 16px;font-size:18px;font-weight:700'; // sopra la barra in basso: «Esci» resta raggiungibile
+  b.textContent='Account non collegato: avvisa il titolare';
+  document.body.appendChild(b);
 }
 function _p4Giorno(oggi,n){const x=new Date(oggi+'T12:00');x.setDate(x.getDate()+n);return x.toISOString().split('T')[0];}
 function _p4Dal(d){return d?String(d).slice(8,10)+'.'+String(d).slice(5,7):'';}
@@ -8392,7 +8420,7 @@ async function _p4CompilaVisibilitaScheda(o){
   lista.dataset.prima=JSON.stringify([...spuntati]);
   lista.innerHTML=cant.length?cant.map(c=>'<label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:15px">'
     +'<input type="checkbox" class="o-vis-cb" value="'+c.id+'"'+(spuntati.has(c.id)?' checked':'')+' style="width:18px;height:18px;accent-color:var(--gold)">'
-    +'<span>'+escHtml(c.nome)+(c.stato!=='Attivo'?' <span style="color:var(--t3)">('+escHtml(c.stato||'')+')</span>':'')+'</span></label>').join('')
+    +'<span>'+escHtml(_cantEtichetta(c))+(c.stato!=='Attivo'?' <span style="color:var(--t3)">('+escHtml(c.stato||'')+')</span>':'')+'</span></label>').join('')
     :'<div style="font-size:14px;color:var(--t2);padding:6px 0">Nessun cantiere attivo</div>';
 }
 function _p4AggiornaVisSection(){
@@ -8445,7 +8473,7 @@ async function _p4GestisciAccesso(azione,operaioId,extra){
 async function _p4ControllaAccessoAttivo(){
   if(!USER||_ruoloApp()==='titolare')return true;
   try{
-    const{data,error}=await sb.from('operai').select('id,attivo,data_fine_rapporto').ilike('email',USER.email).limit(5);
+    const{data,error}=await sb.from('operai').select('id,attivo,data_fine_rapporto').eq('user_id',USER.id).limit(5); // P2 punto 4
     if(error||!data||!data.length)return true; // nessuna scheda collegata: non si decide niente
     if(!data.some(o=>_opAttivo(o))){
       alert('Accesso non più attivo. Contatta il titolare.');
@@ -8488,7 +8516,7 @@ function _p4OggiLaSquadra(el,ultime){
     const o=attivi.get(opId);if(!o)return;
     righe.forEach(function(r){
       const k=r.cantiere_id||'_';
-      if(!perCant.has(k))perCant.set(k,{nome:r.cantieri?.nome||'Senza cantiere',persone:[]});
+      if(!perCant.has(k))perCant.set(k,{nome:_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'Senza cantiere',persone:[]});
       perCant.get(k).persone.push({nome:((o.nome||'')+' '+(o.cognome||'')).trim(),
         mezzo:r.mezzi?((r.mezzi.targa||'')+(r.mezzi.descrizione?' — '+r.mezzi.descrizione:'')):'',dal:r.data});
     });
@@ -8586,7 +8614,7 @@ async function _p6MettiQui(){
   if(!_p4PuoGestireVisibilita()||!curCant)return;
   const opId=document.getElementById('p6-metti-op')?.value;
   if(!opId){_p7cSegna(['p6-metti-op'],'Scegli una persona');showToast('Scegli una persona','e');return;}
-  const cantId=curCant.id,cantNome=curCant.nome||'questo cantiere';
+  const cantId=curCant.id,cantNome=_cantEtichetta(curCant)||'questo cantiere';
   const nome=_p6NomeOp((OPERAI_TUTTI||[]).find(x=>x.id===opId));
   const oggi=nowZurich().date;
   const btn=document.getElementById('p6-metti-ok');if(btn)btn.disabled=true;
@@ -8596,7 +8624,7 @@ async function _p6MettiQui(){
     const righe=esist||[];
     if(righe.length&&righe.every(r=>r.cantiere_id===cantId)){showToast(nome+' è già in questo cantiere oggi');_p6MostraMetti(false);return;}
     if(righe.length){
-      const altrove=[...new Set(righe.filter(r=>r.cantiere_id!==cantId).map(r=>r.cantieri?.nome||'altro cantiere'))].join(', ');
+      const altrove=[...new Set(righe.filter(r=>r.cantiere_id!==cantId).map(r=>_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'altro cantiere'))].join(', ');
       if(!confirm(nome+' oggi è già nel Piano su: '+altrove+'.\n\nSostituire con '+cantNome+'?'))return;
       // resta una riga sola (quella di questo cantiere, se c'e'); le altre si tolgono
       const tieni=righe.find(r=>r.cantiere_id===cantId)||righe[0];
@@ -8629,7 +8657,7 @@ async function _p6TogliVisibile(opId){
   if(!_p4PuoGestireVisibilita()||!curCant)return;
   const cantId=curCant.id;
   const nome=_p6NomeOp((OPERAI_TUTTI||[]).find(x=>x.id===opId));
-  if(!confirm('Togliere a '+nome+' l\'accesso a '+(curCant.nome||'questo cantiere')+'?\n\nSe nel Piano ci lavora, continua a vederlo.'))return;
+  if(!confirm('Togliere a '+nome+' l\'accesso a '+(_cantEtichetta(curCant)||'questo cantiere')+'?\n\nSe nel Piano ci lavora, continua a vederlo.'))return;
   try{
     const{data,error}=await sb.from('cantieri_visibili').delete().eq('operaio_id',opId).eq('cantiere_id',cantId).select('id');
     if(error)throw error;
@@ -8658,12 +8686,9 @@ async function renderPersoneSenzaCantiere(){
     if(extra.error)throw extra.error;
     if(prof.error)throw prof.error;
     const validi=new Set((CANTIERI||[]).filter(c=>!_cantInterno(c)).map(c=>c.id)); // P2: interni da tipo
-    // account della persona: stessa email (elenco del titolare), altrimenti stesso nome e cognome (come il passaggio 4)
+    // account della persona: SOLO con operai.user_id (P2 punto 4)
     const accountDi=function(o){
-      const em=String(o.email||'').trim().toLowerCase();
-      if(pmap&&em&&pmap[em])return{ruolo:pmap[em].ruolo};
-      const n=_p6Norm(_p6NomeOp(o));
-      const p=(prof.data||[]).find(x=>_p6Norm(x.nome)===n);
+      const p=o.user_id?(prof.data||[]).find(x=>x.id===o.user_id):null;
       return p?{ruolo:p.ruolo}:null;
     };
     const visDi=new Map();
@@ -8706,6 +8731,9 @@ function _p3Filtra(q){return _p3SoloMie()?q.eq('created_by',USER.id):q;}
 // I due finti cantieri non si propongono piu' (restano nel database con i loro dati)
 // Punto 2 (20.10.2026): gli interni si riconoscono SOLO da cantieri.tipo='interno', mai dal nome.
 function _cantInterno(c){return !!c&&c.tipo==='interno';}
+// Punto 3 (P2): numero commessa accanto al nome ovunque si vede un cantiere. Interni: solo il nome.
+function _cantEtichetta(c){if(!c)return '';const n=String(c.numero_commessa||'').trim();return (!_cantInterno(c)&&n?n+' ':'')+(c.nome||'');}
+function _cantEtichettaDaId(id,nome){const c=id?(CANTIERI||[]).find(x=>x.id===id):null;return c?_cantEtichetta(c):(nome||'');}
 // Commessa sceglibile: stato_commessa «In corso» o vuoto. Da fare, Inviata, Persa: mai. Conclusa: solo storico e riepiloghi.
 // La colonna vecchia «stato» (Attivo, In pausa, Completato) qui non conta: l'app la scrive come prima.
 function _cantCommessaInCorso(c){const st=String(c?.stato_commessa||'').trim();return !!c&&!_cantInterno(c)&&(st===''||st==='In corso');}
@@ -8715,7 +8743,7 @@ function _cantSceglibileOre(c){return _cantInterno(c)||_cantCommessaInCorso(c);}
 function _selTieniCantiere(sel,id){
   if(!sel||!id)return;
   _selTogliTenuti(sel);
-  if(![...sel.options].some(o=>o.value===id)){const c=(CANTIERI||[]).find(x=>x.id===id);const o=new Option((c?.nome||'Cantiere')+' (non più nella scelta)',id);o.dataset.tenuto='1';sel.add(o);}
+  if(![...sel.options].some(o=>o.value===id)){const c=(CANTIERI||[]).find(x=>x.id===id);const o=new Option((_cantEtichetta(c)||'Cantiere')+' (non più nella scelta)',id);o.dataset.tenuto='1';sel.add(o);}
   sel.value=id;
 }
 // Toglie le voci «(non più nella scelta)» lasciate da una modifica precedente (prima di una riga nuova).
@@ -8723,7 +8751,7 @@ function _selTogliTenuti(sel){if(sel)[...sel.querySelectorAll('option[data-tenut
 function _p3OpzioniDestinazione(){
   const cant=_cantVisibili().filter(_cantCommessaInCorso); // P2: mai gli interni
   return '<option value="">'+t('opt_scegli')+'</option>'
-    +(cant.length?'<optgroup label="'+escHtml(t('grp_cant_attivi'))+'">'+cant.map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('')+'</optgroup>':'')
+    +(cant.length?'<optgroup label="'+escHtml(t('grp_cant_attivi'))+'">'+cant.map(c=>`<option value="${c.id}">${escHtml(_cantEtichetta(c))}</option>`).join('')+'</optgroup>':'')
     +'<optgroup label="'+escHtml(t('grp_dest_interne'))+'">'
     +'<option value="interno">'+t('opt_spese_gen')+'</option>'
     +'<option value="attrezzature">'+t('opt_dest_attrezzature')+'</option>'
@@ -8741,7 +8769,7 @@ function _p3ImpostaDestinazione(s){
   sel.value=v;
 }
 function _p3DoveVa(s){
-  if(s.cantiere_id)return s.cantieri?.nome||'Cantiere';
+  if(s.cantiere_id)return _cantEtichettaDaId(s.cantiere_id,s.cantieri?.nome)||'Cantiere';
   return t(P3_DEST_ETICHETTA[s.destinazione||'ditta_ufficio']||'opt_spese_gen');
 }
 // ══ P7d: STATO PRE-CONTABILITA' — l'App Cantieri lo LEGGE, non lo scrive (decisione 12.10.2026) ══
@@ -8858,15 +8886,15 @@ async function renderSpeseDaRegistrare(){
 function populateSpeseSel(){
   setTimeout(populatePagatoDa, 100); // P28
 
-  const opts='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  const opts='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${_cantEtichetta(c)}</option>`).join('');
   document.getElementById('sp-cantiere').innerHTML=opts;
   document.getElementById('sp-cant-sel').innerHTML=_p3OpzioniDestinazione(); // P3
   document.getElementById('sp-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
-  document.getElementById('reg-cant-sel').innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('reg-cant-sel').innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${_cantEtichetta(c)}</option>`).join('');
   document.getElementById('reg-op-sel').innerHTML='<option value="">— Seleziona —</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
   document.getElementById('ass-op-sel').innerHTML=OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
-  document.getElementById('ass-cant-sel').innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  document.getElementById('reg-cantiere').innerHTML='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('ass-cant-sel').innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${_cantEtichetta(c)}</option>`).join('');
+  document.getElementById('reg-cantiere').innerHTML='<option value="">Tutti i cantieri</option>'+_cantVisibiliComePrima().map(c=>`<option value="${c.id}">${_cantEtichetta(c)}</option>`).join('');
   document.getElementById('ass-operaio').innerHTML='<option value="">Tutti gli operai</option>'+OPERAI.map(o=>`<option value="${o.id}">${o.nome} ${o.cognome}</option>`).join('');
 }
 function toggleMetodoPag(sel){document.getElementById('sp-metodo-wrap').style.display=sel.value==='Pagato'?'block':'none';}
@@ -8949,7 +8977,7 @@ async function visualizzaSpesa(id){
   document.getElementById('spv-btn-modifica').onclick=()=>{closeModal('mod-spesa-view');openModalSpesa(id);};
   const cantWrap=document.getElementById('spv-btn-cantiere-wrap');
   if(cantWrap){
-    if(s.cantiere_id&&s.cantieri?.nome){
+    if(s.cantiere_id&&_cantEtichettaDaId(s.cantiere_id,s.cantieri?.nome)){
       cantWrap.innerHTML=`<button class="btn btn-s" style="font-size:15px" onclick="closeModal('mod-spesa-view');filtraSpeseCantiere('${s.cantiere_id}')">📋 Tutte le spese di questo cantiere</button>`;
     }else{cantWrap.innerHTML='';}
     if(_p7dGestita(s))cantWrap.innerHTML+='<div style="font-size:14px;color:var(--t2);margin-top:10px">🔒 Già gestita in Pre-contabilità: correggila lì.</div>';
@@ -8987,7 +9015,7 @@ async function visualizzaRegia(id){
   document.getElementById('rgv-titolo').textContent=`${tipoIcon[r.tipo]||'🔧'} ${r.descrizione}`;
   document.getElementById('rgv-content').innerHTML=`
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px">
-      <div class="row2" style="margin-bottom:8px"><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${r.cantieri?.nome||'—'}</div></div><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(r.data)}</div></div></div>
+      <div class="row2" style="margin-bottom:8px"><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cantiere</div><div style="font-weight:700">${_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'—'}</div></div><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Data</div><div style="font-weight:700">${fmtDate(r.data)}</div></div></div>
       <div class="row2" style="margin-bottom:8px"><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Tipo</div><div>${r.tipo||'—'}</div></div><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Operaio</div><div>${r.operai?r.operai.nome+' '+r.operai.cognome:'—'}</div></div></div>
       <div class="row2" style="margin-bottom:8px"><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Quantità</div><div style="font-family:'DM Mono'">${parseFloat(r.quantita||0).toFixed(2)} ${r.um}</div></div><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Stato</div><div style="font-weight:700;color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'✓ Fatturato':'⏳ Da fatturare'}</div></div></div>
       <div class="row2"><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Prezzo cliente</div><div style="font-family:'DM Mono';font-size:20px;color:var(--gold);font-weight:700">${totR.toFixed(2)} CHF</div></div><div><div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Costo CT</div><div style="font-family:'DM Mono';font-size:16px;color:var(--t2)">${costoR.toFixed(2)} CHF</div><div style="font-size:13px;color:${margine>=0?'var(--green)':'var(--red)'}">margine: ${margine.toFixed(2)} CHF</div></div></div>
@@ -9012,7 +9040,7 @@ function openModalSpesa(id){
     if(curCant)document.getElementById('sp-cant-sel').value=curCant.id; // se non e' tra le scelte resta "— Scegli —"
     document.getElementById('sp-documento').value='';p3DocumentoCambiato();
     // P7c: operaio e magazziniere: la spesa e' la sua, da pagare (si sceglie in ufficio)
-    const _io=(OPERAI_TUTTI||[]).find(o=>o.email&&USER&&String(o.email).toLowerCase()===String(USER.email||'').toLowerCase());
+    const _io=_p4MioOperaio(); // P2 punto 4
     if(_io)document.getElementById('sp-op-sel').value=_io.id;
     document.getElementById('sp-tipo-doc').value='Scontrino';
   }else{
@@ -9089,7 +9117,7 @@ async function salvaSpesa(){
       spId=_n[0].id;editSpId=spId; // se la foto fallisce, al "riprova" si aggiorna invece di duplicare
     }
     if(spFotoFile&&spId){
-      const cant=CANTIERI.find(c=>c.id===cantId);const cn=(cant?.nome||destInterna||'spese').replace(/[^a-zA-Z0-9]/g,'_');
+      const cn=cantId||destInterna||'spese'; // P2 punto 6: id del cantiere nel percorso (senza cantiere: la destinazione)
       const ext=spFotoFile.name.split('.').pop();const path=`${cn}/${data}/${Date.now()}_spesa.${ext}`;
       const {error:ue}=await sb.storage.from('cantiere-spese').upload(path,spFotoFile);
       if(ue)throw Object.assign(new Error(ue.message),{p3Msg:'Spesa salvata, ma la foto NON è stata caricata ('+ue.message+'). Tocca di nuovo Salva per riprovare.'});
@@ -9143,7 +9171,7 @@ async function renderRegia(){
   document.getElementById('reg-totali').innerHTML=`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px"><div style="font-size:13px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px">${t('lbl_tot_fatt')}</div><div style="font-family:'DM Mono';font-size:22px;color:var(--gold)">${totFatt.toFixed(2)} CHF</div></div>`;
   if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🔧</div><p>'+t('empty_regia')+'</p></div>';return;}
   const tipoIcon={'Ore':'⏱','Materiale':'📦','Trasferta':'🚗','Nolo attrezzatura':'🏗️','Altro':'🔧'};
-  el.innerHTML=data.map(r=>{const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaRegia('${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span><div style="min-width:0"><div style="font-size:var(--fs-lg);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(r.descrizione||'')}</div><div style="font-size:14px;color:var(--t2)">${r.cantieri?.nome||'—'} · ${fmtDate(r.data)}</div></div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:17px;font-weight:600;color:var(--gold)">${totR.toFixed(2)} CHF</div><div style="font-size:13px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;background:${r.fatturato?'rgba(76,175,125,.15)':'var(--gdim)'};color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'Fatturato':'Da fatturare'}</div></div></div>${_p7TastoFatt(r)}${r.note?`<div style="font-size:14px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${r.note}</div>`:''}</div>`;}).join('');
+  el.innerHTML=data.map(r=>{const totR=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));return `<div style="background:var(--s1);border:1px solid ${r.fatturato?'var(--border)':'rgba(200,168,75,.25)'};border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="visualizzaRegia('${r.id}')"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;gap:10px;align-items:center;flex:1;min-width:0"><span style="font-size:22px;flex-shrink:0">${tipoIcon[r.tipo]||'🔧'}</span><div style="min-width:0"><div style="font-size:var(--fs-lg);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(r.descrizione||'')}</div><div style="font-size:14px;color:var(--t2)">${_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'—'} · ${fmtDate(r.data)}</div></div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div style="font-family:'DM Mono';font-size:17px;font-weight:600;color:var(--gold)">${totR.toFixed(2)} CHF</div><div style="font-size:13px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:4px;background:${r.fatturato?'rgba(76,175,125,.15)':'var(--gdim)'};color:${r.fatturato?'var(--green)':'var(--gold)'}">${r.fatturato?'Fatturato':'Da fatturare'}</div></div></div>${_p7TastoFatt(r)}${r.note?`<div style="font-size:14px;color:var(--t2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">📝 ${r.note}</div>`:''}</div>`;}).join('');
 }
 function openModalRegia(id){
   editRegId=id;
@@ -9187,7 +9215,7 @@ async function exportRegia(){
   if(cantF)q=q.eq('cantiere_id',cantF);
   const {data}=await q;if(!data?.length){showToast(t('toast_nessun_regia_fatt'),'e');return;}
   const rows=[['Data','Cantiere','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Totale CHF','Note']];
-  data.forEach(r=>rows.push([r.data,r.cantieri?.nome||'',`${r.operai?.nome||''} ${r.operai?.cognome||''}`,r.tipo,r.descrizione,parseFloat(r.quantita||0).toFixed(3),r.um,parseFloat(r.prezzo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.note||'']));
+  data.forEach(r=>rows.push([r.data,_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'',`${r.operai?.nome||''} ${r.operai?.cognome||''}`,r.tipo,r.descrizione,parseFloat(r.quantita||0).toFixed(3),r.um,parseFloat(r.prezzo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.note||'']));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Regia da fatturare');
   XLSX.writeFile(wb,`CT_Regia_${new Date().toISOString().split('T')[0]}.xlsx`);showToast('Excel regia scaricato ✓');
 }
@@ -9286,7 +9314,7 @@ async function renderAssenze(){
       <div style="flex:1;min-width:0">
         <div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
         <div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>
-        ${a.cantieri?.nome?`<div style="font-size:14px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}
+        ${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)?`<div style="font-size:14px;color:var(--t3)">📍 ${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)}</div>`:''}
         ${a.note?`<div style="font-size:14px;color:var(--t2)">📝 ${a.note}</div>`:''}
       </div>
       <span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span>
@@ -9307,14 +9335,14 @@ async function renderAssenzeOLD(){
   if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>'+t('empty_assenza')+'</p></div>';return;}
   const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
   const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
-  el.innerHTML=data.map(a=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')"><span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1;min-width:0"><div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div><div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>${a.cantieri?.nome?`<div style="font-size:14px;color:var(--t3)">📍 ${a.cantieri.nome}</div>`:''}</div><span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span></div>`).join('');
+  el.innerHTML=data.map(a=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')"><span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1;min-width:0"><div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div><div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)?`<div style="font-size:14px;color:var(--t3)">📍 ${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)}</div>`:''}</div><span style="font-size:14px;font-weight:700;padding:3px 10px;border-radius:10px;background:${motivoColor[a.motivo]||'var(--t3)'}22;color:${motivoColor[a.motivo]||'var(--t3)'};flex-shrink:0">${a.motivo}</span></div>`).join('');
 }
 function openModalAssenza(id){
   editAssId=id;
   _selTogliTenuti(document.getElementById('ass-cant-sel')); // P2
   // P7: elenchi persone e cantieri pieni anche se non si e' passati dalle Spese (senza toccare i filtri)
   const _so=document.getElementById('ass-op-sel');if(_so&&!_so.options.length)_so.innerHTML=OPERAI.map(o=>`<option value="${o.id}">${escHtml(o.nome)} ${escHtml(o.cognome)}</option>`).join('');
-  const _sc=document.getElementById('ass-cant-sel');if(_sc&&!_sc.options.length)_sc.innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${escHtml(c.nome)}</option>`).join('');
+  const _sc=document.getElementById('ass-cant-sel');if(_sc&&!_sc.options.length)_sc.innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${escHtml(_cantEtichetta(c))}</option>`).join('');
   if(!id){
     document.getElementById('mod-ass-t').textContent=t('modal_ass_titolo');
     document.getElementById('ass-data').value=new Date().toISOString().split('T')[0];
@@ -9522,7 +9550,7 @@ async function renderPiano(){
         +'<div>'
         +'<div style="font-size:17px;font-weight:800">'+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
         +(ruoloLabel?'<div style="margin-top:2px">'+ruoloLabel+'</div>':'')
-        +'<div style="font-size:14px;color:var(--t2);margin-top:4px">📍 '+(r.cantieri?.nome||'—')+(r.cantieri?.luogo?' · '+r.cantieri.luogo:'')+(r.cantieri?.paese&&r.cantieri.paese!=='CH'?' '+(_PFLAGS[r.cantieri.paese]||'')+' ('+r.cantieri.paese+')':'')+'</div>'
+        +'<div style="font-size:14px;color:var(--t2);margin-top:4px">📍 '+(_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'—')+(r.cantieri?.luogo?' · '+r.cantieri.luogo:'')+(r.cantieri?.paese&&r.cantieri.paese!=='CH'?' '+(_PFLAGS[r.cantieri.paese]||'')+' ('+r.cantieri.paese+')':'')+'</div>'
         +rIndirizzoHtml
         +mezzoBadge+squadra+hotelBadge
         +'</div>'
@@ -9560,7 +9588,7 @@ function initRicerca(){
   const cantSel=document.getElementById('ricerca-cant');
   if(cantSel){
     cantSel.innerHTML='<option value="">— '+t('opt_tutti')+' —</option>'
-      +_cantVisibiliComePrima().map(function(c){return '<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>';}).join('');
+      +_cantVisibiliComePrima().map(function(c){return '<option value="'+c.id+'">'+_cantEtichetta(c)+(c.luogo?' — '+c.luogo:'')+'</option>';}).join('');
   }
   const inp=document.getElementById('ricerca-input');
   if(inp)inp.value='';
@@ -9606,7 +9634,7 @@ async function eseguiRicerca(){
       const{data:all}=await qry2;
       const extra=(all||[]).filter(function(g){
         const nome=(g.operai?.nome||'')+' '+(g.operai?.cognome||'');
-        const cant=g.cantieri?.nome||'';
+        const cant=_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'';
         return nome.toLowerCase().includes(ql)||cant.toLowerCase().includes(ql);
       });
       const ids=new Set(results.map(function(g){return g.id;}));
@@ -9634,7 +9662,7 @@ async function eseguiRicerca(){
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:15px;font-weight:700">'+escHtml(fmtD2(g.data))+'</div>'
-        +'<div style="font-size:14px;color:var(--t2)">📍 '+highlight(g.cantieri?.nome||'—',q)+' — 👷 '+highlight((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''),q)+'</div>'
+        +'<div style="font-size:14px;color:var(--t2)">📍 '+highlight(_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—',q)+' — 👷 '+highlight((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:''),q)+'</div>'
         +snipHtml
         +'</div>'
         +'<span style="font-size:18px;margin-left:8px;flex-shrink:0">›</span>'
@@ -9688,7 +9716,7 @@ function popolaDropdownPiano(){
   }
   if(cantSel){
     const cantList=(CANTIERI||[]).filter(_cantCommessaInCorso); // P2
-    cantSel.innerHTML='<option value="">— Seleziona cantiere —</option>'+cantList.map(c=>'<option value="'+c.id+'">'+c.nome+(c.luogo?' — '+c.luogo:'')+'</option>').join('');
+    cantSel.innerHTML='<option value="">— Seleziona cantiere —</option>'+cantList.map(c=>'<option value="'+c.id+'">'+_cantEtichetta(c)+(c.luogo?' — '+c.luogo:'')+'</option>').join('');
   }
   if(mzSel){
     const mzDisp=(MEZZI||[]).filter(m=>(!m.stato||m.stato==='disponibile')&&m.attivo!==false&&!m.data_dismissione);
@@ -9820,7 +9848,7 @@ function apriSchermoPiano(){
     +'const d=new Date(DATA+"T12:00");'
     +'document.getElementById("data-label").textContent=d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});'
     +'async function carica(){'
-    +'const{data:rows}=await sb2.from("piano_giorno").select("*, operai(nome,cognome), cantieri(nome,luogo), mezzi(targa,tipo,descrizione)").eq("data",DATA).order("ordine").order("created_at");'
+    +'const{data:rows}=await sb2.from("piano_giorno").select("*, operai(nome,cognome), cantieri(nome,luogo,numero_commessa,tipo), mezzi(targa,tipo,descrizione)").eq("data",DATA).order("ordine").order("created_at");'
     +'const tb=document.getElementById("tbody");tb.innerHTML="";'
     +'(rows||[]).forEach(r=>{'
     +'const hasNote=!!(r.annotazioni&&r.annotazioni.trim());'
@@ -9828,7 +9856,7 @@ function apriSchermoPiano(){
     +'const ruolo=r.ruolo_giorno==="caposquadra"?"<span class=\"ruolo-cs\">★ Caposquadra</span>":r.ruolo_giorno==="responsabile"?"<span class=\"ruolo-rc\">◆ Responsabile</span>":"Operaio";'
     +'const mezzo=r.mezzi?`<div class="mezzo">🚗 ${r.mezzi.targa}${r.mezzi.descrizione?" — "+r.mezzi.descrizione.substring(0,30):""}</div>`:"—";'
     +'tr.innerHTML="<td style=\"font-size:1.2rem;font-weight:700\">"+(r.operai?.nome||"—")+" "+(r.operai?.cognome||"")+"</td>'
-    +'<td>"+(r.cantieri?.nome||"—")+(r.cantieri?.luogo?"<br><small style=\"color:#857f73\">"+r.cantieri.luogo+"</small>":"")+"</td>'
+    +'<td>"+((r.cantieri&&r.cantieri.tipo!=="interno"&&r.cantieri.numero_commessa)?r.cantieri.numero_commessa+" ":"")+(r.cantieri?.nome||"—")+(r.cantieri?.luogo?"<br><small style=\"color:#857f73\">"+r.cantieri.luogo+"</small>":"")+"</td>'
     +'<td>"+mezzo+"</td><td>"+ruolo+"</td><td>"+(r.squadra||"—")+"</td>'
     +'<td class=\"note-cell\">"+(hasNote?"⚠️ "+r.annotazioni:"—")+"</td>";'
     +'tb.appendChild(tr);});'
@@ -10242,7 +10270,7 @@ async function renderPagamenti(){
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div>'
         +'<div style="font-size:var(--fs-lg);font-weight:700">'+(metoIcon[p.metodo]||'💳')+' '+p.metodo+'</div>'
-        +'<div style="font-size:14px;color:var(--t2)">'+(p.cantieri?.nome||'—')+' · '+fmtDate(p.data)+'</div>'
+        +'<div style="font-size:14px;color:var(--t2)">'+(_cantEtichettaDaId(p.cantiere_id,p.cantieri?.nome)||'—')+' · '+fmtDate(p.data)+'</div>'
         +(p.riferimento?'<div style="font-size:14px;color:var(--t2);margin-top:2px">📋 '+p.riferimento+'</div>':'')
         +'</div>'
         +'<div style="font-family:var(--mono,monospace);font-size:20px;font-weight:500;color:var(--green)">CHF '+parseFloat(p.importo||0).toFixed(2)+'</div>'
@@ -10692,7 +10720,7 @@ const RUOLI_APP=[
   {v:'operaio',     l:'Operaio'},
   {v:'magazziniere',l:'Magazziniere'}
 ];
-let _profiliAppCache=null; // email(lower) → {user_id, ruolo, nome}
+let _profiliAppCache=null; // user_id → {user_id, ruolo, nome, email} (P2 punto 4)
 
 async function _caricaProfiliApp(){
   if(PROF?.ruolo!=='titolare')return null;
@@ -10706,9 +10734,9 @@ async function _caricaProfiliApp(){
       console.warn('Elenco profili app non disponibile (funzione non ancora deployata?)');
       return null;
     }
-    const map={};
+    const map={}; // P2 punto 4: chiave = user_id (prima: email)
     data.profili.forEach(function(p){
-      if(p.email)map[String(p.email).toLowerCase()]={user_id:p.user_id,ruolo:p.ruolo,nome:p.nome};
+      if(p.user_id)map[p.user_id]={user_id:p.user_id,ruolo:p.ruolo,nome:p.nome,email:p.email||''};
     });
     _profiliAppCache=map;
     return map;
@@ -10811,8 +10839,8 @@ async function renderPersonale(){
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
     function _buildOperaioDiv(o){
       const isEx=!_opAttivo(o,oggi);
-      const pApp=(profiliApp&&o.email)?profiliApp[o.email.toLowerCase()]:null;
-      const hasAccount=pApp?true:(o.email&&emailToProfiloId[o.email.toLowerCase()]);
+      const pApp=(profiliApp&&o.user_id)?profiliApp[o.user_id]:null; // P2 punto 4
+      const hasAccount=!!o.user_id;
       const div=document.createElement('div');
       div.id='op-card-'+o.id;
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
@@ -10940,6 +10968,7 @@ function _p5cDescriviDati(dati){
 async function _p5cPreparaEliminaDefinitiva(o){
   const el=document.getElementById('o-elimina-def');if(!el)return;
   el.innerHTML='';
+  return; // P2 punto 7: le persone non si cancellano (si archiviano: «Rimuovi» = attivo false)
   if(!o||_ruoloApp()!=='titolare'||_opAttivo(o))return;
   el.innerHTML='<div style="font-size:14px;color:var(--t2)">Controllo dei dati collegati…</div>';
   const{data,error}=await sb.rpc('app_dati_collaboratore',{p_operaio:o.id});
@@ -10960,6 +10989,7 @@ async function _p5cPreparaEliminaDefinitiva(o){
     +'<div style="font-size:14px;color:var(--t3);margin-top:4px">Nessun dato collegato e nessun account app: la scheda si può cancellare del tutto.</div>';
 }
 async function p5cEliminaDefinitivamente(){
+  showToast('Le persone non si cancellano: si archiviano.','e');return; // P2 punto 7
   if(_ruoloApp()!=='titolare'){showToast('Solo il titolare','e');return;}
   const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);if(!o)return;
   if(_opAttivo(o)){_p5MsgScheda('Errore: la persona è attiva. Prima va rimossa.','e');return;}
@@ -10986,7 +11016,7 @@ function _p5bMostraTastoPassword(o){
   let vedi=!!o&&!!em&&['titolare','responsabile'].includes(_ruoloApp());
   // il titolare conosce i ruoli degli account: niente tasto sui titolari
   // (e il responsabile solo su caposquadra, operaio, magazziniere: lo ricontrolla la funzione)
-  const pa=_profiliAppCache&&em?_profiliAppCache[em]:null;
+  const pa=_profiliAppCache&&o?.user_id?_profiliAppCache[o.user_id]:null; // P2 punto 4
   if(pa&&pa.ruolo==='titolare')vedi=false;
   if(pa&&_ruoloApp()==='responsabile'&&!['caposquadra','operaio','magazziniere'].includes(pa.ruolo))vedi=false;
   w.style.display=vedi?'block':'none';
@@ -11075,11 +11105,11 @@ function openModalBolla(id){
   document.getElementById('bol-foto-prv').innerHTML='';
   document.getElementById('del-bol-w').innerHTML='';
   const sc=document.getElementById('bol-cant-sel');
-  if(sc)sc.innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>'<option value="'+c.id+'">'+c.nome+'</option>').join(''); // P2
+  if(sc)sc.innerHTML=_cantVisibili().filter(_cantCommessaInCorso).map(c=>'<option value="'+c.id+'">'+_cantEtichetta(c)+'</option>').join(''); // P2
   const so=document.getElementById('bol-op-sel');
   if(so)so.innerHTML='<option value="">— Seleziona —</option>'+(OPERAI||[]).map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+'</option>').join('');
   const sf=document.getElementById('bol-cantiere');
-  if(sf&&sf.options.length<=1)_cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
+  if(sf&&sf.options.length<=1)_cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=_cantEtichetta(c);sf.appendChild(o);});
   if(!id){
     const{date,time}=nowZurich();
     document.getElementById('bol-data').value=date;
@@ -11164,7 +11194,7 @@ async function renderBolle(){
       const opNome=(b.operai?.nome||'')+' '+(b.operai?.cognome||'');
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
         +'<div><div style="font-size:var(--fs-lg);font-weight:700">📦 '+(b.fornitore||'Fornitore non specificato')+'</div>'
-        +'<div style="font-size:14px;color:var(--t2)">'+(b.cantieri?.nome||'—')+' · '+fmtDate(b.data)+(b.ora?' · '+b.ora:'')+'</div>'
+        +'<div style="font-size:14px;color:var(--t2)">'+(_cantEtichettaDaId(b.cantiere_id,b.cantieri?.nome)||'—')+' · '+fmtDate(b.data)+(b.ora?' · '+b.ora:'')+'</div>'
         +(opNome.trim()?'<div style="font-size:14px;color:var(--t2)">'+opNome.trim()+'</div>':'')
         +'</div>'
         +'<span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:10px;background:'+(isPag?'rgba(76,175,125,.15)':'rgba(224,136,64,.15)')+';color:'+(isPag?'var(--green)':'var(--orange)')+'">'+
@@ -11210,7 +11240,7 @@ async function cercaChiHaGuidato(){
       div.style.cssText='background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between';
       div.innerHTML='<div>'
         +'<div style="font-size:15px;font-weight:700">👷 '+(r.operai?.nome||'')+'  '+(r.operai?.cognome||'')+'</div>'
-        +'<div style="font-size:14px;color:var(--t2)">📍 '+(r.cantieri?.nome||'—')+'</div>'
+        +'<div style="font-size:14px;color:var(--t2)">📍 '+(_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'—')+'</div>'
         +'</div>'
         +'<div style="font-size:14px;color:var(--t2);text-align:right">'+r.data+'</div>';
       el.appendChild(div);
@@ -11230,9 +11260,9 @@ function apriMaterialiCantiere(){pushNav('cantiere-sotto'); // P7: indietro torn
   if(!curCant)return;
   _matCantiereId=curCant.id;
   showScr('mat-cantiere');
-  document.getElementById('top-title').textContent='Materiali — '+curCant.nome;
-  document.getElementById('mat-cant-title').textContent='Materiali — '+curCant.nome;
-  setBread([{label:'Cantieri',onclick:'goHome()'},{label:curCant.nome,onclick:'goToCantiere()'},{label:'Materiali'}]);
+  document.getElementById('top-title').textContent='Materiali — '+_cantEtichetta(curCant);
+  document.getElementById('mat-cant-title').textContent='Materiali — '+_cantEtichetta(curCant);
+  setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Materiali'}]);
   renderMaterialiCantiere(curCant.id);
 }
 
@@ -11375,7 +11405,7 @@ async function renderMagazzino(){
       const daPortare=items.filter(function(m){return !m.fatto;});
       const hdr=document.createElement('div');
       hdr.style.cssText='background:var(--s2);border-radius:var(--rsm);padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer';
-      hdr.innerHTML='<div><div style="font-size:17px;font-weight:800">'+escHtml(c.nome)+'</div>'
+      hdr.innerHTML='<div><div style="font-size:17px;font-weight:800">'+escHtml(_cantEtichetta(c))+'</div>'
         +(c.luogo?'<div style="font-size:14px;color:var(--t2)">'+escHtml(c.luogo)+'</div>':'')
         +'</div>'
         +'<div style="display:flex;gap:8px;align-items:center">'
@@ -11442,13 +11472,7 @@ function apriInvioNotifica(){
 
 // P7: le schede in Personale di un account (stessa email se il titolare ha l'elenco, altrimenti stesso nome e cognome)
 function _p7SchedeDelProfilo(p,pmap){
-  const tutti=OPERAI_TUTTI||[];
-  if(pmap){
-    const em=Object.keys(pmap).find(k=>pmap[k].user_id===p.id);
-    if(em){const x=tutti.filter(o=>String(o.email||'').trim().toLowerCase()===em);if(x.length)return x;}
-  }
-  const n=_p6Norm(p.nome);
-  return n?tutti.filter(o=>_p6Norm(_p6NomeOp(o))===n):[];
+  return (OPERAI_TUTTI||[]).filter(o=>o.user_id&&o.user_id===p.id); // P2 punto 4: solo operai.user_id
 }
 async function inviaNotifica(){
   const titolo=document.getElementById('notif-titolo').value.trim();
@@ -11742,7 +11766,7 @@ async function renderMioGiorno(){
       box.innerHTML=giorni.map(function(d){
         const asg=assegnazioneAl(d);const ore=oreIl(d);tot+=ore;const aIl=assenteIl(d);
         const wd=new Date(d+'T12:00').getDay();const festivo=wd===0||wd===6;
-        const cant=asg.length?asg.map(x=>escHtml(x.cantieri?.nome||'—')).join(', '):'<span style="color:var(--t3)">'+escHtml(t('mg_niente'))+'</span>';
+        const cant=asg.length?asg.map(x=>escHtml(_cantEtichettaDaId(x.cantiere_id,x.cantieri?.nome)||'—')).join(', '):'<span style="color:var(--t3)">'+escHtml(t('mg_niente'))+'</span>';
         return '<div onclick="p7MgApriGiorno(\''+d+'\')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;'+(d===oggi?'background:var(--gdim);':'')+(festivo?'opacity:.7;':'')+'">'
           +'<div style="width:62px;flex-shrink:0;font-size:14px;font-weight:700;text-transform:capitalize">'+escHtml(fmtG(d,{weekday:'short',day:'2-digit',month:'2-digit'}))+'</div>'
           +'<div style="flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(aIl?'🏖️ '+escHtml(t('mg_assente')):'📍 '+cant)+'</div>'
@@ -11770,7 +11794,7 @@ function buildCardAssegnazione(a, tutteAssegnazioni, isOggi){
       :'background:var(--s1);border:1px solid var(--border);');
 
   // Cantiere
-  const cantNome=a.cantieri?.nome||'—';
+  const cantNome=_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)||'—';
   const cantLuogo=a.cantieri?.luogo||'';
   const cantIndirizzo=[a.cantieri?.via,[a.cantieri?.cap,a.cantieri?.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   const cantPaese=a.cantieri?.paese||'CH';
@@ -12169,9 +12193,9 @@ async function inviaRichiestaAssenza(){
     // Calcola giorni
     const d1=new Date(dal+'T12:00'),d2=new Date(al+'T12:00');
     const giorni=Math.round((d2-d1)/(1000*60*60*24))+1;
-    // Trova operaio_id dall'email
+    // P2 punto 4: operaio_id dalla scheda collegata (operai.user_id)
     let opId=null;
-    const{data:op}=await sb.from('operai').select('id').ilike('email',USER.email).maybeSingle();
+    const{data:op}=await sb.from('operai').select('id').eq('user_id',USER.id).maybeSingle();
     if(op)opId=op.id;
     const payload={
       operaio_id:opId,
@@ -12222,10 +12246,10 @@ function escHtml(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').repla
 function populateGruSel(){
   const s=document.getElementById('gru-cant-sel');if(!s)return;
   s.innerHTML='<option value="">Nessuno</option>';
-  _cantVisibili().filter(_cantCommessaInCorso).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;s.appendChild(o);}); // P2
+  _cantVisibili().filter(_cantCommessaInCorso).forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=_cantEtichetta(c);s.appendChild(o);}); // P2
   const sf=document.getElementById('gru-cantiere');if(!sf)return;
   sf.innerHTML='<option value="">Tutti i cantieri</option>';
-  _cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nome;sf.appendChild(o);});
+  _cantVisibiliComePrima().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=_cantEtichetta(c);sf.appendChild(o);});
 }
 
 async function renderGru(){
@@ -12260,7 +12284,7 @@ async function renderGru(){
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div><div style="font-size:14px;font-weight:700;color:'+col+'">'+(isInc?'✅ '+t('gru_incluso'):isI?'🏗️ CT incassa':'🏗️ CT paga')+'</div>'
         +'<div style="font-size:17px;font-weight:700">'+escHtml(r.ditta||'—')+'</div>'
-        +'<div style="font-size:14px;color:var(--t2)">'+(r.data||'')+' '+(cant?'· '+cant.nome:'')+'</div></div>'
+        +'<div style="font-size:14px;color:var(--t2)">'+(r.data||'')+' '+(cant?'· '+_cantEtichetta(cant):'')+'</div></div>'
         +'<div style="text-align:right">'
         +(isInc?'':'')
         +(r.importo&&!isInc?'<div style="font-size:18px;font-weight:700;color:'+col+'">'+(parseFloat(r.importo)).toFixed(2)+' CHF</div>':(!isInc?'<div style="font-size:15px;font-weight:700;color:var(--orange)">Importo da definire</div>':''))
@@ -12293,7 +12317,7 @@ function apriDettaglioGru(id){
   document.getElementById('mgd-content').innerHTML=
     '<div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:12px">'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
-    +'<span style="color:var(--t2)">Cantiere</span><span style="font-weight:700">'+(cant?.nome||'—')+'</span></div>'
+    +'<span style="color:var(--t2)">Cantiere</span><span style="font-weight:700">'+(_cantEtichetta(cant)||'—')+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
     +'<span style="color:var(--t2)">Data</span><span>'+(r.data||'—')+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
@@ -12499,6 +12523,7 @@ async function invitaCollaboratore(){
       throw new Error(msg);
     }
     if(data&&data.error)throw new Error(data.error);
+    if(data&&data.avviso)showToast(data.avviso,'e'); // P2 punto 4: scheda non collegata all'account
 
     // P4: nessuna email: si mostrano i dati da comunicare, con il tasto Copia
     document.getElementById('inv-esito-titolo').textContent='Comunica a '+nome+' '+cogn+':';
@@ -12705,7 +12730,7 @@ function p7ApriPosizione(cantId){
       +'<button class="btn btn-s" onclick="closeModal(\'mod-p7-pos\')">Annulla</button></div></div>';
     document.body.appendChild(ov);
   }
-  document.getElementById('p7-pos-nome').textContent=(c.nome||'')+' — '+([c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'indirizzo mancante');
+  document.getElementById('p7-pos-nome').textContent=(_cantEtichetta(c)||'')+' — '+([c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ')||'indirizzo mancante');
   {const _l=document.getElementById('p7-pos-link');if(_l)_l.value='';const _m=document.getElementById('p7-pos-link-msg');if(_m)_m.textContent='Link corto (maps.app.goo.gl)? Aprilo nel browser e copia l\'indirizzo lungo dalla barra in alto. Sul telefono: in Google Maps tieni premuto sul punto, tocca le coordinate in alto per copiarle e incollale qui.';}
   openModal('mod-p7-pos');
   setTimeout(function(){
@@ -12823,12 +12848,12 @@ async function renderMappa(){
           ? (righe.length ? (righe.find(r => r.squadra)?.squadra ? '🏗️ ' + righe.find(r => r.squadra).squadra : righe.map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(Boolean).slice(0,3).join(', ')) : 'Nessuna squadra')
           : (cant.stato || 'Attivo');
         const icon = L.divIcon({
-          html: '<div style="background:#c8a84b;color:#1a1000;font-size:14px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">' + escHtml(cant.nome||'Cantiere') + '</div>',
+          html: '<div style="background:#c8a84b;color:#1a1000;font-size:14px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">' + escHtml(_cantEtichetta(cant)||'Cantiere') + '</div>',
           className: '', iconAnchor: [0, 0]
         });
         const marker = L.marker([cant.lat, cant.lng], {icon}).addTo(_mappaLeaflet);
         marker.bindPopup('<div style="font-family:sans-serif;min-width:180px">'
-          + '<div style="font-weight:700;font-size:16px;margin-bottom:6px">🏗️ ' + escHtml(cant.nome||'—') + '</div>'
+          + '<div style="font-weight:700;font-size:16px;margin-bottom:6px">🏗️ ' + escHtml(_cantEtichetta(cant)||'—') + '</div>'
           + '<div style="font-size:14px;color:#555;margin-bottom:4px">📍 ' + escHtml(indir(cant)||'—') + (cant.posizione_manuale ? ' (posizione messa a mano)' : '') + '</div>'
           + '<div style="font-size:14px;color:#555;margin-bottom:4px">👷 ' + escHtml(squadraInfo) + '</div>'
           + (cant.responsabile ? '<div style="font-size:14px;color:#555">📋 ' + escHtml(cant.responsabile) + '</div>' : '')
@@ -12848,7 +12873,7 @@ async function renderMappa(){
     if(senzaPos.length){
       h += titolo('⚠️ Senza posizione (' + senzaPos.length + ')', 'var(--orange)');
       h += senzaPos.map(c => '<div style="background:var(--s1);border:1px solid rgba(224,136,64,.5);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'
-        + '<div style="min-width:0"><div style="font-weight:700;font-size:16px">' + escHtml(c.nome||'—') + '</div>'
+        + '<div style="min-width:0"><div style="font-weight:700;font-size:16px">' + escHtml(_cantEtichetta(c)||'—') + '</div>'
         + '<div style="font-size:14px;color:var(--t2)">' + escHtml(indir(c)||'Indirizzo mancante') + '</div>'
         + '<div style="font-size:14px;color:var(--orange);font-weight:700;margin-top:2px">senza posizione — ' + (puo ? 'mettila a mano' : 'chiedi al titolare o al responsabile di metterla a mano') + '</div>'
         + (idOggi.has(c.id) ? '<div style="font-size:14px;color:var(--gold);margin-top:2px">👷 oggi: ' + escHtml(nomiOggi(c)) + '</div>' : '') + '</div>'
@@ -12859,14 +12884,14 @@ async function renderMappa(){
     h += sullaMappa.length ? sullaMappa.map(c => {
         const nomi = filtro === 'oggi' ? nomiOggi(c) : '';
         return '<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="_mappaLeaflet&&_mappaLeaflet.setView([' + c.lat + ',' + c.lng + '],16)">'
-          + '<div><div style="font-weight:700;font-size:16px">' + escHtml(c.nome||'—') + '</div>'
+          + '<div><div style="font-weight:700;font-size:16px">' + escHtml(_cantEtichetta(c)||'—') + '</div>'
           + '<div style="font-size:14px;color:var(--t2)">' + escHtml(indir(c)||'—') + (c.posizione_manuale ? ' · posizione messa a mano' : '') + '</div>'
           + (nomi ? '<div style="font-size:14px;color:var(--gold);margin-top:2px">👷 ' + escHtml(nomi) + '</div>' : '') + '</div>'
           + '<div style="font-size:20px">📍</div></div>';
       }).join('') : '<div style="font-size:14px;color:var(--t3);padding:4px 2px">Nessuno.</div>';
     if(altri.length){
       h += titolo('Altri cantieri attivi — oggi nessuno nel Piano (' + altri.length + ')');
-      h += altri.map(c => '<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;opacity:.8"><div style="font-weight:700;font-size:16px">' + escHtml(c.nome||'—') + '</div><div style="font-size:14px;color:var(--t2)">' + escHtml(indir(c)||'—') + ' · scegli «Tutti attivi» per vederlo in mappa</div></div>').join('');
+      h += altri.map(c => '<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:6px;opacity:.8"><div style="font-weight:700;font-size:16px">' + escHtml(_cantEtichetta(c)||'—') + '</div><div style="font-size:14px;color:var(--t2)">' + escHtml(indir(c)||'—') + ' · scegli «Tutti attivi» per vederlo in mappa</div></div>').join('');
     }
     lista.innerHTML = h;
   }
@@ -12898,10 +12923,10 @@ function onCercaCantiere(testo){
     return;
   }
   el.innerHTML = ris.map(c => `
-    <div onclick="selezionaCantiereDaRicerca('${c.id}','${(c.nome||'').replace(/'/g,"\\'")}',this)"
+    <div onclick="selezionaCantiereDaRicerca('${c.id}','${(_cantEtichetta(c)||'').replace(/'/g,"\\'")}',this)"
          style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:16px;font-weight:600;transition:background .15s"
          onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
-      ${c.nome}
+      ${_cantEtichetta(c)}
       <div style="font-size:14px;font-weight:400;color:var(--t2);margin-top:2px">${c.indirizzo||'—'}</div>
     </div>`).join('');
 }
@@ -12945,8 +12970,8 @@ function renderScegliCantiere(filtro){
       style="padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
       onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-        <span class="cant-status ${stCls}" style="font-size:13px;padding:2px 7px">${escHtml(c.stato)}</span>
-        <span style="font-size:17px;font-weight:700;color:var(--gold)">${escHtml(c.nome)}</span>
+        <span class="cant-status ${stCls}" style="position:static;font-size:13px;padding:2px 7px">${escHtml(c.stato)}</span>
+        <span style="font-size:17px;font-weight:700;color:var(--gold)">${escHtml(_cantEtichetta(c))}</span>
       </div>
       ${c.luogo?`<div style="font-size:14px;color:var(--t2)">📌 ${escHtml(c.luogo)}</div>`:''}
       ${addr?`<div style="font-size:14px;color:var(--t3)">${escHtml(addr)}</div>`:''}
@@ -13014,7 +13039,7 @@ async function renderOre(){
   const annoSel=parseInt(document.getElementById('ore-anno')?.value||new Date().getFullYear());
   let opId=document.getElementById('ore-operaio')?.value||null;
   if(!opId){
-    const{data:op}=await sb.from('operai').select('id').ilike('email',USER.email).maybeSingle();
+    const{data:op}=await sb.from('operai').select('id').eq('user_id',USER.id).maybeSingle(); // P2 punto 4
     opId=op?.id||null;
   }
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
