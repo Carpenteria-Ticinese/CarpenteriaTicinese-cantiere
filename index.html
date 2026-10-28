@@ -8,17 +8,19 @@
 <meta name="theme-color" content="#c8a84b">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CT Cantiere">
-<title>CT Cantiere</title>
-<script src="https://browser.sentry-cdn.com/7.99.0/bundle.min.js" crossorigin="anonymous"></script>
+<meta name="apple-mobile-web-app-title" content="Cantiere">
+<title>Cantiere</title>
+<script src="lib/sentry-7.99.0.bundle.min.js"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js"></script>
+<script src="lib/xlsx-0.18.5.full.min.js"></script>
+<script src="lib/qrcode-1.0.0.min.js"></script>
+<script src="lib/chart-4.4.0.umd.min.js"></script>
+<!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -67,6 +69,8 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
   #top-versione{font-size:12px!important}
   .rbadge{display:none}
   .top-r .btn-icon{padding:6px 8px}
+  .top{flex-wrap:wrap}
+  #btn-emergenza{order:3;flex:1 0 100%;margin-left:0}
   #navbar .nb{flex:1 1 0;min-width:40px;padding:8px 1px 10px}
   #navbar{scrollbar-width:thin}
   #navbar::-webkit-scrollbar{display:block;height:3px}
@@ -119,6 +123,27 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .cant-stat{font-size:var(--fs-xs);font-weight:600;padding:4px 10px;background:var(--s2);border-radius:4px;color:var(--t2)}
 .cant-stat.gold{color:var(--gold);background:var(--gdim)}
 .cant-status{position:absolute;top:14px;right:14px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:10px}
+/* P3: nella Home l'etichetta sta a destra e il nome le gira intorno (prima a 390 px un nome lungo le passava sotto) */
+.cant-status.cant-status-fl{position:static;float:right;margin:-4px -4px 6px 10px}
+/* P3 punto B: EMERGENZA, solo 144 e 1414. Scritte almeno 18 px, tasti alti almeno 56 px, icona sempre con scritta.
+   Telefono: tasti che chiamano. PC (mouse, niente tocco): numero grande, nessun tasto chiama. */
+#btn-emergenza{margin-left:auto;min-height:56px;padding:0 16px;background:#c62828;color:#fff;border:none;border-radius:var(--rsm);font-size:18px;font-weight:800;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px}
+#emergenza{display:none;position:fixed;inset:0;z-index:10001;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#emergenza.on{display:block}
+.em-box{max-width:640px;margin:0 auto;padding:16px 16px 48px;font-size:18px}
+.em-testa{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.em-testa h2{font-size:26px;font-weight:800;color:#ff6b6b}
+.em-chiudi{min-height:56px;padding:0 18px;font-size:18px;font-weight:700;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);cursor:pointer;font-family:inherit;white-space:nowrap}
+.em-sez{font-size:18px;font-weight:800;color:var(--t2);margin:18px 0 10px;text-transform:uppercase;letter-spacing:1px}
+.em-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;padding:10px 16px;margin:0 0 10px;border:none;border-radius:var(--r);background:#c62828;color:#fff;font-size:22px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit}
+.em-num{display:none;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;margin:0 0 10px;border:2px solid #c62828;border-radius:var(--r);font-size:20px;font-weight:700}
+.em-num b{font-family:'DM Mono',monospace;font-size:44px;color:#ff6b6b}
+.em-login{margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.em-login .em-sez{margin-top:0;color:#ff6b6b}
+@media (hover:hover) and (pointer:fine){
+  .em-tel{display:none!important}
+  .em-num{display:flex}
+}
 .st-attivo{background:rgba(76,175,125,.15);color:var(--green)}
 .st-pausa{background:rgba(224,136,64,.15);color:var(--orange)}
 .st-compl{background:var(--s3);color:var(--t3)}
@@ -321,6 +346,14 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
       <span data-i18n="login_chiedi_titolare">Chiedi al titolare una password nuova.</span><br>
       <a href="tel:+41762230443" style="color:var(--gold);font-weight:800;font-size:17px;text-decoration:none">📞 076 223 04 43</a>
     </div>
+    <!-- P3 punto B: numeri di soccorso, senza login -->
+    <div class="em-login">
+      <div class="em-sez">🆘 Emergenza</div>
+      <a class="em-btn em-tel" href="tel:144">🚑 144 Ambulanza</a>
+      <a class="em-btn em-tel" href="tel:1414">🚁 1414 Rega</a>
+      <div class="em-num"><span>🚑 Ambulanza</span><b>144</b></div>
+      <div class="em-num"><span>🚁 Rega</span><b>1414</b></div>
+    </div>
     <!-- Selettore lingua login -->
     <div style="display:flex;justify-content:center;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
       <button class="lang-btn" data-lang="IT" onclick="changeLang('IT')" style="background:var(--gold);color:#1a1000;border:1px solid var(--gold);border-radius:var(--rsm);padding:6px 12px;cursor:pointer;font-size:15px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif">🇮🇹 IT</button>
@@ -332,6 +365,21 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   </div>
 </div>
 
+<!-- P3 punto B: EMERGENZA, solo 144 e 1414, scritti qui: non dipendono dal database. -->
+<div id="emergenza" role="dialog" aria-modal="true" aria-labelledby="em-titolo">
+  <div class="em-box">
+    <div class="em-testa">
+      <h2 id="em-titolo">🆘 Emergenza</h2>
+      <button type="button" class="em-chiudi" onclick="chiudiEmergenza()">✕ Chiudi</button>
+    </div>
+    <div class="em-sez">Numeri di soccorso</div>
+    <a class="em-btn em-tel" href="tel:144">🚑 144 Ambulanza</a>
+    <a class="em-btn em-tel" href="tel:1414">🚁 1414 Rega</a>
+    <div class="em-num"><span>🚑 Ambulanza</span><b>144</b></div>
+    <div class="em-num"><span>🚁 Rega</span><b>1414</b></div>
+  </div>
+</div>
+
 <div id="app">
 
   <div class="top">
@@ -339,6 +387,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:17px;line-height:1;flex-shrink:0" title="Indietro">←</button>
       <div class="top-brand"><b id="top-brand-nome">CantiereMaster</b><span id="top-title" data-i18n="top_cantieri">Cantieri</span></div>
     </div>
+    <button type="button" id="btn-emergenza" onclick="apriEmergenza()">🆘 Emergenza</button>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
       <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span><span id="top-versione" style="font-size:13px;color:var(--t3)"></span>
@@ -2146,7 +2195,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='9';
+const APP_VERSIONE='10';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4452,7 +4501,7 @@ async function renderHome(){
     const gru=gruPerCant[c.id]||null;
     const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
     return `<div class="cant-card" onclick="enterCantiere('${c.id}')">
-      <span class="cant-status ${stCls}">${c.stato}</span>
+      <span class="cant-status cant-status-fl ${stCls}">${c.stato}</span>
       <div class="cant-nome">${_cantEtichetta(c)}</div>
       <div class="cant-meta">${[c.luogo,utenteHaAccesso(PROF,'committente',null)&&c.committente?c.committente:null].filter(Boolean).join(' · ')||c.luogo||'—'}</div>
       ${(()=>{const _ia=[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');return _ia?`<div style="font-size:14px;color:var(--t2);margin-bottom:6px">${_ia}</div>`:'';})()}
@@ -7059,6 +7108,7 @@ function closeModal(id){document.getElementById(id).classList.remove('on');docum
 // ESC chiude la modale aperta
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
+  if(_emAperta()){chiudiEmergenza();return;} // P3
   const open=document.querySelector('.ov.on');
   if(open)closeModal(open.id);
 });
@@ -8048,6 +8098,7 @@ function _armaIndietro(){
 }
 window.addEventListener('popstate',function(){
   if(!document.getElementById('app')?.classList.contains('on'))return; // non loggato
+  if(_emAperta()){chiudiEmergenza();_armaIndietro();return;} // P3: Emergenza sta sopra a tutto
   // 1. finestra aperta → si chiude solo quella
   const ov=document.querySelector('.ov.on');
   if(ov){closeModal(ov.id);_armaIndietro();return;}
@@ -8505,6 +8556,23 @@ function p4CopiaCredenziali(){
 }
 function _p4CopiaVecchioModo(txt){
   try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}
+}
+
+// ══════════════════════════════════════════════════
+// P3 punto B — EMERGENZA
+// ══════════════════════════════════════════════════
+// Solo 144 e 1414, scritti nell'HTML (#emergenza e pagina di accesso): niente database.
+// Decisione di Umberto (27.10): nessun contatto d'emergenza personale nell'app. Niente indirizzo del cantiere.
+function _emAperta(){return !!document.getElementById('emergenza')?.classList.contains('on');}
+function apriEmergenza(){
+  const el=document.getElementById('emergenza');if(!el)return;
+  el.classList.add('on');el.scrollTop=0;
+  document.body.style.overflow='hidden';
+  _armaIndietro();
+}
+function chiudiEmergenza(){
+  document.getElementById('emergenza')?.classList.remove('on');
+  if(!document.querySelector('.ov.on'))document.body.style.overflow='';
 }
 
 // "Oggi la squadra": per ogni cantiere chi c'e' e con che mezzo. Sola lettura, visibile a tutti.

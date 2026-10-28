@@ -1,6 +1,6 @@
 {
-  "name": "CT Cantiere – Carpenteria Ticinese",
-  "short_name": "CT Cantiere",
+  "name": "Cantiere",
+  "short_name": "Cantiere",
   "description": "Gestionale di cantiere professionale",
   "start_url": "/CarpenteriaTicinese-cantiere/",
   "display": "standalone",
