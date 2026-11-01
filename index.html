@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=11">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantiere">
 <title>Cantiere</title>
-<script src="lib/sentry-7.99.0.bundle.min.js"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=11"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js"></script>
-<script src="lib/xlsx-0.18.5.full.min.js"></script>
-<script src="lib/qrcode-1.0.0.min.js"></script>
-<script src="lib/chart-4.4.0.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=11"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=11"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=11"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=11"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -315,6 +315,18 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 /* ═══ P7c: campi mancanti — bordo rosso e scritta sotto il campo ═══ */
 .campo-err{border:2px solid var(--red)!important;box-shadow:0 0 0 3px rgba(240,112,112,.25)!important}
 .campo-err-msg{color:var(--red);font-size:15px;font-weight:700;margin-top:6px;line-height:1.35}
+/* ═══ v11: Giorni con ore da confermare — righe grandi (guanti), ritardo con SCRITTA, mai solo colore ═══ */
+.p2b-giorno{display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:12px 14px;margin:0 0 8px;background:var(--s1);border:2px solid rgba(224,136,64,.55);border-radius:var(--r);color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+.p2b-giorno:active{transform:scale(.99)}
+.p2b-g-testo{flex:1;min-width:0}
+.p2b-g-data{display:block;font-size:19px;font-weight:800;line-height:1.2}
+.p2b-g-info{display:block;font-size:16px;color:var(--t2);margin-top:3px}
+.p2b-g-apri{flex:0 0 auto;font-size:17px;font-weight:700;color:var(--gold)}
+.p2b-ritardo{border-color:#c62828;background:rgba(198,40,40,.14)}
+.p2b-g-ritardo{flex:0 0 auto;font-size:16px;font-weight:800;color:#fff;background:#c62828;border-radius:10px;padding:6px 10px;white-space:nowrap}
+.p2b-scelto{box-shadow:0 0 0 3px var(--gold)}
+.p2b-vuoto{font-size:17px;font-weight:700;color:var(--green);padding:10px 0 14px}
+.p2b-avviso-rit{font-size:17px;font-weight:800;color:#fff;background:#c62828;border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1223,7 +1235,8 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
   <!-- CONFERMA ORE CAPOSQUADRA -->
   <div class="scr" id="scr-conferma-ore">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div id="conferma-giorni"></div>
+    <div id="conferma-ore-giorno" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <label class="fl" style="margin:0;white-space:nowrap">Data:</label>
       <input type="date" id="conferma-ore-data" class="fi" style="flex:1" onchange="renderConfermaOre()">
     </div>
@@ -2195,7 +2208,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='10';
+const APP_VERSIONE='11';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -5027,19 +5040,30 @@ async function deleteFigura(id){if(!confirm(t('conf_elimina_figura')))return;_p7
 
 // ── MODIFICA GIORNATA ──
 let modificaGid=null,mgFotoFiles=[];
+// v11: se cambiano gli orari di una giornata gia' confermata, la conferma si toglie e il giorno
+// torna in "Giorni con ore da confermare" (prima restava "Confermato" con le ore vecchie).
+let _v11MgOrig=null;
+function _v11Pausa(v,def){const n=parseInt(v,10);return (v===''||v==null||isNaN(n))?def:Math.max(0,n);} // v11: pausa vuota = predefinita, 0 = 0
+function _v11Ora(x){return x==null?'':String(x).slice(0,5);}
+function _v11OrariCambiati(orig,ini,fine,pausa){
+  if(!orig)return false;
+  return _v11Ora(orig.ini)!==_v11Ora(ini)||_v11Ora(orig.fine)!==_v11Ora(fine)||(parseInt(orig.pausa,10)||0)!==(parseInt(pausa,10)||0);
+}
+function _v11TogliConferma(orig,ini,fine,pausa){return !!(orig&&orig.confermata&&_v11OrariCambiati(orig,ini,fine,pausa));}
 async function apriModificaGiornata(gid){
   modificaGid=gid;mgFotoFiles=[];
   document.getElementById('mg-foto-nuove').innerHTML='';
   document.getElementById('mg-foto-esistenti').innerHTML='<div style="font-size:14px;color:var(--t2);grid-column:span 3">'+t('lbl_caricamento_gen')+'</div>';
   const {data:g}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').eq('id',gid).single();
   if(!g)return;
+  _v11MgOrig={gid:gid,ini:g.ora_inizio||'07:00',fine:g.ora_fine||'17:00',pausa:g.pausa_minuti??60,confermata:g.ore_confermate!=null}; // v11: come li mostra il modulo
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
   const {data:fotoEsist}=await sb.from('foto').select('*').eq('giornata_id',gid);
   const {data:vociEsist}=await sb.from('voci_lavoro').select('*, lavorazioni(nome,um)').eq('giornata_id',gid);
   document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}`;
   document.getElementById('mg-ini').value=g.ora_inizio||'07:00';
   document.getElementById('mg-fine').value=g.ora_fine||'17:00';
-  document.getElementById('mg-pausa').value=g.pausa_minuti||60;
+  document.getElementById('mg-pausa').value=g.pausa_minuti??60; // v11: pausa 0 resta 0
   document.getElementById('mg-note').value=g.note||'';
   document.getElementById('mg-materiale-g').value=g.materiale_giorno||'';
   document.getElementById('mg-attrezzatura-g').value=g.attrezzatura_giorno||'';
@@ -5199,7 +5223,8 @@ async function salvaModificaGiornata(){
     const materialeG=document.getElementById('mg-materiale-g')?.value.trim()||'';
     const attrezzaturaG=document.getElementById('mg-attrezzatura-g')?.value.trim()||'';
     const _mgPWrap2=document.getElementById('mg-pasto-wrap');const _mgPCb2=document.getElementById('mg-pasto');const _pastiOnMg=IMPOSTAZIONI.pasti_abilitati==='1';
-    const {data:_gUpd,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,danni:(document.getElementById('mg-danni')?.value.trim()||null),meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{})}).eq('id',modificaGid).select();
+    const _v11Riconferma=_v11MgOrig&&_v11MgOrig.gid===modificaGid&&_v11TogliConferma(_v11MgOrig,ini,fine,pausa); // v11
+    const {data:_gUpd,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,danni:(document.getElementById('mg-danni')?.value.trim()||null),meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{}),...(_v11Riconferma?{ore_confermate:null,confermato_da:null,data_conferma:null}:{})}).eq('id',modificaGid).select();
     if(error)throw error;
     // P2b: 0 righe = il database non ha salvato
     if(!_gUpd||!_gUpd.length)throw new Error('il database non ha modificato la giornata (0 righe)');
@@ -5279,34 +5304,123 @@ async function salvaModificaGiornata(){
       mgFotoFiles=[];
     }
     logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
-closeModal('mod-modifica-g');showToast('Giornata aggiornata ✓');renderCantiere();
+closeModal('mod-modifica-g');showToast(_v11Riconferma?'Giornata aggiornata ✓ — orari cambiati: le ore tornano DA CONFERMARE':'Giornata aggiornata ✓');renderCantiere();
     if(_p7bOltre.length&&!_p2KoMg)showToast('Giornata aggiornata. ⚠️ OLTRE IL PREVENTIVO: '+_p7bTestoOltre(_p7bOltre),'e');
     if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
   }catch(err){showToast('Giornata NON salvata, riprova. ('+err.message+')','e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
 }
+// ══ v11 (punto 2): la regia scritta con la giornata non resta "da fatturare" quando la giornata si toglie ══
+// Con l'SQL CANT_01 la regia porta giornata_id e il database la toglie con la giornata (copia in archivio).
+// Le righe vecchie (senza legame) dello stesso operaio, cantiere e giorno: si chiede cosa farne.
+// Regia FATTURATA = oltre l'uscita (fattura emessa): la toglie solo titolare/responsabile. Stesso testo del database (CANT_01).
+const V11_MSG_FATTURATA='Questa giornata ha ore già fatturate: la può togliere solo Umberto o Giovanni.';
+function _v11ErroreFatturata(e){return /fatturat/i.test(String(e&&e.message||''))&&/Umberto o Giovanni/.test(String(e&&e.message||''));}
+function _v11ColonnaMancante(e){
+  const m=String(e&&e.message||'');
+  return !!e&&(e.code==='42703'||e.code==='PGRST204'||(/giornata_id/.test(m)&&/column|colonna|schema cache/i.test(m)));
+}
+// Salva la regia di "Salva operaio". '' = salvata; altrimenti il motivo (si mostra a schermo).
+// Senza .select(): una regia che si puo' scrivere ma non rileggere (RLS) non deve sembrare un errore.
+async function _v11SalvaRegiaLegata(pay){
+  let r=await sb.from('regia').insert(pay);
+  if(r&&r.error&&_v11ColonnaMancante(r.error)&&'giornata_id' in pay){ // SQL CANT_01 non ancora applicato: come la v10
+    const senza=Object.assign({},pay);delete senza.giornata_id;
+    r=await sb.from('regia').insert(senza);
+  }
+  return r&&r.error?(r.error.message||'errore'):'';
+}
+// Divide la regia dello stesso operaio/cantiere/giorno: legata a QUESTA giornata, oppure senza legame.
+// Quella legata a un'altra giornata non si tocca.
+function _v11DividiRegia(righe,gid){
+  const legate=[],slegate=[];
+  (righe||[]).forEach(function(r){
+    if(r.giornata_id===gid)legate.push(r);
+    else if(r.giornata_id==null)slegate.push(r);
+  });
+  return {legate,slegate};
+}
+function _v11RigaRegia(r){
+  const q=r.quantita!=null&&r.quantita!==''?' ('+r.quantita+' '+(r.um||'')+')':'';
+  return '- '+(r.descrizione||'regia')+q+(r.fatturato===true||r.fatturato==='true'?' — FATTURATA':'');
+}
+function _v11Fatturata(l){return (l||[]).some(r=>r.fatturato===true||r.fatturato==='true');}
+async function _v11RegiaDelGiorno(gid){
+  const{data:g,error:ge}=await sb.from('giornate').select('id,cantiere_id,operaio_id,data').eq('id',gid).single();
+  if(ge)throw ge;
+  if(!g||!g.operaio_id||!g.cantiere_id)return {legate:[],slegate:[],letta:true};
+  const q=cols=>sb.from('regia').select(cols).eq('cantiere_id',g.cantiere_id).eq('operaio_id',g.operaio_id).eq('data',g.data);
+  let r=await q('id,descrizione,quantita,um,fatturato,giornata_id');
+  if(r.error&&_v11ColonnaMancante(r.error))r=await q('id,descrizione,quantita,um,fatturato'); // CANT_01 non applicato
+  if(r.error)throw r.error;
+  return Object.assign(_v11DividiRegia(r.data,gid),{letta:true});
+}
+function _v11TestoConferma(reg,puoTogliereRegia){
+  let m=t('conf_elimina_giornata');
+  if(!reg.letta)m+='\n\n⚠️ La regia di questo giorno NON si legge ('+(reg.errore||'errore')+'): se c\'è, resta. Controlla in Regia.';
+  if(reg.legate.length){
+    m+='\n\nInsieme alla giornata si toglie anche la sua regia ('+reg.legate.length+(reg.legate.length===1?' riga':' righe')+'):\n'+reg.legate.map(_v11RigaRegia).join('\n');
+    if(_v11Fatturata(reg.legate))m+='\n⚠️ ATTENZIONE: c\'è regia già segnata FATTURATA.';
+  }
+  if(reg.slegate.length&&!puoTogliereRegia)
+    m+='\n\nRestano '+reg.slegate.length+(reg.slegate.length===1?' riga':' righe')+' di regia dello stesso giorno (scritte a parte):\n'+reg.slegate.map(_v11RigaRegia).join('\n')+'\nLe può togliere solo il titolare o il responsabile (Regia).';
+  return m;
+}
+function _v11TestoSlegate(slegate){
+  return 'C\'è anche regia dello STESSO operaio, cantiere e giorno, scritta senza legame con la giornata:\n'
+    +slegate.map(_v11RigaRegia).join('\n')
+    +(_v11Fatturata(slegate)?'\n⚠️ ATTENZIONE: c\'è regia già segnata FATTURATA.':'')
+    +'\n\nOK = togli anche questa regia (non resta da fatturare)\nAnnulla = la regia resta';
+}
 async function eliminaGiornataModifica(){
   if(!modificaGid)return;
-  if(!confirm(t('conf_elimina_giornata')))return;
+  const gid=modificaGid;
+  let reg;
+  try{reg=await _v11RegiaDelGiorno(gid);}catch(e){reg={legate:[],slegate:[],letta:false,errore:e.message};}
+  const puoTogliereRegia=['titolare','responsabile'].includes(_ruoloApp()); // come la regola del database (regia_elimina)
+  // ore gia' fatturate: le toglie solo titolare/responsabile (il database lo impone, CANT_01). Si dice subito, senza domanda.
+  if(!puoTogliereRegia&&_v11Fatturata(reg.legate)){showToast(V11_MSG_FATTURATA,'e');return;}
+  if(!confirm(_v11TestoConferma(reg,puoTogliereRegia)))return;
+  const togliSlegate=puoTogliereRegia&&reg.slegate.length>0&&confirm(_v11TestoSlegate(reg.slegate));
   // P2b: si chiude solo se il database ha eliminato davvero
   try{
-    const{data,error}=await sb.from('giornate').delete().eq('id',modificaGid).select('id');
+    const{data,error}=await sb.from('giornate').delete().eq('id',gid).select('id');
     if(error)throw error;
     if(!data||!data.length)throw new Error('il database non ha eliminato la giornata (0 righe)');
-  }catch(e){showToast('Giornata NON eliminata, riprova. ('+e.message+')','e');return;}
+  }catch(e){
+    if(_v11ErroreFatturata(e)){showToast(V11_MSG_FATTURATA+' Giornata NON eliminata.','e');return;} // blocco del database: niente "riprova"
+    showToast('Giornata NON eliminata, riprova. ('+e.message+')','e');return;
+  }
+  // regia: quella legata la toglie il database con la giornata (CANT_01); se c'e' ancora, la si toglie qui
+  let _avvisoRegia='';
+  const daTogliere=reg.legate.map(r=>r.id).concat(togliSlegate?reg.slegate.map(r=>r.id):[]);
+  if(daTogliere.length){
+    try{
+      const{data:ancora,error:ae}=await sb.from('regia').select('id').in('id',daTogliere);
+      if(ae)throw ae;
+      const ids=(ancora||[]).map(r=>r.id);
+      if(ids.length){
+        const{data:tolte,error:te}=await sb.from('regia').delete().in('id',ids).select('id');
+        if(te)throw te;
+        const n=(tolte||[]).length;
+        if(n!==ids.length)throw new Error((ids.length-n)+' righe di regia restano: le può togliere solo il titolare o il responsabile');
+      }
+    }catch(e){_avvisoRegia=e.message;}
+  }
   // righe dei lavori rimaste collegate (se il database non le toglie da solo)
   let _avviso='';
   try{
-    const{data:resto,error:re}=await sb.from('voci_lavoro').select('id').eq('giornata_id',modificaGid);
+    const{data:resto,error:re}=await sb.from('voci_lavoro').select('id').eq('giornata_id',gid);
     if(re)throw re;
     if(resto&&resto.length){
-      const{data:tolte,error:te}=await sb.from('voci_lavoro').delete().eq('giornata_id',modificaGid).select('id');
+      const{data:tolte,error:te}=await sb.from('voci_lavoro').delete().eq('giornata_id',gid).select('id');
       if(te)throw te;
       if(!tolte||tolte.length!==resto.length)throw new Error((tolte?tolte.length:0)+' su '+resto.length+' righe');
     }
   }catch(e){_avviso=e.message;}
   closeModal('mod-modifica-g');renderCantiere();
-  if(_avviso)showToast('Giornata eliminata, ma i lavori collegati NON sono stati eliminati ('+_avviso+')','e');
+  if(_avvisoRegia)showToast('Giornata eliminata, ma la REGIA è rimasta ('+_avvisoRegia+')','e');
+  else if(_avviso)showToast('Giornata eliminata, ma i lavori collegati NON sono stati eliminati ('+_avviso+')','e');
   else showToast('Giornata eliminata');
 }
 
@@ -5326,7 +5440,7 @@ async function openCantLog(gid){
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:14px">
       <div style="font-size:var(--fs-lg);font-weight:700">${fmtDate(g.data)} ${g.meteo||''}</div>
       <div style="font-family:'DM Mono';font-size:24px;color:var(--gold);margin-top:6px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
-      <div style="font-size:14px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti||60}min pausa</div>
+      <div style="font-size:14px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti??60}min pausa</div>
     </div>
     ${vociHtml?`<div class="sec">${t('lbl_lavori_svolti')}</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>${t('th_lavorazione')}</th><th>${t('th_ore')}</th><th>${t('th_quantita')}</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
     ${(mats||[]).length?`<div class="sec">${t('lbl_materiali')}</div><div style="font-size:15px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
@@ -5379,7 +5493,7 @@ async function generaPdfGiornata(data){
       const voceRows=(g.voci_lavoro||[]).map(function(v){return '<tr><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0">'+escHtml(v.lavorazioni?.nome||v.lavorazione_nome||'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace">'+parseFloat(v.ore||0).toFixed(2)+'h</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;color:#666">'+( v.quantita?v.quantita+' '+(v.um||''):'—')+'</td></tr>';}).join('');
       const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:13px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta?'<span style="font-size:13px;background:#e08840;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px" data-i18n="sett_trasferta">🚗 Trasferta</span>':'');
       const extraPdf=(g.note?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px;white-space:pre-line">'+escHtml(g.note)+'</div>':'')+(g.materiale_giorno?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#888">🧱 Materiale utilizzato</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.materiale_giorno)+'</div></div>':'')+(g.attrezzatura_giorno?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#888">🔧 Attrezzatura / Macchinari</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.attrezzatura_giorno)+'</div></div>':'');
-      return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:17px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:14px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti||60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+extraPdf+'</div>';
+      return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:17px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:14px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti??60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+extraPdf+'</div>';
     }).join('');
     const matsHtml=(mats||[]).length?'<div style="margin-bottom:16px"><h3 style="font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px">📦 Materiali ricevuti</h3><ul style="font-size:15px;margin:0;padding-left:20px">'+mats.map(function(m){return '<li>'+escHtml(m.descrizione)+'</li>';}).join('')+'</ul></div>':'';
     const noteHtml=noteCs?'<div style="margin-bottom:16px;padding:10px;background:#fffbef;border:1px solid #f0d080;border-radius:6px"><strong style="font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#a08000">📋 Note caposquadra</strong><div style="font-size:15px;margin-top:6px;white-space:pre-line">'+escHtml(noteCs)+'</div></div>':'';
@@ -6208,7 +6322,7 @@ function renderSalvati(){
 }
 function calcOre2(){
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
-  const pausa=parseInt(document.getElementById('g2-pausa').value)||60;
+  const pausa=_v11Pausa(document.getElementById('g2-pausa').value,60); // v11: 0 e' un valore vero
   document.getElementById('g2-ore-op').textContent=calcOreRaw(ini,fine,pausa).toFixed(2);
   checkVociWarn();
 }
@@ -6234,7 +6348,7 @@ function onChangeVoce(sel){
 async function salvaOperaio(){
   const opId=document.getElementById('g2-operaio').value;if(!opId){_p7cSegna(['g2-operaio'],'Seleziona un operaio');showToast('Seleziona un operaio','e');return;}
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
-  const pausa=parseInt(document.getElementById('g2-pausa').value)||60;if(!ini||!fine){_p7cSegna(['g2-ini','g2-fine'],'Inserisci orari');showToast('Inserisci orari','e');return;}
+  const pausa=_v11Pausa(document.getElementById('g2-pausa').value,60); // v11: 0 e' un valore veroif(!ini||!fine){_p7cSegna(['g2-ini','g2-fine'],'Inserisci orari');showToast('Inserisci orari','e');return;}
   const ore=calcOreRaw(ini,fine,pausa);const note=document.getElementById('g2-note').value.trim();
   const materialeG=document.getElementById('g2-materiale-g')?.value.trim()||'';
   const attrezzaturaG=document.getElementById('g2-attrezzatura-g')?.value.trim()||'';
@@ -6254,13 +6368,14 @@ async function salvaOperaio(){
       const _tipoFoto=document.getElementById('foto-tipo-upload')?.value||'durante';
       if(!ue)await sb.from('foto').insert({cantiere_id:GIO.cantId,giornata_id:newG.id,data:GIO.data,storage_path:path,nome_file:file.name,operaio_id:USER.id,caricato_da:PROF?.nome||USER.email,tipo_foto:_tipoFoto,created_by:USER.id});
     }
-    // Regia da operaio
+    // Regia da operaio — v11: legata alla giornata (giornata_id), errore a schermo (prima solo in console)
+    let _v11ErrRegia='';
     const _regiaCb=document.getElementById('g2-regia-cb');
     if(_regiaCb?.checked){
       const _rDesc=document.getElementById('g2-reg-desc').value.trim();
       if(_rDesc){
-        const _rPay={cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,tipo:document.getElementById('g2-reg-tipo').value||'Ore',descrizione:_rDesc,quantita:parseFloat(document.getElementById('g2-reg-qty').value)||null,um:document.getElementById('g2-reg-um').value||'h',prezzo_unitario:parseFloat(document.getElementById('g2-reg-prezzo').value)||null,fatturato:false,created_by:USER.id};
-        try{await sb.from('regia').insert(_rPay);}catch(_re){console.warn('Regia insert:',_re.message);}
+        const _rPay={cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,giornata_id:newG.id,tipo:document.getElementById('g2-reg-tipo').value||'Ore',descrizione:_rDesc,quantita:parseFloat(document.getElementById('g2-reg-qty').value)||null,um:document.getElementById('g2-reg-um').value||'h',prezzo_unitario:parseFloat(document.getElementById('g2-reg-prezzo').value)||null,fatturato:false,created_by:USER.id};
+        _v11ErrRegia=await _v11SalvaRegiaLegata(_rPay);
       }
     }
     const op=OPERAI.find(o=>o.id===opId);
@@ -6277,7 +6392,8 @@ async function salvaOperaio(){
     ['g2-reg-desc','g2-reg-qty','g2-reg-prezzo'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
     const _rum=document.getElementById('g2-reg-um');if(_rum)_rum.value='h';
     fFiles=[];fB64=[];showToast((op?.nome||'')+t('lbl_salvato_op'));
-    if(_p2ErrVoci)showToast('Attenzione: giornata salvata ma i lavori svolti NON sono stati salvati ('+_p2ErrVoci+'). Aprila con ✏️ e reinseriscili.','e');
+    if(_v11ErrRegia)showToast('Giornata salvata, ma la REGIA NON è stata salvata ('+_v11ErrRegia+'). Scrivila da Regia.','e');
+    else if(_p2ErrVoci)showToast('Attenzione: giornata salvata ma i lavori svolti NON sono stati salvati ('+_p2ErrVoci+'). Aprila con ✏️ e reinseriscili.','e');
     else if(_p2Ko)showToast('Salvato. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
     else if(_p7bErrMat)showToast('Salvato, ma i "Materiali ricevuti" NON sono stati salvati ('+_p7bErrMat+')','e');
   }catch(e){showToast('Errore: '+e.message,'e');}
@@ -6641,7 +6757,7 @@ async function exportCantiere(){
   const rows=[['Data','Operaio','Ruolo','Inizio','Fine','Pausa (min)',t('kpi_ore_tot'),'Lavorazione','Ore lavoro','Quantità scritta','Quantità contata nel totale','Ore contate sulla voce','Riga di squadra','UM','Note','Materiale utilizzato','Attrezzatura / macchinari','Danni']];
   giornate.forEach(g=>{
     const opNome=(g.operai?.nome||'')+' '+(g.operai?.cognome||'');
-    const base=[g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60];
+    const base=[g.data,opNome,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti??60];
     if(!(g.voci_lavoro||[]).length)rows.push([...base,parseFloat(g.ore_totali||0).toFixed(2),'','','','','','','',g.note||'',g.materiale_giorno||'',g.attrezzatura_giorno||'',g.danni||'']);
     else g.voci_lavoro.forEach((v,i)=>rows.push([...base,i===0?parseFloat(g.ore_totali||0).toFixed(2):'',v.lavorazioni?.nome||v.lavorazione_nome||'',parseFloat(v.ore||0).toFixed(2),v.quantita||'',v._q||'',v._ore||'',v.di_squadra?'sì':'',v.um||'',i===0?g.note||'':'',i===0?g.materiale_giorno||'':'',i===0?g.attrezzatura_giorno||'':'',i===0?g.danni||'':'']));
   });
@@ -6676,7 +6792,7 @@ async function exportCSV(){
   const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('operaio_id').order('data');
   if(!data?.length){showToast('Nessun dato','e');return;}
   const rows=[['Data','Cantiere','Operaio','Ruolo','Inizio','Fine','Pausa','Ore']];
-  data.forEach(g=>rows.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti||60,parseFloat(g.ore_totali||0).toFixed(2)]));
+  data.forEach(g=>rows.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti??60,parseFloat(g.ore_totali||0).toFixed(2)]));
   const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`CT_Stipendi_${mese}.csv`;a.click();
@@ -7187,7 +7303,7 @@ async function renderTimbratura(){
         <button onclick="timbraUscita('${g.id}')" class="btn" style="width:100%;font-size:18px;padding:18px;border-radius:14px;letter-spacing:1px;background:var(--red);color:#fff">🔚 USCITA</button>
       </div>`;
   } else {
-    const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||pausaDef);
+    const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata??pausaDef);
     el.innerHTML=`
       <div style="text-align:center;padding:32px 16px">
         <div style="font-size:48px;margin-bottom:16px">✅</div>
@@ -7196,7 +7312,7 @@ async function renderTimbratura(){
           <div><div style="font-size:14px;color:var(--t2)">Entrata</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">${g.ora_inizio_timbrata}</div></div>
           <div><div style="font-size:14px;color:var(--t2)">Uscita</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)">${g.ora_fine_timbrata}</div></div>
         </div>
-        <div style="font-size:16px;color:var(--t2);margin-bottom:12px">Ore lavorate: <strong style="color:var(--text)">${ore}h</strong> &nbsp;(pausa ${g.pausa_minuti_timbrata||pausaDef} min)</div>
+        <div style="font-size:16px;color:var(--t2);margin-bottom:12px">Ore lavorate: <strong style="color:var(--text)">${ore}h</strong> &nbsp;(pausa ${g.pausa_minuti_timbrata??pausaDef} min)</div>
         ${g.cantiere_da_assegnare?`<div style="background:rgba(200,168,75,0.15);border:1px solid var(--gold);border-radius:8px;padding:10px;font-size:15px;color:var(--gold)">⏳ Cantiere da assegnare dal responsabile</div>`:`<div style="font-size:15px;color:var(--t2)">${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}</div>`}
       </div>`;
   }
@@ -7268,7 +7384,7 @@ async function timbraUscita(gid){
 async function salvaTimbratura(gid){
   const cantId=document.getElementById('timb-cantiere')?.value;
   const oraFine=document.getElementById('timb-ora-fine')?.value;
-  const pausa=parseInt(document.getElementById('timb-pausa-inp')?.value||'60');
+  const pausa=_v11Pausa(document.getElementById('timb-pausa-inp')?.value,60);
   if(!cantId){_p7cSegna(['timb-cantiere'],'Seleziona il cantiere');showToast('Seleziona il cantiere','e');return;}
   if(!oraFine){_p7cSegna(['timb-ora-fine'],'Inserisci ora uscita');showToast('Inserisci ora uscita','e');return;}
   try{
@@ -8203,7 +8319,7 @@ async function renderSituazione(){
           const cantOpts=_cantVisibili().filter(_cantSceglibileOre).map(c=>`<option value="${c.id}">${_cantEtichetta(c)||c.id}</option>`).join(''); // P2
           let html='';
           timb.forEach(g=>{
-            const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata||60);
+            const ore=_calcOreTimb(g.ora_inizio_timbrata,g.ora_fine_timbrata,g.pausa_minuti_timbrata??60);
             html+=`<div style="background:var(--s1);border:1px solid rgba(200,168,75,.4);border-radius:var(--r);padding:12px 14px;margin-bottom:8px">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
                 <div>
@@ -8847,6 +8963,8 @@ function _p3DoveVa(s){
 // Le due tabelle le legge solo chi e' in tm_utenti: per gli altri zero righe SENZA errore ("tutto da
 // registrare", falso). Per questo lo stato si mostra SOLO al titolare; se una lettura da' errore si
 // scrive "non leggibile", mai "Da registrare". La colonna spese.stato_precontabilita resta ma non si legge.
+// v11 (decisione del Direttore, 1.11.2026): spese.stato_precontabilita e' SUPERATA. NON USARE: lo stato vero
+// viene da tm_conta_classificazioni e tm_conta_scarti (qui sopra). L'app la scrive solo alla nascita, come prima.
 function _p7dVedeStato(){return _ruoloApp()==='titolare';}
 function _p7dTabellaManca(e){return !!e&&(e.code==='42P01'||e.code==='PGRST205'||/does not exist|could not find the table/i.test(e.message||''));}
 async function _p7dStatoSpese(ids){
@@ -12167,6 +12285,7 @@ async function renderConfermaOre(){
   const el=document.getElementById('conferma-ore-content');
   if(!el)return;
   renderVociDaConfermare(); // P2
+  renderGiorniDaConfermare(); // v11: tutti i giorni con ore da confermare
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const dataInput=document.getElementById('conferma-ore-data');
   const data=dataInput?.value||nowZurich().date;
@@ -12192,7 +12311,7 @@ async function renderConfermaOre(){
     }
     el.innerHTML='';
     giornate.forEach(function(g){
-      const isConf=!!g.ore_confermate;
+      const isConf=g.ore_confermate!=null; // v11: anche 0 ore confermate e' "confermato" (come l'elenco dei giorni)
       const card=document.createElement('div');
       card.style.cssText='background:var(--s1);border:1px solid '+(isConf?'rgba(76,175,125,.4)':'rgba(224,136,64,.4)')+';border-radius:var(--r);padding:14px;margin-bottom:10px';
       const nomeOp=((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:'')).trim()||'Operaio';
@@ -12236,6 +12355,89 @@ async function confermaOreGiornata(btn){
     renderConfermaOre();
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent=t('btn_conferma_ore');btn.disabled=false;}
+}
+
+// ══ v11 (punto 2, 1.11.2026): GIORNI CON ORE DA CONFERMARE ══
+// In "Conferma ore", sopra la data: TUTTI i giorni che hanno almeno una giornata non confermata
+// (ore_confermate vuoto). Stesse giornate che la pagina mostra per quel giorno: il caposquadra
+// solo sui cantieri che vede, titolare e responsabile tutte. Piu' vecchi di 14 giorni:
+// riquadro rosso CON la scritta "In ritardo" (mai solo colore). Un tocco apre quel giorno.
+const P2B_GIORNI_RITARDO=14;
+function _p2bGiorniTra(da,a){ // giorni di calendario fra due date 'AAAA-MM-GG' (niente ore, niente ora legale)
+  const u=s=>Date.UTC(+String(s).slice(0,4),+String(s).slice(5,7)-1,+String(s).slice(8,10));
+  return Math.round((u(a)-u(da))/86400000);
+}
+function _p2bGiorniDaConfermare(righe,oggi){
+  const per={};
+  (righe||[]).forEach(function(g){
+    if(!g||!g.data||g.ore_confermate!=null)return;
+    const d=String(g.data).slice(0,10);per[d]=(per[d]||0)+1;
+  });
+  return Object.keys(per).sort().map(function(d){
+    const giorni=_p2bGiorniTra(d,oggi);
+    return {data:d,n:per[d],giorni:giorni,inRitardo:giorni>P2B_GIORNI_RITARDO};
+  });
+}
+function _p2bQuando(giorni){
+  if(giorni===0)return 'oggi';
+  if(giorni===1)return 'ieri';
+  if(giorni<0)return 'fra '+(-giorni)+' giorni';
+  return giorni+' giorni fa';
+}
+function _p2bData(d){
+  const x=new Date(d+'T12:00:00');
+  const gs=['dom','lun','mar','mer','gio','ven','sab'][x.getDay()];
+  return gs+' '+d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4);
+}
+function _p2bHtmlGiorni(giorni,scelto){
+  const titolo='<div class="sec" style="display:flex;align-items:center;gap:8px">Giorni con ore da confermare'
+    +(giorni.length?' <span style="background:var(--orange);color:#fff;font-size:15px;font-weight:700;border-radius:10px;padding:1px 9px">'+giorni.length+'</span>':'')+'</div>';
+  if(!giorni.length)return titolo+'<div class="p2b-vuoto">✅ Nessun giorno con ore da confermare</div>';
+  const nRit=giorni.filter(g=>g.inRitardo).length;
+  let h=titolo;
+  if(nRit)h+='<div class="p2b-avviso-rit" role="alert">⚠️ '+nRit+(nRit===1?' giorno in ritardo':' giorni in ritardo')+' (più di '+P2B_GIORNI_RITARDO+' giorni)</div>';
+  h+=giorni.map(function(g){
+    const info=g.n+' da confermare · '+_p2bQuando(g.giorni);
+    return '<button type="button" class="p2b-giorno'+(g.inRitardo?' p2b-ritardo':'')+(g.data===scelto?' p2b-scelto':'')+'"'
+      +' data-data="'+g.data+'" onclick="p2bApriGiorno(this.dataset.data)"'
+      +' aria-label="'+_p2bData(g.data)+', '+info+(g.inRitardo?', in ritardo':'')+'. Apri il giorno">'
+      +'<span class="p2b-g-testo"><span class="p2b-g-data">'+_p2bData(g.data)+'</span><span class="p2b-g-info">'+info+'</span></span>'
+      +(g.inRitardo?'<span class="p2b-g-ritardo">⚠️ In ritardo</span>':'<span class="p2b-g-apri">Apri ›</span>')
+      +'</button>';
+  }).join('');
+  return h;
+}
+async function renderGiorniDaConfermare(){
+  const box=document.getElementById('conferma-giorni');
+  if(!box)return;
+  if(!['titolare','responsabile','caposquadra'].includes(_ruoloApp())){box.innerHTML='';return;}
+  if(!box.innerHTML)box.innerHTML='<div class="sec">Giorni con ore da confermare</div><div style="font-size:16px;color:var(--t2);padding:6px 0 12px">Caricamento…</div>';
+  try{
+    if(!(await _sessioneValida()))return; // sessione scaduta: avviso e accesso, mai un elenco vuoto
+    let cantIds=null;
+    if(_p4FiltraCantieri()){
+      cantIds=_cantVisibili().map(c=>c.id);
+      if(!cantIds.length){box.innerHTML='';return;} // il messaggio "Nessun cantiere assegnato" lo da' gia' la pagina
+    }
+    const righe=await _p7TmTutte(function(){
+      let q=sb.from('giornate').select('id,data,ore_confermate').is('ore_confermate',null);
+      if(cantIds)q=q.in('cantiere_id',cantIds);
+      return q.order('data').order('id');
+    });
+    const scelto=document.getElementById('conferma-ore-data')?.value||'';
+    box.innerHTML=_p2bHtmlGiorni(_p2bGiorniDaConfermare(righe,nowZurich().date),scelto);
+  }catch(e){
+    if(_erroreDiSessione(e)){await _sessioneScaduta();return;}
+    box.innerHTML='<div class="sec">Giorni con ore da confermare</div><div class="warn on" style="font-size:16px;margin-bottom:12px">⚠️ Elenco dei giorni NON letto ('+escHtml(e.message)+'). Riapri la pagina.</div>';
+  }
+}
+function p2bApriGiorno(d){
+  const inp=document.getElementById('conferma-ore-data');
+  if(!inp||!d)return;
+  inp.value=d;
+  renderConfermaOre();
+  const dove=document.getElementById('conferma-ore-giorno');
+  if(dove&&dove.scrollIntoView)dove.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ══════════════════════════════════════════════════
