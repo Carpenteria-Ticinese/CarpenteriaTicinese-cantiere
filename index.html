@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json?v=12">
+<link rel="manifest" href="manifest.json?v=13">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantiere">
 <title>Cantiere</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=12"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=13"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=12"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=12"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=12"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=12"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=13"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=13"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=13"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=13"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -2213,7 +2213,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='12';
+const APP_VERSIONE='13';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -3657,7 +3657,8 @@ async function renderContabilita(cantId){
 
     // ── CALCOLI BASE ──
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
-    const costoManodopera=totOre*tariffa;
+    const _v13c=_v13OreCosto(giornate); // v13: nel costo solo le ore dei Dipendenti
+    const costoManodopera=_v13c.ore*tariffa;
     const totSpeseAll=(spese||[]).reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totSpeseDA=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totSpesePag=(spese||[]).filter(s=>s.stato_pag==='Pagato').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
@@ -3682,7 +3683,7 @@ async function renderContabilita(cantId){
       const key=lun.toISOString().split('T')[0];
       if(!settimane[key])settimane[key]={dal:key,ore:0,costo:0,giorni:new Set()};
       settimane[key].ore+=parseFloat(g.ore_totali||0);
-      settimane[key].costo+=parseFloat(g.ore_totali||0)*tariffa;
+      if(!_v13RigaEsterna(g))settimane[key].costo+=parseFloat(g.ore_totali||0)*tariffa; // v13: Esterni fuori dal costo
       settimane[key].giorni.add(g.data);
     });
     // Aggiunge spese per settimana
@@ -3716,6 +3717,7 @@ async function renderContabilita(cantId){
         </div>
       </div>
 
+      ${_v13AvvisoEsterni(_v13c.oreEst,_v13c.nEst)}
       <!-- KPI PRINCIPALI -->
       <div class="cont-kpi">
         <div class="kpi-box" onclick="navTo('report')" style="cursor:pointer" title="Vai al report"><div class="kpi-val kpi-gold">${costoManodopera.toFixed(0)}</div><div class="kpi-lbl">${t('kpi_manodopera')} ↗</div></div>
@@ -3809,7 +3811,7 @@ async function renderContabilitaGlobale(){
   try{
     const tariffa=IMPOSTAZIONI.tariffa_ora||78;
     const [{data:giornate},{data:spese},{data:regia},{data:gruG},{data:incassiG}]=await Promise.all([
-      sb.from('giornate').select('cantiere_id,ore_totali').order('data'),
+      sb.from('giornate').select('cantiere_id,operaio_id,ore_totali').order('data'), // v13: operaio_id per togliere gli Esterni dal costo
       sb.from('spese').select('cantiere_id,importo,stato_pag').order('data'),
       sb.from('regia').select('cantiere_id,quantita,prezzo_unitario,fatturato').order('data'),
       sb.from('tiri_gru').select('cantiere_id,importo,tipo').order('data'),
@@ -3818,8 +3820,8 @@ async function renderContabilitaGlobale(){
     const cantAttivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>'+t('empty_cant_attivo')+'</p></div>';return;}
     const byCant={};
-    cantAttivi.forEach(c=>byCant[c.id]={nome:c.nome,ore:0,spese:0,ricavi:0,da:0,gru:0,incassi:0});
-    (giornate||[]).forEach(g=>{if(byCant[g.cantiere_id])byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);});
+    cantAttivi.forEach(c=>byCant[c.id]={id:c.id,nome:c.nome,ore:0,spese:0,ricavi:0,da:0,gru:0,incassi:0});
+    (giornate||[]).forEach(g=>{if(byCant[g.cantiere_id]&&!_v13RigaEsterna(g))byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);}); // v13: solo Dipendenti
     (spese||[]).forEach(s=>{if(byCant[s.cantiere_id]){byCant[s.cantiere_id].spese+=(parseFloat(s.importo)||0);if(s.stato_pag==='Da pagare')byCant[s.cantiere_id].da+=(parseFloat(s.importo)||0);}});
     (regia||[]).forEach(r=>{if(byCant[r.cantiere_id]&&r.fatturato)byCant[r.cantiere_id].ricavi+=(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0));});
     (gruG||[]).forEach(g=>{if(byCant[g.cantiere_id]){if(g.tipo==='paghiamo')byCant[g.cantiere_id].gru+=(parseFloat(g.importo)||0);else byCant[g.cantiere_id].ricavi+=(parseFloat(g.importo)||0);}});
@@ -3838,8 +3840,7 @@ async function renderContabilitaGlobale(){
     riepilogo.forEach(function(c){
       const m=(c.ricaviTot||0)>0?((c.margine/(c.ricaviTot||1))*100):null;
       const col=c.margine>=0?'var(--green)':'var(--red)';
-      const cantId=CANTIERI.find(function(x){return x.nome===c.nome;})||{};
-      const cId=cantId.id||'';
+      const cId=c.id||''; // v13: dall'id, mai dal nome
       const pct=(c.ricaviTot||0)>0?Math.min(100,(c.costo/(c.ricaviTot||1)*100)).toFixed(0):100;
       const mStr=c.margine>=0?'+':'';
       html+='<div class="sett-row" style="cursor:pointer" onclick="navToCant(\''+cId+'\')">'; 
@@ -3878,7 +3879,8 @@ async function esportaReportContabilita(cantId){
 
     // Foglio 1: Riepilogo
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
-    const costoMano=totOre*tariffa;
+    const _v13c=_v13OreCosto(giornate); // v13: nel costo solo le ore dei Dipendenti
+    const costoMano=_v13c.ore*tariffa;
     const totSpese=(spese||[]).reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRicavi=(regia||[]).filter(r=>r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const riepilogo=[
@@ -3888,6 +3890,7 @@ async function esportaReportContabilita(cantId){
       ['Ore lavorate totali',totOre.toFixed(2)+'h'],
       ['Tariffa oraria',tariffa+' CHF/h'],
       ['Costo manodopera','CHF '+costoMano.toFixed(2)],
+      ..._v13c.nEst?[['Ore di Esterni (NON nel costo: il loro costo è la fattura)',_v13c.oreEst.toFixed(2)+'h']]:[],
       ['Spese totali','CHF '+totSpese.toFixed(2)],
       ['COSTO TOTALE','CHF '+(costoMano+totSpese).toFixed(2)],
       [''],
@@ -4430,13 +4433,69 @@ function _opAttivo(o,giorno){
   const g=giorno||new Date().toISOString().split('T')[0];
   return o.attivo!==false&&(!o.data_fine_rapporto||o.data_fine_rapporto>=g);
 }
+// ── v13 (2.11.2026): Rapporto Dipendente / Esterno — operai.rapporto, colonna di Anagrafiche (qui sola lettura) ──
+// Esterno = lavora per noi con la sua ditta (es. lattoniere): niente login, niente ore, niente stipendio,
+// niente assenze. Il suo costo è solo la fattura (niente CHF/h: sarebbe contato due volte).
+// Vuoto o assente = Dipendente (valore di base del database).
+function _v13Esterno(o){return !!o&&o.rapporto==='esterno';}
+// Persona che si può scegliere per ore, giornate, regia, spese, piano, assenze: attiva e non Esterna.
+function _v13Lavora(o,giorno){return _opAttivo(o,giorno)&&!_v13Esterno(o);}
+function _v13OpDi(id){return id?((OPERAI_TUTTI||[]).find(o=>o.id===id)||null):null;}
+// Una riga (giornata, assenza, voce...) e' di un Esterno? Prima il rapporto letto con la riga, poi la scheda in memoria.
+function _v13RigaEsterna(r,opDi){
+  if(!r)return false;
+  const j=r.operai||(r.giornate&&r.giornate.operai)||null;
+  if(j&&j.rapporto!==undefined&&j.rapporto!==null)return j.rapporto==='esterno';
+  const id=r.operaio_id||(r.giornate&&r.giornate.operaio_id)||null;
+  return _v13Esterno((opDi||_v13OpDi)(id));
+}
+// Divide le righe: dip = Dipendenti (entrano in stipendi e costi), est = Esterni (si mostrano a parte, mai nei conti).
+function _v13Dividi(righe,opDi){const dip=[],est=[];(righe||[]).forEach(r=>(_v13RigaEsterna(r,opDi)?est:dip).push(r));return{dip,est};}
+// Ore per il costo manodopera: solo Dipendenti. Le ore vecchie di chi ora e' Esterno restano visibili ma fuori dal costo.
+function _v13OreCosto(giornate,opDi){
+  const d=_v13Dividi(giornate,opDi);const somma=l=>l.reduce((s,g)=>s+(parseFloat(g.ore_totali)||0),0);
+  return{ore:somma(d.dip),oreEst:somma(d.est),nEst:d.est.length};
+}
+function _v13AvvisoEsterni(oreEst,nEst){
+  if(!nEst)return '';
+  return '<div class="warn on" style="margin:8px 0">👷 '+nEst+(nEst===1?' giornata':' giornate')+' di persone Esterne ('
+    +(Math.round(oreEst*100)/100).toFixed(2)+' h): restano registrate ma NON entrano nel costo. Il costo di un Esterno è la sua fattura.</div>';
+}
+// Database senza la colonna operai.rapporto (42703 / PGRST204): messaggio chiaro, mai un elenco vuoto muto.
+const V13_MSG_RAPPORTO='Nel database manca il campo «Rapporto» (Dipendente / Esterno): questo elenco non si può fare senza rischiare di contare gli Esterni. Avvisa l\'ufficio: serve l\'aggiornamento di Anagrafiche.';
+function _v13MancaRapporto(e){
+  if(!e)return false;const c=String(e.code||''),m=String(e.message||'');
+  return c==='42703'||c==='PGRST204'||(/rapporto/i.test(m)&&/does not exist|could not find|schema cache/i.test(m));
+}
+function _v13Errore(e){return _v13MancaRapporto(e)?V13_MSG_RAPPORTO:('Errore: '+((e&&e.message)||e));}
+let V13_SENZA_RAPPORTO=false; // true = operai letti senza la colonna rapporto (database vecchio)
+// Prima di chiamare crea-collaboratore: un Esterno non ha accesso all'app (deciso da Umberto, 2.11.2026).
+// La funzione sul server collega l'account alla scheda con la STESSA email: se quella scheda e' Esterna, si blocca.
+// Stesso nome e cognome di un Esterno (email diversa): avviso, si chiede conferma.
+function _v13ControlloAccesso(email,nome,cognome,lista){
+  const em=String(email||'').trim().toLowerCase(),n=x=>String(x||'').toLowerCase().replace(/\s+/g,'');
+  const tutte=lista||[];
+  const perEmail=em?tutte.filter(o=>String(o.email||'').trim().toLowerCase()===em):[];
+  const est=perEmail.find(_v13Esterno);
+  if(est)return{blocca:(est.nome||'')+' '+(est.cognome||'')+' è una persona Esterna (lavora con la sua ditta): niente accesso all\'app. Nessun account è stato creato.'};
+  if(!perEmail.length){
+    const omonimo=tutte.find(o=>_v13Esterno(o)&&n(o.nome)===n(nome)&&n(o.cognome)===n(cognome));
+    if(omonimo)return{avviso:(omonimo.nome||'')+' '+(omonimo.cognome||'')+' è registrato come Esterno: gli Esterni non hanno accesso all\'app.\nSe è un\'altra persona (Dipendente) premi OK, altrimenti Annulla.'};
+  }
+  return{};
+}
+// Nome della ditta di un Esterno (tm_contatti, letto solo se si puo'): ragione sociale, se no nome e cognome.
+function _v13NomeDitta(c){if(!c)return '';return String(c.ragione_sociale||'').trim()||[c.nome,c.cognome].filter(Boolean).join(' ').trim();}
 async function loadOperai(){
   if(!(await _sessioneValida()))return false; // P2 punto 5
   try{
     const{data,error}=await sb.from('operai').select('*').order('cognome');
     if(error)throw error;
     OPERAI_TUTTI=data||[];
-    OPERAI=OPERAI_TUTTI.filter(o=>_opAttivo(o));
+    // v13: OPERAI = chi si puo' scegliere per ore, spese, regia, assenze, piano: attivi e NON Esterni
+    OPERAI=OPERAI_TUTTI.filter(o=>_v13Lavora(o));
+    V13_SENZA_RAPPORTO=OPERAI_TUTTI.length>0&&!OPERAI_TUTTI.some(o=>'rapporto' in o);
+    if(V13_SENZA_RAPPORTO)console.warn('operai senza la colonna rapporto: database vecchio, tutti contati come Dipendenti');
     return true;
   }catch(e){
     if(_erroreDiSessione(e)){await _sessioneScaduta();return false;}
@@ -4559,12 +4618,13 @@ async function renderCantiere(){
     if(ge)throw ge;
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
     const tariffa=IMPOSTAZIONI.tariffa_ora||78;
-    const totCosto=totOre*tariffa;
+    const _v13c=_v13OreCosto(giornate); // v13: CHF manodopera solo sulle ore dei Dipendenti
+    const totCosto=_v13c.ore*tariffa;
     const totSpeseDaPagare=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaDaFatt=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const byOp={};
     (giornate||[]).forEach(g=>{
-      if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,ore:0};
+      if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,ore:0,est:_v13RigaEsterna(g)};
       byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);
     });
     let prev=null;
@@ -4598,6 +4658,7 @@ async function renderCantiere(){
         <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
         <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
       </div>
+      ${_v13AvvisoEsterni(_v13c.oreEst,_v13c.nEst)}
       ${totSpeseDaPagare>0?`<div style="background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:10px 14px;font-size:15px;color:var(--red);margin-bottom:8px;cursor:pointer" onclick="apriSpeseCantiere()">🧾 Spese da pagare: <strong>${totSpeseDaPagare.toFixed(2)} CHF</strong> → tocca per vedere</div>`:''}
       ${totRegiaDaFatt>0?`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px;font-size:15px;color:var(--gold);margin-bottom:8px;cursor:pointer" onclick="apriRegiaCantiere()">${t('lbl_nessun_regia_banner')}<strong>${totRegiaDaFatt.toFixed(2)} CHF</strong> ${t('lbl_tocca_vedere')}</div>`:''}
       ${utenteHaAccesso(PROF,'committente',null)&&curCant.committente?`
@@ -4654,8 +4715,8 @@ async function renderCantiere(){
       <div class="sec">${t('sec_ore_op_cant')}</div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
         <table class="rtable"><thead><tr><th>${t('th_operaio')}</th><th>${t('th_ore_totali')}</th><th>${t('th_chf_est')}</th></tr></thead>
-        <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore})=>
-          `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td><td style="font-family:'DM Mono';font-size:14px;color:var(--t2)">${(ore*tariffa).toFixed(0)}</td></tr>`
+        <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore,est})=>
+          `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td><td style="font-family:'DM Mono';font-size:14px;color:var(--t2)">${est?'<span style="color:var(--orange);font-weight:700">Esterno: fattura</span>':(ore*tariffa).toFixed(0)}</td></tr>`
         ).join('')}</tbody></table>
       </div>`:''}
       <div class="sec">${t('sec_cronologia_cant')}</div>
@@ -6352,6 +6413,7 @@ function onChangeVoce(sel){
 }
 async function salvaOperaio(){
   const opId=document.getElementById('g2-operaio').value;if(!opId){_p7cSegna(['g2-operaio'],'Seleziona un operaio');showToast('Seleziona un operaio','e');return;}
+  if(_v13Esterno(_v13OpDi(opId))){showToast('Questa persona è Esterna: niente ore nell\'App Cantieri (il suo costo è la fattura).','e');return;} // v13
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
   const pausa=_v11Pausa(document.getElementById('g2-pausa').value,60); // v11: 0 e' un valore veroif(!ini||!fine){_p7cSegna(['g2-ini','g2-fine'],'Inserisci orari');showToast('Inserisci orari','e');return;}
   const ore=calcOreRaw(ini,fine,pausa);const note=document.getElementById('g2-note').value.trim();
@@ -6794,8 +6856,12 @@ async function exportCantiere(){
 async function exportCSV(){
   const mese=document.getElementById('rep-mese').value;if(!mese){_p7cSegna(['rep-mese'],'Seleziona un mese');showToast('Seleziona un mese','e');return;}
   const [y,m]=mese.split('-');
-  const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('operaio_id').order('data');
-  if(!data?.length){showToast('Nessun dato','e');return;}
+  // v13: stipendi = solo Dipendenti (operai.rapporto). Database senza la colonna: messaggio, niente file.
+  const {data:_v13g,error:_v13e}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo,rapporto), cantieri(nome)').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('operaio_id').order('data');
+  if(_v13e){showToast(_v13Errore(_v13e),'e');return;}
+  const _v13d=_v13Dividi(_v13g),data=_v13d.dip;
+  if(!data.length){showToast(_v13d.est.length?'Nessuna giornata di Dipendenti in questo mese (gli Esterni non entrano negli stipendi)':'Nessun dato','e');return;}
+  if(_v13d.est.length)setTimeout(function(){showToast(_v13d.est.length+' giornate di Esterni non messe nel file stipendi');},2600);
   const rows=[['Data','Cantiere','Operaio','Ruolo','Inizio','Fine','Pausa','Ore']];
   data.forEach(g=>rows.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',g.ora_inizio||'',g.ora_fine||'',g.pausa_minuti??60,parseFloat(g.ore_totali||0).toFixed(2)]));
   const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
@@ -6823,8 +6889,11 @@ async function exportReportPDF(){
 async function exportExcel(){
   const mese=document.getElementById('rep-mese').value;if(!mese){_p7cSegna(['rep-mese'],'Seleziona un mese');showToast('Seleziona un mese','e');return;}
   const [y,m]=mese.split('-');
-  const {data}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome), voci_lavoro(ore,lavorazione_nome,lavorazioni(nome))').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('data');
-  if(!data?.length){showToast('Nessun dato','e');return;}
+  // v13: fogli Stipendi e Dettaglio = solo Dipendenti; le giornate di Esterni in un foglio a parte, fuori dai conti
+  const {data:_v13g,error:_v13e}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo,rapporto), cantieri(nome), voci_lavoro(ore,lavorazione_nome,lavorazioni(nome))').gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`).order('data');
+  if(_v13e){showToast(_v13Errore(_v13e),'e');return;}
+  if(!_v13g?.length){showToast('Nessun dato','e');return;}
+  const _v13d=_v13Dividi(_v13g),data=_v13d.dip;
   const wb=XLSX.utils.book_new();
   const rstip=[['Operaio','Ruolo','Giorni lavorati',t('kpi_ore_tot')]];
   const byOp={};data.forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:new Set(),ore:0};byOp[g.operaio_id].giorni.add(g.data);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);});
@@ -6833,6 +6902,11 @@ async function exportExcel(){
   const rdet=[['Data','Cantiere','Operaio','Ore','Lavorazione','Ore lavoro']];
   data.forEach(g=>{(g.voci_lavoro||[{}]).forEach(v=>rdet.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2),v.lavorazioni?.nome||v.lavorazione_nome||'',v.ore?parseFloat(v.ore).toFixed(2):'']));});
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rdet),'Dettaglio');
+  if(_v13d.est.length){
+    const rest=[['Giornate di persone Esterne: NON negli stipendi e NON nei costi (il costo è la fattura della ditta)'],['Data','Cantiere','Persona','Ore']];
+    _v13d.est.forEach(g=>rest.push([g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rest),'Esterni (fuori conti)');
+  }
   XLSX.writeFile(wb,`CT_Report_${mese}.xlsx`);showToast('Excel scaricato ✓');
 }
 
@@ -6844,16 +6918,22 @@ async function renderReport(){
   if(!mese){el.innerHTML='<div class="empty">Seleziona un mese</div>';return;}
   const [y,m]=mese.split('-');const from=`${y}-${m}-01`,to=`${y}-${m}-${new Date(y,m,0).getDate()}`;
   if(tipo==='stipendi'){
-    const [{data},{data:assenze}]=await Promise.all([
-      sb.from('giornate').select('*,ore_straordinari,zona_trasferta, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('operaio_id').order('data'),
-      sb.from('assenze').select('*, operai(nome,cognome,ruolo)').gte('data',from).lte('data',to)
+    // v13: stipendi = solo Dipendenti. Giornate e assenze di Esterni: solo un avviso, mai nel conto.
+    const [_v13rg,_v13ra]=await Promise.all([
+      sb.from('giornate').select('*,ore_straordinari,zona_trasferta, operai(nome,cognome,ruolo,rapporto), cantieri(nome)').gte('data',from).lte('data',to).order('operaio_id').order('data'),
+      sb.from('assenze').select('*, operai(nome,cognome,ruolo,rapporto)').gte('data',from).lte('data',to)
     ]);
-    if(!data?.length&&!assenze?.length){el.innerHTML='<div class="empty"><div class="empty-i">💰</div><p>'+t('empty_dato')+'</p></div>';return;}
+    const _v13e=_v13rg.error||_v13ra.error;
+    if(_v13e){el.innerHTML='<div class="warn on">'+escHtml(_v13Errore(_v13e))+'</div>';return;}
+    const _v13dg=_v13Dividi(_v13rg.data),_v13da=_v13Dividi(_v13ra.data);
+    const data=_v13dg.dip,assenze=_v13da.dip;
+    const _v13Nota=(_v13dg.est.length||_v13da.est.length)?'<div class="warn on" style="margin-bottom:10px">👷 Non contati negli stipendi (persone Esterne): '+_v13dg.est.length+' giornate'+(_v13da.est.length?', '+_v13da.est.length+' assenze':'')+'.</div>':'';
+    if(!data.length&&!assenze.length){el.innerHTML=_v13Nota+'<div class="empty"><div class="empty-i">💰</div><p>'+t('empty_dato')+'</p></div>';return;}
     const byOp={};
     (data||[]).forEach(g=>{if(!byOp[g.operaio_id])byOp[g.operaio_id]={op:g.operai,giorni:[],ore:0,oreStr:0,assenze:[]};byOp[g.operaio_id].giorni.push(g);byOp[g.operaio_id].ore+=parseFloat(g.ore_totali||0);byOp[g.operaio_id].oreStr+=parseFloat(g.ore_straordinari||0);});
     (assenze||[]).forEach(a=>{if(!byOp[a.operaio_id])byOp[a.operaio_id]={op:a.operai,giorni:[],ore:0,assenze:[]};byOp[a.operaio_id].assenze.push(a);});
     const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
-    el.innerHTML=Object.values(byOp).map(({op,giorni,ore,oreStr,assenze:ass})=>`
+    el.innerHTML=_v13Nota+Object.values(byOp).map(({op,giorni,ore,oreStr,assenze:ass})=>`
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div><div style="font-size:17px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:14px;color:var(--t2)">${op?.ruolo||''} · ${giorni.length} giorni lavorati${ass.length?' · '+ass.length+' assenze':''}${oreStr>0?' · <strong style="color:var(--orange)">+'+oreStr.toFixed(2)+'h straord.</strong>':''}</div></div>
@@ -6866,15 +6946,19 @@ async function renderReport(){
   }else if(tipo==='cantieri'){
     const {data}=await sb.from('giornate').select('*, cantieri(nome,luogo), operai(nome,cognome)').gte('data',from).lte('data',to);
     if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>'+t('empty_dato')+'</p></div>';return;}
-    const byCant={};data.forEach(g=>{if(!byCant[g.cantiere_id])byCant[g.cantiere_id]={cant:g.cantieri,ore:0,giorni:0};byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);byCant[g.cantiere_id].giorni++;});
-    el.innerHTML=Object.values(byCant).sort((a,b)=>b.ore-a.ore).map(({cant,ore,giorni})=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="enterCantiere('${CANTIERI.find(c=>c.nome===cant?.nome)?.id||''}')"><div style="display:flex;justify-content:space-between"><div><div style="font-size:17px;font-weight:800">${cant?.nome||'—'}</div><div style="font-size:14px;color:var(--t2)">${cant?.luogo||''} · ${giorni} giornate</div></div><div class="mono" style="font-size:24px">${ore.toFixed(1)}h</div></div></div>`).join('');
+    const byCant={};data.forEach(g=>{if(!byCant[g.cantiere_id])byCant[g.cantiere_id]={id:g.cantiere_id,cant:g.cantieri,ore:0,giorni:0};byCant[g.cantiere_id].ore+=parseFloat(g.ore_totali||0);byCant[g.cantiere_id].giorni++;}); // v13: id per aprire il cantiere, mai il nome
+    el.innerHTML=Object.values(byCant).sort((a,b)=>b.ore-a.ore).map(({id,cant,ore,giorni})=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer" onclick="enterCantiere('${escHtml(id||'')}')"><div style="display:flex;justify-content:space-between"><div><div style="font-size:17px;font-weight:800">${cant?.nome||'—'}</div><div style="font-size:14px;color:var(--t2)">${cant?.luogo||''} · ${giorni} giornate</div></div><div class="mono" style="font-size:24px">${ore.toFixed(1)}h</div></div></div>`).join('');
   }else if(tipo==='assenze'){
-    const {data:assenze}=await sb.from('assenze').select('*, operai(nome,cognome,ruolo), cantieri(nome)').gte('data',from).lte('data',to).order('data',{ascending:false});
-    if(!assenze?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>'+t('empty_assenza_per')+'</p></div>';return;}
+    // v13: assenze solo Dipendenti
+    const {data:_v13a,error:_v13e}=await sb.from('assenze').select('*, operai(nome,cognome,ruolo,rapporto), cantieri(nome)').gte('data',from).lte('data',to).order('data',{ascending:false});
+    if(_v13e){el.innerHTML='<div class="warn on">'+escHtml(_v13Errore(_v13e))+'</div>';return;}
+    const _v13d=_v13Dividi(_v13a),assenze=_v13d.dip;
+    const _v13Nota=_v13d.est.length?'<div class="warn on" style="margin-bottom:10px">👷 '+_v13d.est.length+' assenze di persone Esterne non contate (le assenze sono solo dei Dipendenti).</div>':'';
+    if(!assenze.length){el.innerHTML=_v13Nota+'<div class="empty"><div class="empty-i">🏖️</div><p>'+t('empty_assenza_per')+'</p></div>';return;}
     const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
     const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
     const byOpA={};assenze.forEach(a=>{if(!byOpA[a.operaio_id])byOpA[a.operaio_id]={op:a.operai,ass:[],totGiorni:0};byOpA[a.operaio_id].ass.push(a);byOpA[a.operaio_id].totGiorni+=parseFloat(a.giorni)||1;});
-    el.innerHTML=Object.values(byOpA).map(({op,ass,totGiorni})=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><div style="font-size:17px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:14px;color:var(--t2)">${op?.ruolo||''}</div></div><div style="font-family:'DM Mono';font-size:22px;color:var(--orange);font-weight:500">${totGiorni}<span style="font-size:15px"> gg</span></div></div>${ass.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)"><span style="font-size:20px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1"><div style="font-size:15px;font-weight:600;color:${motivoColor[a.motivo]||'var(--t2)'}">${a.motivo}</div><div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${parseFloat(a.giorni)===1?t('lbl_giorno_intero'):t('lbl_mezza_giornata')}</div>${a.note?`<div style="font-size:14px;color:var(--t3)">${a.note}</div>`:''}</div></div>`).join('')}</div>`).join('');
+    el.innerHTML=_v13Nota+Object.values(byOpA).map(({op,ass,totGiorni})=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><div style="font-size:17px;font-weight:800">${op?.nome||''} ${op?.cognome||''}</div><div style="font-size:14px;color:var(--t2)">${op?.ruolo||''}</div></div><div style="font-family:'DM Mono';font-size:22px;color:var(--orange);font-weight:500">${totGiorni}<span style="font-size:15px"> gg</span></div></div>${ass.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)"><span style="font-size:20px">${motivoIcon[a.motivo]||'❓'}</span><div style="flex:1"><div style="font-size:15px;font-weight:600;color:${motivoColor[a.motivo]||'var(--t2)'}">${a.motivo}</div><div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${parseFloat(a.giorni)===1?t('lbl_giorno_intero'):t('lbl_mezza_giornata')}</div>${a.note?`<div style="font-size:14px;color:var(--t3)">${a.note}</div>`:''}</div></div>`).join('')}</div>`).join('');
   }else{
     const {data:voci}=await sb.from('voci_lavoro').select('ore,quantita,um,di_squadra,lavorazione_id,lavorazione_nome,lavorazioni(nome,um,categoria),giornate!inner(data,cantiere_id,operaio_id,operai(nome,cognome))').gte('giornate.data',from).lte('giornate.data',to).gt('ore',0);
     if(!voci?.length){el.innerHTML='<div class="empty"><div class="empty-i">📐</div><p>'+t('empty_dato')+'</p></div>';return;}
@@ -6923,7 +7007,7 @@ async function renderAdmin(){
     const exAt=!_opAttivo(o,oggi_adm);
     return `<div style="background:var(--s1);border:1px solid ${exAt?'rgba(224,85,85,.2)':'var(--border)'};border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:${exAt?'.65':'1'}">
       <div>
-        <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}</div>
+        <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}${_v13Esterno(o)?' <span style="font-size:13px;background:#6b4fa3;color:#fff;border-radius:4px;padding:1px 6px">👷 Esterno</span>':''}</div>
         <div style="font-size:14px;color:var(--t2)">${o.ruolo}${exAt?` &nbsp;<span style="color:var(--red);font-weight:700">&#128683; Fine ${o.data_fine_rapporto}</span>`:''}</div>
       </div>
       <button class="btn-icon btn-sm" data-action="edit-op" data-opid="${o.id}">✏️</button>
@@ -7703,11 +7787,14 @@ async function renderReportAvanzato(){
 }
 
 async function _raOre(el,from,to,opF,cantF){
-  let q=sb.from('giornate').select('*,operai(nome,cognome,agenzia),cantieri(nome)').gte('data',from).lte('data',to);
+  // v13: ore per gli stipendi = solo Dipendenti; le giornate di Esterni solo come avviso
+  let q=sb.from('giornate').select('*,operai(nome,cognome,agenzia,rapporto),cantieri(nome)').gte('data',from).lte('data',to);
   if(cantF)q=q.eq('cantiere_id',cantF);
   if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
-  const{data:gio}=await q.order('data');
-  let lista=gio||[];
+  const{data:gio,error:_v13e}=await q.order('data');
+  if(_v13e){el.innerHTML='<div class="warn on">'+escHtml(_v13Errore(_v13e))+'</div>';return;}
+  const _v13d=_v13Dividi(gio);
+  let lista=_v13d.dip;
   if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
   if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
   const totOre=lista.reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
@@ -7717,7 +7804,7 @@ async function _raOre(el,from,to,opF,cantF){
   // Per cantiere
   const byCant={};lista.forEach(g=>{const k=g.cantiere_id;if(!byCant[k])byCant[k]={nome:_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—',ore:0};byCant[k].ore+=parseFloat(g.ore_totali||0);});
   const opKeys=Object.keys(byOp);const cantKeys=Object.keys(byCant);
-  el.innerHTML=`
+  el.innerHTML=(_v13d.est.length?'<div class="warn on" style="margin-bottom:10px">👷 '+_v13d.est.length+' giornate di persone Esterne non contate (le ore per gli stipendi sono solo dei Dipendenti).</div>':'')+`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div class="ore-box"><div class="ore-num">${totOre.toFixed(1)}</div><div class="ore-lbl">ore totali</div></div>
       <div class="ore-box"><div class="ore-num" style="color:var(--green)">${totStr.toFixed(1)}</div><div class="ore-lbl">straordinari</div></div>
@@ -7778,11 +7865,13 @@ async function _raAttrezzatura(el,from,to,opF,cantF){
 }
 
 async function _raPranzi(el,from,to,opF,cantF){
-  let q=sb.from('giornate').select('data,operaio_id,operai(nome,cognome,ruolo)').eq('pasto_riconosciuto',true).gte('data',from).lte('data',to);
+  // v13: indennità pasto = solo Dipendenti
+  let q=sb.from('giornate').select('data,operaio_id,operai(nome,cognome,ruolo,rapporto)').eq('pasto_riconosciuto',true).gte('data',from).lte('data',to);
   if(cantF)q=q.eq('cantiere_id',cantF);
   if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
-  const{data:gio}=await q;
-  let lista=gio||[];
+  const{data:gio,error:_v13e}=await q;
+  if(_v13e){el.innerHTML='<div class="warn on">'+escHtml(_v13Errore(_v13e))+'</div>';return;}
+  let lista=_v13Dividi(gio).dip;
   const pastiOn=IMPOSTAZIONI.pasti_abilitati==='1';
   const tarCarp=parseFloat(IMPOSTAZIONI.pasto_carpentiere)||18;
   const tarLatt=parseFloat(IMPOSTAZIONI.pasto_lattoniere)||15;
@@ -7842,9 +7931,12 @@ async function exportRaExcel(){
     try{
       let rows=[[]];
       if(tab==='ore'){
-        let q=sb.from('giornate').select('data,ore_totali,ore_straordinari,zona_trasferta,operai(nome,cognome,ruolo),cantieri(nome)').gte('data',from).lte('data',to);
+        // v13: foglio Ore = solo Dipendenti. Errore (es. manca il campo Rapporto): foglio con il messaggio, mai vuoto muto.
+        let q=sb.from('giornate').select('data,operaio_id,ore_totali,ore_straordinari,zona_trasferta,operai(nome,cognome,ruolo,agenzia,rapporto),cantieri(nome)').gte('data',from).lte('data',to);
         if(cantF)q=q.eq('cantiere_id',cantF);if(opF&&opF!=='__agenzia__'&&opF!=='__diretti__')q=q.eq('operaio_id',opF);
-        const{data}=await q.order('data');let lista=data||[];
+        const{data,error:_v13e}=await q.order('data');
+        if(_v13e){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([[_v13Errore(_v13e)]]),sheetName);showToast(_v13Errore(_v13e),'e');continue;}
+        let lista=_v13Dividi(data).dip;
         if(opF==='__agenzia__')lista=lista.filter(g=>g.operai?.agenzia);
         if(opF==='__diretti__')lista=lista.filter(g=>!g.operai?.agenzia);
         rows=[['Data','Cantiere','Collaboratore','Ruolo','Ore','Straordinari','Trasferta'],...lista.map(g=>[g.data,_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'',`${g.operai?.nome||''} ${g.operai?.cognome||''}`,g.operai?.ruolo||'',parseFloat(g.ore_totali||0),parseFloat(g.ore_straordinari||0),g.zona_trasferta?'Sì':'No'])];
@@ -8060,6 +8152,7 @@ function _p5StatoAccountScheda(o){
   const el=document.getElementById('o-acc-stato');if(!el)return;
   if(!o){el.textContent='';return;}
   // P2 punto 4: collegamento solo con operai.user_id
+  if(_v13Esterno(o)){el.textContent='👷 Persona Esterna: niente accesso all\'app.';return;} // v13
   if(!o.user_id){el.textContent='⚠️ Scheda non collegata a un account app.';return;}
   if(_ruoloApp()!=='titolare'||!_profiliAppCache){el.textContent='';return;}
   el.textContent=_profiliAppCache[o.user_id]?'🔑 Account app collegato a questa scheda.':'⚠️ La scheda indica un account che non c\'è più.';
@@ -8552,7 +8645,7 @@ function _p4PuoVedereCantiere(id){
 // Il Piano si compila quando una persona cambia cantiere: l'assegnazione resta valida.
 async function _p4UltimeAssegnazioni(){
   const oggi=nowZurich().date;
-  const attivi=new Set((OPERAI_TUTTI||[]).filter(o=>_opAttivo(o,oggi)).map(o=>o.id));
+  const attivi=new Set((OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o,oggi)).map(o=>o.id));
   const out=new Map(),dataDi=new Map();
   const PAG=1000;
   for(let p=0;p<20;p++){
@@ -8699,7 +8792,7 @@ function chiudiEmergenza(){
 // "Oggi la squadra": per ogni cantiere chi c'e' e con che mezzo. Sola lettura, visibile a tutti.
 function _p4OggiLaSquadra(el,ultime){
   const oggi=nowZurich().date;
-  const attivi=new Map((OPERAI_TUTTI||[]).filter(o=>_opAttivo(o,oggi)).map(o=>[o.id,o]));
+  const attivi=new Map((OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o,oggi)).map(o=>[o.id,o]));
   const perCant=new Map();
   ultime.forEach(function(righe,opId){
     const o=attivi.get(opId);if(!o)return;
@@ -8764,7 +8857,7 @@ async function _p6RenderChiLavora(){
   // 1. persone attive la cui ultima assegnazione e' questo cantiere
   const qui=[];
   ultime.forEach(function(righe,opId){
-    const o=opDi(opId);if(!o||!_opAttivo(o,oggi))return;
+    const o=opDi(opId);if(!o||!_v13Lavora(o,oggi))return; // v13: Esterni mai nel Piano
     const r=righe.find(x=>x.cantiere_id===cantId);
     if(r)qui.push({o,dal:r.data});
   });
@@ -8774,7 +8867,7 @@ async function _p6RenderChiLavora(){
   const extra=[...new Set(vis.map(r=>r.operaio_id))].map(id=>({id,o:opDi(id)}))
     .sort((a,b)=>_p6NomeOp(a.o).localeCompare(_p6NomeOp(b.o)));
   const riga='display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:15px';
-  const opzioni=(OPERAI_TUTTI||[]).filter(o=>_opAttivo(o,oggi)).map(o=>'<option value="'+o.id+'">'+escHtml(_p6NomeOp(o))+'</option>').join('');
+  const opzioni=(OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o,oggi)).map(o=>'<option value="'+o.id+'">'+escHtml(_p6NomeOp(o))+'</option>').join('');
   box.innerHTML=hdr
     +'<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">'
     +'<div style="font-size:14px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">In cantiere da oggi</div>'
@@ -9418,12 +9511,14 @@ async function renderAssenze(){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const opF=document.getElementById('ass-operaio').value;
   const meseF=document.getElementById('ass-mese').value;
-  let q=sb.from('assenze').select('*, operai(nome,cognome), cantieri(nome)').order('data',{ascending:false});
+  // v13: statistiche e costo stimato solo Dipendenti; un'assenza vecchia di un Esterno resta in elenco, segnata, fuori dai conti
+  let q=sb.from('assenze').select('*, operai(nome,cognome,rapporto), cantieri(nome)').order('data',{ascending:false});
   if(opF)q=q.eq('operaio_id',opF);
   if(meseF){const [y,m]=meseF.split('-');q=q.gte('data',`${y}-${m}-01`).lte('data',`${y}-${m}-${new Date(y,m,0).getDate()}`);}
-  const {data,error}=await q.limit(200);
-  if(error){el.innerHTML=`<div class="empty">Errore: ${error.message}</div>`;return;}
-  if(!data?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>'+t('empty_assenza')+'</p></div>';return;}
+  const {data:tutte,error}=await q.limit(200);
+  if(error){el.innerHTML='<div class="warn on">'+escHtml(_v13Errore(error))+'</div>';return;}
+  if(!tutte?.length){el.innerHTML='<div class="empty"><div class="empty-i">🏖️</div><p>'+t('empty_assenza')+'</p></div>';return;}
+  const _v13d=_v13Dividi(tutte),data=_v13d.dip;
 
   const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
   const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
@@ -9456,7 +9551,7 @@ async function renderAssenze(){
   // Classifica operai per assenze
   const rank=Object.values(byOp).sort((a,b)=>b.totGiorni-a.totGiorni);
 
-  let html=`
+  let html=(_v13d.est.length?'<div class="warn on" style="margin-bottom:10px">👷 '+_v13d.est.length+' assenze di persone Esterne: in elenco ma NON nei conti (le assenze sono solo dei Dipendenti).</div>':'')+`
     <!-- STATS RAPIDE -->
     <div class="cont-kpi" style="margin-bottom:14px">
       <div class="kpi-box"><div class="kpi-val kpi-orange">${totGiorni.toFixed(1)}</div><div class="kpi-lbl">Giorni assenza</div></div>
@@ -9499,11 +9594,11 @@ async function renderAssenze(){
 
   // Lista dettagliata
   html+=`<div class="sec">Dettaglio assenze</div>`;
-  html+=data.map(a=>`
+  html+=tutte.map(a=>`
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openModalAssenza('${a.id}')">
       <span style="font-size:28px">${motivoIcon[a.motivo]||'❓'}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}</div>
+        <div style="font-size:var(--fs-lg);font-weight:700">${a.operai?.nome||''} ${a.operai?.cognome||''}${_v13RigaEsterna(a)?' <span style="font-size:13px;color:var(--orange);font-weight:700">👷 Esterno · fuori dai conti</span>':''}</div>
         <div style="font-size:14px;color:var(--t2)">${fmtDate(a.data)} · ${a.giorni} ${parseFloat(a.giorni)===1?'giorno':'giorni'}</div>
         ${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)?`<div style="font-size:14px;color:var(--t3)">📍 ${_cantEtichettaDaId(a.cantiere_id,a.cantieri?.nome)}</div>`:''}
         ${a.note?`<div style="font-size:14px;color:var(--t2)">📝 ${a.note}</div>`:''}
@@ -9531,6 +9626,7 @@ async function renderAssenzeOLD(){
 function openModalAssenza(id){
   editAssId=id;
   _selTogliTenuti(document.getElementById('ass-cant-sel')); // P2
+  _selTogliTenuti(document.getElementById('ass-op-sel')); // v13
   // P7: elenchi persone e cantieri pieni anche se non si e' passati dalle Spese (senza toccare i filtri)
   const _so=document.getElementById('ass-op-sel');if(_so&&!_so.options.length)_so.innerHTML=OPERAI.map(o=>`<option value="${o.id}">${escHtml(o.nome)} ${escHtml(o.cognome)}</option>`).join('');
   const _sc=document.getElementById('ass-cant-sel');if(_sc&&!_sc.options.length)_sc.innerHTML='<option value="">Nessuno</option>'+_cantVisibili().filter(_cantCommessaInCorso).map(c=>`<option value="${c.id}">${escHtml(_cantEtichetta(c))}</option>`).join('');
@@ -9543,6 +9639,13 @@ function openModalAssenza(id){
     sb.from('assenze').select('*').eq('id',id).single().then(({data:a})=>{
       if(!a)return;document.getElementById('mod-ass-t').textContent=t('modal_modifica_ass');
       document.getElementById('ass-op-sel').value=a.operaio_id||'';document.getElementById('ass-data').value=a.data||'';
+      { // v13: assenza vecchia di chi non e' piu' nella scelta (Esterno o ex): la persona resta com'era, segnata
+        const _so2=document.getElementById('ass-op-sel');
+        if(a.operaio_id&&_so2&&![..._so2.options].some(o=>o.value===a.operaio_id)){
+          const _op=_v13OpDi(a.operaio_id);const _o=new Option(((_op?(_op.nome||'')+' '+(_op.cognome||''):'Persona')+(_v13Esterno(_op)?' (Esterno)':' (non più nella scelta)')),a.operaio_id);
+          _o.dataset.tenuto='1';_so2.add(_o);_so2.value=a.operaio_id;
+        }
+      }
       document.getElementById('ass-giorni').value=a.giorni||'1';document.getElementById('ass-motivo').value=a.motivo||'Malattia';
       if(a.cantiere_id)_selTieniCantiere(document.getElementById('ass-cant-sel'),a.cantiere_id);else document.getElementById('ass-cant-sel').value='';document.getElementById('ass-note').value=a.note||''; // P2
       document.getElementById('del-ass-w').innerHTML=`<button class="btn btn-d" onclick="deleteAssenza('${id}')">🗑️ Elimina</button>`;
@@ -9553,6 +9656,7 @@ function openModalAssenza(id){
 async function salvaAssenza(){
   const opId=document.getElementById('ass-op-sel').value,data=document.getElementById('ass-data').value;
   if(!opId||!data){_p7cSegna(['ass-op-sel','ass-data'],'Seleziona operaio e data');showToast('Seleziona operaio e data','e');return;}
+  if(!editAssId&&_v13Esterno(_v13OpDi(opId))){showToast('Le assenze sono solo dei Dipendenti: questa persona è Esterna.','e');return;} // v13
   const payload={operaio_id:opId,data,giorni:parseFloat(document.getElementById('ass-giorni').value)||1,motivo:document.getElementById('ass-motivo').value,cantiere_id:document.getElementById('ass-cant-sel').value||null,note:document.getElementById('ass-note').value.trim()||null,created_by:USER.id};
   if(editAssId)_p7Righe(await sb.from('assenze').update(payload).eq('id',editAssId).select('id'),'assenze');
   else{const {error}=await sb.from('assenze').insert(payload);if(error){showToast('Errore: '+error.message,'e');return;}}
@@ -9684,7 +9788,7 @@ async function renderPiano(){
     // Banner operai non assegnati
     try{
       const oggiStr=data;
-      const opAttivi=(OPERAI_TUTTI||[]).filter(function(o){return _opAttivo(o,oggiStr);});
+      const opAttivi=(OPERAI_TUTTI||[]).filter(function(o){return _v13Lavora(o,oggiStr);});
       const assegnatiIds=new Set((rows||[]).map(function(r){return r.operaio_id;}));
       // P7: un'assenza copre i giorni da "data" per "giorni" giorni (non rifiutata)
       const{data:assenze}=await sb.from('assenze').select('operaio_id,data,giorni,stato')
@@ -9740,6 +9844,7 @@ async function renderPiano(){
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'
         +'<div>'
         +'<div style="font-size:17px;font-weight:800">'+(r.operai?.nome||'—')+' '+(r.operai?.cognome||'')+'</div>'
+        +(_v13RigaEsterna(r)?'<div style="font-size:14px;color:var(--orange);font-weight:700;margin-top:2px">👷 Esterno: si pianifica nel Calendario, non qui</div>':'') // v13
         +(ruoloLabel?'<div style="margin-top:2px">'+ruoloLabel+'</div>':'')
         +'<div style="font-size:14px;color:var(--t2);margin-top:4px">📍 '+(_cantEtichettaDaId(r.cantiere_id,r.cantieri?.nome)||'—')+(r.cantieri?.luogo?' · '+r.cantieri.luogo:'')+(r.cantieri?.paese&&r.cantieri.paese!=='CH'?' '+(_PFLAGS[r.cantieri.paese]||'')+' ('+r.cantieri.paese+')':'')+'</div>'
         +rIndirizzoHtml
@@ -9902,7 +10007,7 @@ function popolaDropdownPiano(){
   const cantSel=document.getElementById('pa-cantiere');
   const mzSel=document.getElementById('pa-mezzo');
   if(opSel){
-    const opList=(OPERAI_TUTTI||[]).filter(o=>_opAttivo(o));
+    const opList=(OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o));
     opSel.innerHTML='<option value="">— Seleziona operaio —</option>'+opList.map(o=>'<option value="'+o.id+'">'+o.nome+' '+o.cognome+(o.ruolo?' ('+o.ruolo+')':'')+'</option>').join('');
   }
   if(cantSel){
@@ -10991,6 +11096,17 @@ async function cambiaRuoloApp(sel){
   }
 }
 
+// v13: nomi delle ditte degli Esterni (tm_contatti, sola lettura). Non leggibile = solo «Esterno», nessun errore.
+async function _v13CaricaDitte(lista){
+  const ids=[...new Set((lista||[]).filter(o=>_v13Esterno(o)&&o.ditta_id).map(o=>o.ditta_id))];
+  const out={};if(!ids.length)return out;
+  try{
+    const{data,error}=await sb.from('tm_contatti').select('id,ragione_sociale,nome,cognome').in('id',ids);
+    if(error)throw error;
+    (data||[]).forEach(c=>{const n=_v13NomeDitta(c);if(n)out[c.id]=n;});
+  }catch(e){/* ditta non leggibile: resta solo «Esterno» */}
+  return out;
+}
 async function renderPersonale(){
   const el=document.getElementById('pers-list');
   if(!el)return;
@@ -11025,7 +11141,9 @@ async function renderPersonale(){
     // profili non ha la colonna email. Se la funzione non c'e' ancora, resta null
     // e la schermata continua a funzionare senza i menù "Ruolo app".
     const profiliApp=await _caricaProfiliApp();
+    const _v13Ditta=await _v13CaricaDitte(lista); // v13: nome della ditta degli Esterni (se leggibile)
     el.innerHTML='';
+    if(V13_SENZA_RAPPORTO){const w=document.createElement('div');w.className='warn on';w.style.marginBottom='10px';w.textContent='⚠️ '+V13_MSG_RAPPORTO+' Per ora tutti sono contati come Dipendenti.';el.appendChild(w);}
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
     const raggruppa=document.getElementById('pers-raggruppa')?.checked;
     function _buildOperaioDiv(o){
@@ -11037,12 +11155,15 @@ async function renderPersonale(){
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
       const icon=ruoloIcon[o.ruolo]||'👤';
       const agzBadge=o.agenzia?'<span style="font-size:12px;background:var(--orange);color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">AGZ'+(o.nome_agenzia?' · '+escHtml(o.nome_agenzia):'')+'</span>':'';
+      // v13: Esterno = etichetta con la ditta; niente accesso app, niente ore, niente stipendio
+      const estBadge=_v13Esterno(o)?'<span style="font-size:13px;background:#6b4fa3;color:#fff;border-radius:4px;padding:1px 6px;margin-left:5px;font-weight:700">👷 Esterno'+(_v13Ditta[o.ditta_id]?' · '+escHtml(_v13Ditta[o.ditta_id]):'')+'</span>':'';
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
         +'<div>'
-        +'<div style="font-size:17px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+agzBadge+'<span id="op-badge-'+o.id+'"></span></div>'
+        +'<div style="font-size:17px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+agzBadge+estBadge+'<span id="op-badge-'+o.id+'"></span></div>'
         +'<div style="font-size:14px;color:var(--t2)">'+o.ruolo
         +(isEx?'&nbsp;<span style="color:var(--red);font-weight:700">· Ex'+(o.data_fine_rapporto?' (fine '+o.data_fine_rapporto+')':' (rimosso)')+'</span>':'')
         +(hasAccount?'&nbsp;<span style="color:var(--green);font-size:13px">● App attiva</span>':'')
+        +(_v13Esterno(o)?'<div style="font-size:13px;color:var(--t3)">Niente accesso all\'app e niente ore: il suo costo è la fattura della ditta.</div>':'')
         +'</div></div>'
         +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
         +'</div>'
@@ -11116,6 +11237,7 @@ async function apriSchedaOp(id){
   document.getElementById('scheda-op-t').textContent=(o.nome||'')+' '+(o.cognome||'');
   document.getElementById('scheda-op-dati').innerHTML=
     _riga('Mestiere',escHtml(o.ruolo))
+    +_riga('Rapporto',_v13Esterno(o)?'👷 Esterno (niente accesso app, niente ore)':'Dipendente') // v13
     +_riga('Email',escHtml(o.email))
     +_riga('Telefono',escHtml(o.telefono))
     +_riga('Inizio rapporto',_data(o.data_assunzione))
@@ -11204,7 +11326,7 @@ async function p5cEliminaDefinitivamente(){
 function _p5bMostraTastoPassword(o){
   const w=document.getElementById('o-pwd-wrap');if(!w)return;
   const em=String(o?.email||'').trim().toLowerCase();
-  let vedi=!!o&&!!em&&['titolare','responsabile'].includes(_ruoloApp());
+  let vedi=!!o&&!!em&&['titolare','responsabile'].includes(_ruoloApp())&&!_v13Esterno(o); // v13: Esterni senza accesso
   // il titolare conosce i ruoli degli account: niente tasto sui titolari
   // (e il responsabile solo su caposquadra, operaio, magazziniere: lo ricontrolla la funzione)
   const pa=_profiliAppCache&&o?.user_id?_profiliAppCache[o.user_id]:null; // P2 punto 4
@@ -12822,6 +12944,10 @@ async function invitaCollaboratore(){
   if(!nome||!cogn){errEl.textContent='Inserisci nome e cognome';errEl.style.display='block';return;}
   if(!email||!email.includes('@')){errEl.textContent='Email non valida';errEl.style.display='block';return;}
   if(!pwd||pwd.length<6){errEl.textContent='Password minimo 6 caratteri';errEl.style.display='block';return;}
+  // v13: un Esterno non ha accesso all'app. Controllo PRIMA di chiamare crea-collaboratore (nessuna chiamata).
+  const _v13c=_v13ControlloAccesso(email,nome,cogn,OPERAI_TUTTI);
+  if(_v13c.blocca){errEl.textContent=_v13c.blocca;errEl.style.display='block';return;}
+  if(_v13c.avviso&&!confirm(_v13c.avviso))return;
   const btn=document.getElementById('btn-invita');
   btn.disabled=true;btn.textContent='⏳...';
   try{
@@ -12930,7 +13056,7 @@ async function caricaImpostazioniSchermata(){
     const alertResp=document.getElementById('foto-alert-resp');
     if(alertGiorno&&map.foto_alert_giorno)alertGiorno.value=map.foto_alert_giorno;
     if(alertResp){
-      alertResp.innerHTML='<option value="">— Tutti —</option>'+(OPERAI_TUTTI||[]).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+(o.nome||o.email||o.id)+'</option>').join('');
+      alertResp.innerHTML='<option value="">— Tutti —</option>'+(OPERAI_TUTTI||[]).filter(o=>!_v13Esterno(o)).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+(o.nome||o.email||o.id)+'</option>').join('');
     }
     _aggiornaPushStato();
     // Rapportino firma
@@ -13127,7 +13253,7 @@ async function renderMappa(){
       const ult = await _p4UltimeAssegnazioni();
       ult.forEach(function(righe,opId){
         const o=(OPERAI_TUTTI||[]).find(x=>x.id===opId);
-        if(!o||!_opAttivo(o,oggi))return;
+        if(!o||!_v13Lavora(o,oggi))return; // v13: Esterni mai nel Piano
         righe.forEach(r=>pianOggi.push(r));
       });
     }catch(e){ console.warn('piano_giorno:', e.message); }
@@ -13438,7 +13564,7 @@ async function renderOre(){
     const kpiDiff=kpiMese.effettive-kpiMese.teoriche;
     const nomiMesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     let opSel='';
-    if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:15px">${(OPERAI_TUTTI||[]).map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${o.nome||''} ${o.cognome||''}</option>`).join('')}</select>`;}
+    if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:15px">${(OPERAI_TUTTI||[]).filter(o=>!_v13Esterno(o)).map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${o.nome||''} ${o.cognome||''}</option>`).join('')}</select>`;}
 
     // Nota sul periodo considerato
     let notaPeriodo='';
