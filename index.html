@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json?v=11">
+<link rel="manifest" href="manifest.json?v=12">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantiere">
 <title>Cantiere</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=11"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=12"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=11"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=11"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=11"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=11"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=12"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=12"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=12"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=12"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -326,6 +326,11 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .p2b-g-ritardo{flex:0 0 auto;font-size:16px;font-weight:800;color:#fff;background:#c62828;border-radius:10px;padding:6px 10px;white-space:nowrap}
 .p2b-scelto{box-shadow:0 0 0 3px var(--gold)}
 .p2b-vuoto{font-size:17px;font-weight:700;color:var(--green);padding:10px 0 14px}
+/* ═══ v12: Conferma ore — ore in grande (vengono dagli orari), due tasti grandi, niente campo da scrivere ═══ */
+.v12-ore{font-family:'DM Mono',monospace;font-size:34px;font-weight:500;color:var(--gold);line-height:1.1;margin:2px 0 4px}
+.v12-tasti{display:flex;flex-direction:column;gap:10px}
+.v12-tasto{min-height:60px;font-size:19px}
+.v12-msg{font-size:18px;font-weight:700;line-height:1.35;color:#fff;background:#c62828;border-radius:var(--rsm);padding:12px 14px 2px;margin-bottom:10px}
 .p2b-avviso-rit{font-size:17px;font-weight:800;color:#fff;background:#c62828;border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px}
 </style>
 </head>
@@ -2208,7 +2213,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='11';
+const APP_VERSIONE='12';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -5304,7 +5309,7 @@ async function salvaModificaGiornata(){
       mgFotoFiles=[];
     }
     logAzione('giornate',modificaGid,'UPDATE',{ora_inizio:ini,ora_fine:fine}); // P29
-closeModal('mod-modifica-g');showToast(_v11Riconferma?'Giornata aggiornata ✓ — orari cambiati: le ore tornano DA CONFERMARE':'Giornata aggiornata ✓');renderCantiere();
+closeModal('mod-modifica-g');showToast(_v11Riconferma?'Giornata aggiornata ✓ — orari cambiati: le ore tornano DA CONFERMARE':'Giornata aggiornata ✓');_v12DopoModifica();
     if(_p7bOltre.length&&!_p2KoMg)showToast('Giornata aggiornata. ⚠️ OLTRE IL PREVENTIVO: '+_p7bTestoOltre(_p7bOltre),'e');
     if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
   }catch(err){showToast('Giornata NON salvata, riprova. ('+err.message+')','e');}
@@ -5418,7 +5423,7 @@ async function eliminaGiornataModifica(){
       if(!tolte||tolte.length!==resto.length)throw new Error((tolte?tolte.length:0)+' su '+resto.length+' righe');
     }
   }catch(e){_avviso=e.message;}
-  closeModal('mod-modifica-g');renderCantiere();
+  closeModal('mod-modifica-g');_v12DopoModifica(); // v12: da Conferma ore si torna a Conferma ore
   if(_avvisoRegia)showToast('Giornata eliminata, ma la REGIA è rimasta ('+_avvisoRegia+')','e');
   else if(_avviso)showToast('Giornata eliminata, ma i lavori collegati NON sono stati eliminati ('+_avviso+')','e');
   else showToast('Giornata eliminata');
@@ -12301,7 +12306,7 @@ async function renderConfermaOre(){
       }
     }
     let _qG=sb.from('giornate')
-      .select('id,ore_totali,ore_originali,ore_confermate,confermato_da,data_conferma,operai(nome,cognome)')
+      .select('id,ore_totali,ore_originali,ore_confermate,confermato_da,data_conferma,ora_inizio,ora_fine,pausa_minuti,operai(nome,cognome)')
       .eq('data',data);
     if(cantIds)_qG=_qG.in('cantiere_id',cantIds);
     const{data:giornate,error}=await _qG.order('created_at');
@@ -12311,50 +12316,98 @@ async function renderConfermaOre(){
     }
     el.innerHTML='';
     giornate.forEach(function(g){
-      const isConf=g.ore_confermate!=null; // v11: anche 0 ore confermate e' "confermato" (come l'elenco dei giorni)
       const card=document.createElement('div');
-      card.style.cssText='background:var(--s1);border:1px solid '+(isConf?'rgba(76,175,125,.4)':'rgba(224,136,64,.4)')+';border-radius:var(--r);padding:14px;margin-bottom:10px';
-      const nomeOp=((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:'')).trim()||'Operaio';
-      const badgeHtml=isConf
-        ?'<span style="background:rgba(76,175,125,.15);color:var(--green);font-size:14px;font-weight:700;padding:3px 10px;border-radius:10px">'+t('badge_confermato')+'</span>'
-        :'<span style="background:rgba(224,136,64,.15);color:var(--orange);font-size:14px;font-weight:700;padding:3px 10px;border-radius:10px">'+t('badge_da_confermare')+'</span>';
-      card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
-        +'<div style="font-size:17px;font-weight:700">👷 '+escHtml(nomeOp)+'</div>'
-        +badgeHtml+'</div>'
-        +(g.ore_originali?'<div style="font-size:14px;color:var(--t3);margin-bottom:4px">Ore originali: <span style="text-decoration:line-through">'+parseFloat(g.ore_originali).toFixed(2)+'h</span></div>':'')
-        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">'
-        +'<label style="font-size:15px;color:var(--t2);white-space:nowrap">Ore da confermare:</label>'
-        +'<input type="number" step="0.25" min="0" max="24" value="'+parseFloat(g.ore_totali||0).toFixed(2)+'" id="conf-ore-'+g.id+'" style="width:90px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--gold);font-family:DM Mono,monospace;font-size:16px;padding:6px 10px;text-align:center">'
-        +'</div>'
-        +(isConf?''
-          :'<button class="btn btn-g" style="font-size:16px;padding:10px" data-gid="'+g.id+'" data-ore="'+parseFloat(g.ore_totali||0).toFixed(2)+'" onclick="confermaOreGiornata(this)">'+t('btn_conferma_ore')+'</button>');
-      el.appendChild(card);
+      card.innerHTML=_v12CardConferma(g);
+      el.appendChild(card.firstElementChild);
     });
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Errore: '+escHtml(e.message)+'</div>';}
 }
 
+// ══ v12 (2.11.2026): le ore si confermano COME VENGONO DAGLI ORARI ══
+// giornate.ore_totali e' una colonna GENERATA dal database (ora_fine - ora_inizio - pausa): non si scrive mai.
+// Decisione di Umberto (A): chi vuole confermare ore diverse corregge prima gli ORARI della giornata.
+// Niente campo da scrivere (con i guanti): ore in grande, tasto «Conferma» e tasto «Correggi gli orari».
+function _v12Ore(n){return (Math.round((parseFloat(n)||0)*100)/100).toFixed(2).replace('.',',')+' h';}
+function _v12Orari(g){
+  const o=x=>x?String(x).slice(0,5):'—';
+  return o(g.ora_inizio)+'–'+o(g.ora_fine)+', pausa '+(g.pausa_minuti==null?'—':g.pausa_minuti);
+}
+// Decide se si puo' confermare. mostrate = le ore viste sulla carta; g = la giornata riletta adesso.
+// Ritorna {ok:true,payload} (MAI ore_totali ne' ore_originali) oppure {ok:false,msg}.
+function _v12EsitoConferma(mostrate,g,uid,quando){
+  if(!g)return {ok:false,msg:'Giornata non trovata: forse è stata tolta. Riapri la pagina.'};
+  if(g.ore_totali==null)return {ok:false,msg:'Mancano gli orari di questa giornata ('+_v12Orari(g)+'): le ore non si possono calcolare. Correggi prima gli orari.'};
+  const ora=Math.round(parseFloat(g.ore_totali)*100)/100;
+  if(mostrate!=null&&Math.abs(ora-(Math.round(parseFloat(mostrate)*100)/100))>=0.005)
+    return {ok:false,msg:'Le ore sono cambiate: ora vengono dagli orari '+_v12Ore(ora)+' ('+_v12Orari(g)+'). Controlla e conferma di nuovo.'};
+  return {ok:true,payload:{ore_confermate:ora,confermato_da:uid,data_conferma:quando}};
+}
+function _v12CardConferma(g){
+  const isConf=g.ore_confermate!=null; // v11: anche 0 ore confermate e' "confermato"
+  const nomeOp=((g.operai?.nome||'')+(g.operai?.cognome?' '+g.operai.cognome:'')).trim()||'Operaio';
+  const badge=isConf
+    ?'<span style="background:rgba(76,175,125,.15);color:var(--green);font-size:15px;font-weight:700;padding:4px 10px;border-radius:10px">'+t('badge_confermato')+'</span>'
+    :'<span style="background:rgba(224,136,64,.15);color:var(--orange);font-size:15px;font-weight:700;padding:4px 10px;border-radius:10px">'+t('badge_da_confermare')+'</span>';
+  const oreTxt=g.ore_totali==null?'— h':_v12Ore(g.ore_totali);
+  let h='<div class="v12-card" id="conf-card-'+g.id+'" style="background:var(--s1);border:2px solid '+(isConf?'rgba(76,175,125,.5)':'rgba(224,136,64,.55)')+';border-radius:var(--r);padding:14px;margin-bottom:10px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">'
+    +'<div style="font-size:18px;font-weight:700">👷 '+escHtml(nomeOp)+'</div>'+badge+'</div>'
+    +'<div class="v12-ore">'+oreTxt+'</div>'
+    +'<div style="font-size:16px;color:var(--t2);margin-bottom:10px">Dagli orari: '+escHtml(_v12Orari(g))+(isConf?'':'<br>Ore diverse? Correggi prima gli orari.')+'</div>';
+  if(g.ore_originali)h+='<div style="font-size:14px;color:var(--t3);margin-bottom:6px">Ore originali (prima della v12): <span style="text-decoration:line-through">'+_v12Ore(g.ore_originali)+'</span></div>';
+  if(isConf){
+    if(g.ore_totali!=null&&Math.abs(parseFloat(g.ore_confermate)-parseFloat(g.ore_totali))>=0.005)
+      h+='<div class="warn on" style="font-size:16px">⚠️ Confermate '+_v12Ore(g.ore_confermate)+', ma dagli orari vengono '+_v12Ore(g.ore_totali)+'.</div>';
+    else h+='<div style="font-size:16px;color:var(--green);font-weight:700">Confermate: '+_v12Ore(g.ore_confermate)+'</div>';
+  }else{
+    h+='<div class="v12-msg" id="conf-msg-'+g.id+'" role="alert" style="display:none"></div>'
+      +'<div class="v12-tasti">'
+      +(g.ore_totali==null?''
+        :'<button type="button" class="btn btn-g v12-tasto" data-gid="'+g.id+'" data-ore="'+parseFloat(g.ore_totali).toFixed(2)+'" onclick="confermaOreGiornata(this)">✅ Conferma '+_v12Ore(g.ore_totali)+'</button>')
+      +'<button type="button" class="btn btn-s v12-tasto" onclick="v12CorreggiOrari(\''+g.id+'\')">✏️ Correggi gli orari</button>'
+      +'</div>';
+  }
+  return h+'</div>';
+}
+function _v12MostraMsg(gid,msg){
+  const m=document.getElementById('conf-msg-'+gid);
+  if(!m){showToast(msg,'e');return;}
+  m.innerHTML='<div style="margin-bottom:10px">'+escHtml(msg)+'</div>';
+  m.style.display='block';
+}
+// Apre la modifica della giornata (la stessa di "Cantiere": caposquadra sui suoi cantieri, titolare e
+// responsabile tutte, come le regole del database). Dopo il salvataggio si torna qui (_v12DopoModifica).
+function v12CorreggiOrari(gid){if(gid)apriModificaGiornata(gid);}
+function _v12DopoModifica(){
+  const scr=document.getElementById('scr-conferma-ore');
+  if(scr&&scr.classList.contains('on'))renderConfermaOre();
+  else renderCantiere();
+}
+
 async function confermaOreGiornata(btn){
   const gid=btn.dataset.gid;
-  const oreInput=document.getElementById('conf-ore-'+gid);
-  if(!gid||!oreInput)return;
-  const nuoveOre=parseFloat(oreInput.value)||0;
+  if(!gid)return;
+  const mostrate=btn.dataset.ore!=null&&btn.dataset.ore!==''?parseFloat(btn.dataset.ore):null;
+  let testo=btn.textContent;
   btn.textContent='⏳...';btn.disabled=true;
   try{
-    const{data:g}=await sb.from('giornate').select('ore_totali').eq('id',gid).single();
-    const payload={
-      ore_confermate:nuoveOre,
-      confermato_da:USER.id,
-      data_conferma:new Date().toISOString()
-    };
-    if(nuoveOre!==parseFloat(g?.ore_totali||0)){
-      payload.ore_originali=parseFloat(g?.ore_totali||0);
-      payload.ore_totali=nuoveOre;
+    // si rilegge la giornata: si conferma solo quello che c'e' adesso nel database
+    const{data:g,error:ge}=await sb.from('giornate').select('id,ore_totali,ora_inizio,ora_fine,pausa_minuti').eq('id',gid).maybeSingle();
+    if(ge)throw ge;
+    const es=_v12EsitoConferma(mostrate,g,USER.id,new Date().toISOString());
+    if(!es.ok){
+      _v12MostraMsg(gid,es.msg);
+      if(g&&g.ore_totali!=null){ // la carta mostra subito le ore nuove: il prossimo tocco conferma quelle
+        btn.dataset.ore=parseFloat(g.ore_totali).toFixed(2);testo='✅ Conferma '+_v12Ore(g.ore_totali);
+        const o=document.getElementById('conf-card-'+gid)?.querySelector('.v12-ore');if(o)o.textContent=_v12Ore(g.ore_totali);
+      }
+      return;
     }
-    _p7Righe(await sb.from('giornate').update(payload).eq('id',gid).select('id'),'giornate');
+    _p7Righe(await sb.from('giornate').update(es.payload).eq('id',gid).select('id'),'giornate');
     showToast(t('badge_confermato')+' ✓');
     renderConfermaOre();
-  }catch(e){showToast('Errore: '+e.message,'e');}
-  finally{btn.textContent=t('btn_conferma_ore');btn.disabled=false;}
+  }catch(e){if(!e.giaMostrato)_v12MostraMsg(gid,'Ore NON confermate: '+e.message);}
+  finally{btn.textContent=testo;btn.disabled=false;}
 }
 
 // ══ v11 (punto 2, 1.11.2026): GIORNI CON ORE DA CONFERMARE ══
