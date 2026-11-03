@@ -1,36 +1,15 @@
 {
-  "name": "Cantiere",
-  "short_name": "Cantiere",
-  "description": "Gestionale di cantiere professionale",
-  "start_url": "/CarpenteriaTicinese-cantiere/",
+  "name": "Cantieri · Carpenteria Ticinese",
+  "short_name": "Cantieri",
+  "description": "Giornale di cantiere: giornate, ore, spese, foto, danni",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#c8a84b",
-  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#e8710a",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icone/icona-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone/icona-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

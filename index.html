@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json?v=14">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#e8710a">
+<link rel="manifest" href="manifest.json?v=15">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=15">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=15">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Cantiere">
-<title>Cantiere</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=14"></script>
+<meta name="apple-mobile-web-app-title" content="Cantieri">
+<title>Cantieri · Carpenteria Ticinese</title>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=15"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=14"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=14"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=14"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=14"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=15"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=15"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=15"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=15"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -339,23 +339,25 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 <div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#f5c518;color:#1a1a1a;text-align:center;padding:9px 16px;font-size:15px;font-weight:700;letter-spacing:.3px">📵 Sei offline — modalità sola lettura</div>
 
 <div id="loading">
-  <div style="font-size:15px;letter-spacing:4px;color:var(--gold);font-weight:700;text-transform:uppercase" id="loading-nome-az">CantiereMaster</div>
+  <div style="font-size:15px;letter-spacing:4px;color:var(--gold);font-weight:700;text-transform:uppercase" id="loading-nome-az">🏗️ Cantieri</div>
   <div class="spin"></div>
 </div>
 
 <div id="login">
   <div class="lbox">
     <div class="llogo">
-      <b id="login-nome-az">CantiereMaster</b>
-      <h1 data-i18n="login_titolo">Gestione Cantieri</h1>
+      <b id="login-nome-az">🏗️ Cantieri</b>
+      <h1 data-i18n="login_titolo">Carpenteria Ticinese</h1>
     </div>
     <div class="lerr" id="lerr"></div>
+    <form id="login-form" onsubmit="return doLoginForm(event)" novalidate>
     <div class="fg"><label class="fl" data-i18n="lbl_email">Email</label><input type="email" class="fi" id="l-email" autocomplete="email" placeholder="nome@carpenteriaticinese.ch"></div>
     <div class="fg"><label class="fl" data-i18n="lbl_password">Password</label><div style="position:relative">
         <input type="password" class="fi" id="l-pass" autocomplete="current-password" placeholder="••••••••" style="padding-right:44px">
         <button type="button" onclick="togglePwd('l-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--t2);font-size:18px">👁</button>
       </div></div>
-    <button class="btn btn-g" onclick="doLogin()" data-i18n="btn_accedi">Accedi →</button>
+    <button type="submit" class="btn btn-g" id="l-entra" data-i18n="btn_accedi">Accedi →</button>
+    </form>
     <div style="text-align:center;margin-top:12px">
       <span style="font-size:15px;color:var(--t2);cursor:pointer;text-decoration:underline" onclick="resetPassword()" data-i18n="login_pwd_dim">Password dimenticata?</span>
     </div>
@@ -402,7 +404,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   <div class="top">
     <div style="display:flex;align-items:center;gap:8px">
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:17px;line-height:1;flex-shrink:0" title="Indietro">←</button>
-      <div class="top-brand"><b id="top-brand-nome">CantiereMaster</b><span id="top-title" data-i18n="top_cantieri">Cantieri</span></div>
+      <div class="top-brand"><b id="top-brand-nome">🏗️ Cantieri</b><span id="top-title" data-i18n="top_cantieri">Cantieri</span></div>
     </div>
     <button type="button" id="btn-emergenza" onclick="apriEmergenza()">🆘 Emergenza</button>
     <div class="top-r">
@@ -781,7 +783,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <div id="adm-cantieri"></div>
     <div class="sec" data-i18n="sec_imp_azienda">Impostazioni azienda</div>
     <div class="row2" style="margin-bottom:12px;align-items:flex-end">
-      <div class="fg"><label class="fl" data-i18n="lbl_nome_azienda">Nome azienda</label><input type="text" class="fi" id="adm-nome-az" placeholder="es. Carpenteria Ticinese Sàgl"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_nome_azienda">Nome azienda</label><input type="text" class="fi" id="adm-nome-az" placeholder="es. Carpenteria Ticinese Sagl"></div>
       <button class="btn btn-g" style="flex-shrink:0;height:44px" onclick="salvaNomeAzienda()" data-i18n="btn_salva">💾 Salva</button>
     </div>
     <hr style="margin-bottom:14px">
@@ -832,7 +834,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <!-- Dati azienda -->
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:16px">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--gold)" data-i18n="sett_dati_azienda">🏢 Dati azienda</div>
-      <div class="fg"><label class="fl" data-i18n="lbl_nome_azienda">Nome azienda</label><input type="text" class="fi" id="imp-nome-az" placeholder="es. Carpenteria Ticinese Sàgl"></div>
+      <div class="fg"><label class="fl" data-i18n="lbl_nome_azienda">Nome azienda</label><input type="text" class="fi" id="imp-nome-az" placeholder="es. Carpenteria Ticinese Sagl"></div>
       <div class="fg"><label class="fl" data-i18n="lbl_uid">UID (P.IVA svizzera)</label><input type="text" class="fi" id="imp-uid" placeholder="CHE-123.456.789" style="font-family:'DM Mono',monospace"></div>
       <div class="fg"><label class="fl" data-i18n="lbl_via">Via / Numero civico</label><input type="text" class="fi" id="imp-via" placeholder="es. Via Lugano 12"></div>
       <div class="row2">
@@ -2090,7 +2092,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='14';
+const APP_VERSIONE='15';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2185,7 +2187,7 @@ const TRADUZIONI = {
     // ── Meteo ──
     meteo_sole:'Sole',meteo_nuvole:'Nuvole',meteo_pioggia:'Pioggia',meteo_neve:'Neve',
     // ── Login ──
-    login_titolo:'Gestione Cantieri',login_pwd_dim:'Password dimenticata?',login_chiedi_titolare:'Chiedi al titolare una password nuova.',
+    login_titolo:'Carpenteria Ticinese',login_pwd_dim:'Password dimenticata?',login_chiedi_titolare:'Chiedi al titolare una password nuova.',
     login_offline:'📵 Sei offline — modalità sola lettura',
     // ── Home ──
     home_cantieri_attivi:'📋 Cantieri attivi',home_situazione:'Da sistemare',
@@ -2520,7 +2522,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Worker',lbl_da:'From',lbl_a:'To',
     lbl_distr_min_pasto:'Min. distance for meal (km)',
     meteo_sole:'Sunny',meteo_nuvole:'Cloudy',meteo_pioggia:'Rainy',meteo_neve:'Snow',
-    login_titolo:'Site Management',login_pwd_dim:'Forgot password?',login_chiedi_titolare:'Ask the owner for a new password.',
+    login_titolo:'Carpenteria Ticinese',login_pwd_dim:'Forgot password?',login_chiedi_titolare:'Ask the owner for a new password.',
     login_offline:'📵 You are offline — read only',
     home_cantieri_attivi:'📋 Active sites',home_situazione:'To do',
     home_report:'Report',home_spese:'Expenses',home_personale:'Staff',
@@ -2852,7 +2854,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Mitarbeiter',lbl_da:'Von',lbl_a:'Bis',
     lbl_distr_min_pasto:'Min. Entfernung für Mahlzeit (km)',
     meteo_sole:'Sonnig',meteo_nuvole:'Bewölkt',meteo_pioggia:'Regnerisch',meteo_neve:'Schnee',
-    login_titolo:'Baustellen-Management',login_pwd_dim:'Passwort vergessen?',login_chiedi_titolare:'Bitte den Inhaber um ein neues Passwort.',
+    login_titolo:'Carpenteria Ticinese',login_pwd_dim:'Passwort vergessen?',login_chiedi_titolare:'Bitte den Inhaber um ein neues Passwort.',
     login_offline:'📵 Sie sind offline — nur lesbar',
     home_cantieri_attivi:'📋 Aktive Baustellen',home_situazione:'Zu erledigen',
     home_report:'Bericht',home_spese:'Ausgaben',home_personale:'Personal',
@@ -3178,7 +3180,7 @@ const TRADUZIONI = {
     lbl_collaboratore:'Colaborador',lbl_da:'Desde',lbl_a:'Hasta',
     lbl_distr_min_pasto:'Distancia mín. para dieta (km)',
     meteo_sole:'Soleado',meteo_nuvole:'Nublado',meteo_pioggia:'Lluvioso',meteo_neve:'Nieve',
-    login_titolo:'Gestión de Obras',login_pwd_dim:'¿Contraseña olvidada?',login_chiedi_titolare:'Pide al titular una contraseña nueva.',
+    login_titolo:'Carpenteria Ticinese',login_pwd_dim:'¿Contraseña olvidada?',login_chiedi_titolare:'Pide al titular una contraseña nueva.',
     login_offline:'📵 Sin conexión — solo lectura',
     home_cantieri_attivi:'📋 Obras activas',home_situazione:'Pendientes',
     home_report:'Informe',home_spese:'Gastos',home_personale:'Personal',
@@ -3968,7 +3970,7 @@ function mostraFormNuovaPassword(){
   loginEl.innerHTML=`
     <div class="lbox">
       <div class="llogo">
-        <b>CantiereMaster</b>
+        <b>🏗️ Cantieri</b>
         <h1>Nuova password</h1>
       </div>
       <div class="lerr" id="lerr-np"></div>
@@ -4141,6 +4143,16 @@ function resetPassword(){
   el.style.display=el.style.display==='block'?'none':'block';
 }
 
+// v15: Invio (sull'email o sulla password) = «Accedi», senza doppio invio.
+let _loginInCorso=false;
+function doLoginForm(ev){
+  if(ev&&ev.preventDefault)ev.preventDefault();
+  if(_loginInCorso)return false;
+  _loginInCorso=true;
+  const b=document.getElementById('l-entra');if(b)b.disabled=true;
+  Promise.resolve(doLogin()).catch(function(e){console.warn('Accesso:',e&&e.message||e);}).finally(function(){_loginInCorso=false;const bb=document.getElementById('l-entra');if(bb)bb.disabled=false;});
+  return false;
+}
 async function doLogin(){
   const email=document.getElementById('l-email').value.trim();
   const pass=document.getElementById('l-pass').value;
@@ -6179,7 +6191,7 @@ function startNuovaGiornata(){
   document.getElementById('g1-ini').value='07:00';document.getElementById('g1-fine').value='17:00';document.getElementById('g1-pausa').value='60';
   document.getElementById('g1-mat').value='';document.getElementById('g1-visite').value='';
   document.querySelectorAll('.meteo-b').forEach(b=>b.classList.remove('on'));
-  calcOre1();showScr('giornata-1');
+  pushNav('giornata-1');calcOre1();showScr('giornata-1');
   ['g1-mat','g1-visite'].forEach(function(id){const f=document.getElementById(id)?.closest('.fg');if(f)f.style.display=_p7cCapo()?'':'none';}); // P7c
   document.getElementById('top-title').textContent=t('top_nuova')+' — '+_cantEtichetta(curCant);
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Nuova giornata'}]);
@@ -6215,7 +6227,7 @@ function setupStep2(){
   const _sqw=document.getElementById('g2-squadra-wrap');if(_sqw)_sqw.style.display=_p7cCapo()?'block':'none';p7cCaricaSquadra(); // P7c
   {const _bc=document.getElementById('btn-vai-conferma');if(_bc)_bc.style.display=puoAprire('conferma-ore')?'':'none';}
   document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
-  fFiles=[];fB64=[];renderSalvati();showScr('giornata-2');
+  fFiles=[];fB64=[];renderSalvati();pushNav('giornata-2');showScr('giornata-2');
   document.getElementById('top-title').textContent=t('sec_operai_giornata');
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
   _aggiornaCheckboxPasto();
@@ -7095,6 +7107,7 @@ function arrotondaMinuti(date,step){
 }
 
 function mostraTimbratura(){
+  pushNav('timbratura'); // v15: Indietro ci torna
   document.getElementById('top-title').textContent=t('top_pagamenti');
   showScr('timbratura');
   renderTimbratura();
@@ -8058,9 +8071,8 @@ window.addEventListener('popstate',function(){
   const ov=document.querySelector('.ov.on');
   if(ov){closeModal(ov.id);_armaIndietro();return;}
   // 2. dentro una giornata in compilazione → chiedere prima di uscire
-  const inGiornata=['scr-giornata-1','scr-giornata-2'].some(function(id){return document.getElementById(id)?.classList.contains('on');});
-  if(inGiornata){
-    if(confirm('Uscire dalla giornata? I dati non ancora salvati si perdono.'))goToCantiere();
+  if(_inGiornata()){
+    if(confirm('Uscire dalla giornata? I dati non ancora salvati si perdono.')){_navTogliForm();goToCantiere();}
     _armaIndietro();return;
   }
   // 3. alla Home → nessuna azione: il prossimo indietro esce dall'app
@@ -8069,19 +8081,28 @@ window.addEventListener('popstate',function(){
   goBack();_armaIndietro();
 });
 
+// v15: le schermate di compilazione (giornata) non sono mai una meta di «Indietro»:
+// quando si va in una schermata diversa vengono tolte dalla pila.
+const _NAV_FORM=['giornata-1','giornata-2'];
+function _navTogliForm(){while(_navHistory.length&&_NAV_FORM.includes(_navHistory[_navHistory.length-1]))_navHistory.pop();}
 function pushNav(dest){
+  if(!_NAV_FORM.includes(dest))_navTogliForm();
   if(_navHistory[_navHistory.length-1]!==dest)_navHistory.push(dest);
   if(dest!=='home')_armaIndietro();
   const btn=document.getElementById('btn-back');
   if(btn)btn.style.display=_navHistory.length>1?'block':'none';
 }
 
+function _inGiornata(){return _NAV_FORM.some(function(id){return document.getElementById('scr-'+id)?.classList.contains('on');});}
 function goBack(){
+  // v15: anche col tasto ← dell'app, dalla giornata in compilazione si chiede prima di uscire
+  if(_inGiornata()&&!confirm('Uscire dalla giornata? I dati non ancora salvati si perdono.'))return;
+  _navTogliForm();
   if(_navHistory.length<=1){goHome();return;}
   _navHistory.pop();
   const prev=_navHistory[_navHistory.length-1];
   _navHistory.pop();
-  if(prev==='home'||!prev)goHome();
+  if(prev==='home'||!prev||prev==='timbratura')goHome();
   else if((prev==='cantiere'||prev==='giornata-1'||prev==='cantiere-sotto')&&curCant)goToCantiere(); // P1-D, P7
   else if(!puoAprire(prev))goHome(); // P1-D: mai verso una schermata non permessa
   else navTo(prev);
@@ -9959,9 +9980,11 @@ async function caricaNomeAzienda(){
   }catch(e){aggiornaNomeAzienda(IMPOSTAZIONI.nome_azienda||'CantiereMaster');}
 }
 function aggiornaNomeAzienda(nome){
+  // v15: il nome dell'app e' sempre «Cantieri» (identita' unica). Il nome dell'azienda
+  // resta in IMPOSTAZIONI.nome_azienda e si usa solo nelle stampe e nei PDF.
   nome=nome||IMPOSTAZIONI.nome_azienda||'CantiereMaster';
   const ids=['top-brand-nome','login-nome-az','loading-nome-az'];
-  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=nome;});
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='🏗️ Cantieri';});
 }
 
 async function salvaNomeAzienda(){
@@ -12490,6 +12513,7 @@ function openModalInvita(){apriAnagrafiche('persone');}
 // ══════════════════════════════════════════════════
 
 async function navToImpostazioni(){
+  pushNav('impostazioni'); // v15: Indietro ci torna
   showScr('impostazioni');
   document.getElementById('top-title').textContent=t('top_impostazioni');
   setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Admin',onclick:"navTo('admin')"},{label:'Impostazioni'}]);
