@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=15">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=15">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=15">
+<link rel="manifest" href="manifest.json?v=16">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=16">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=16">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=15"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=16"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=15"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=15"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=15"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=15"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=16"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=16"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=16"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=16"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -125,6 +125,7 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .cant-status{position:absolute;top:14px;right:14px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:10px}
 /* P3: nella Home l'etichetta sta a destra e il nome le gira intorno (prima a 390 px un nome lungo le passava sotto) */
 .cant-status.cant-status-fl{position:static;float:right;margin:-4px -4px 6px 10px}
+.cant-status-vuoto{display:block;font-size:15px;font-weight:700;padding:6px 10px;border-radius:8px;margin:0 0 8px}
 /* P3 punto B: EMERGENZA, solo 144 e 1414. Scritte almeno 18 px, tasti alti almeno 56 px, icona sempre con scritta.
    Telefono: tasti che chiamano. PC (mouse, niente tocco): numero grande, nessun tasto chiama. */
 #btn-emergenza{margin-left:auto;min-height:56px;padding:0 16px;background:#c62828;color:#fff;border:none;border-radius:var(--rsm);font-size:18px;font-weight:800;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -1128,15 +1129,15 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
       <div id="sit-timb-content"></div>
     </div>
     <div id="sit-foto-wrap" style="display:none;margin-bottom:16px">
-      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>📷 Foto da scaricare</span><span id="sit-foto-n" style="background:var(--orange);color:#fff;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>📷 Foto da scaricare</span><span id="sit-foto-n" style="background:var(--orange);color:#1a1a1a;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-foto-content"></div>
     </div>
     <div id="sit-senzacant-wrap" style="display:none;margin-bottom:16px">
-      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>🚧 Persone senza cantiere</span><span id="sit-senzacant-n" style="background:var(--orange);color:#fff;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span>🚧 Persone senza cantiere</span><span id="sit-senzacant-n" style="background:var(--orange);color:#1a1a1a;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-senzacant-content"></div>
     </div>
     <div id="sit-spreg-wrap" style="display:none;margin-bottom:16px">
-      <div class="sec" style="display:flex;align-items:center;gap:8px"><span data-i18n="sec_spese_registrare">💲 Spese da registrare in Pre-contabilità</span><span id="sit-spreg-n" style="background:var(--orange);color:#fff;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
+      <div class="sec" style="display:flex;align-items:center;gap:8px"><span data-i18n="sec_spese_registrare">💲 Spese da registrare in Pre-contabilità</span><span id="sit-spreg-n" style="background:var(--orange);color:#1a1a1a;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px"></span></div>
       <div id="sit-spreg-content"></div>
     </div>
     <div style="margin-bottom:16px">
@@ -1334,7 +1335,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')"><div class="nb-icon">🏠</div><div class="nb-label" data-i18n="nav_cantieri">Cantieri</div></div>
     <div class="nb" id="nb-giornata" onclick="navTo('nuova')"><div class="nb-icon">➕</div><div class="nb-label" data-i18n="nav_giornata">Giornata</div></div>
-    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon" style="position:relative">💲<span id="sp-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--orange);color:#fff;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
+    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon" style="position:relative">💲<span id="sp-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--orange);color:#1a1a1a;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
     <div class="nb" id="nb-situazione" onclick="navTo('situazione')">
       <div class="nb-icon" style="position:relative">📌<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
       <div class="nb-label" data-i18n="nav_situazione">Da sistemare</div>
@@ -2092,7 +2093,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='15';
+const APP_VERSIONE='16';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -3678,7 +3679,7 @@ async function renderContabilita(cantId){
       </div>
     `;
   }catch(e){
-    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: \${e.message}</p></div>`;
+    el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>Errore: ${e.message}</p></div>`;
   }
 }
 
@@ -3784,22 +3785,22 @@ async function esportaReportContabilita(cantId){
 
     // Foglio 2: Giornate
     const rGio=[['Data','Operaio','Ore']];
-    (giornate||[]).forEach(g=>rGio.push([g.data,`\${g.operai?.nome||''} \${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
+    (giornate||[]).forEach(g=>rGio.push([g.data,`${g.operai?.nome||''} ${g.operai?.cognome||''}`,parseFloat(g.ore_totali||0).toFixed(2)]));
     rGio.push(['','TOTALE',totOre.toFixed(2)],['','Costo (CHF)','CHF '+costoMano.toFixed(2)]);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rGio),'Manodopera');
 
     // Foglio 3: Spese
     const rSp=[['Data','Operaio','Tipo spesa','Documento','Descrizione','Importo CHF','Valuta','Stato','Metodo pagamento']];
-    (spese||[]).forEach(s=>rSp.push([s.data,`\${s.operai?.nome||''} \${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
+    (spese||[]).forEach(s=>rSp.push([s.data,`${s.operai?.nome||''} ${s.operai?.cognome||''}`,s.tipo_spesa||'',s.tipo_doc||'',s.descrizione||'',parseFloat(s.importo||0).toFixed(2),s.valuta||'CHF',s.stato_pag||'',s.metodo_pag||'']));
     rSp.push(['','','','','TOTALE',totSpese.toFixed(2),'CHF','','']);
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rSp),'Spese');
 
     // Foglio 4: Regia
     const rReg=[['Data','Operaio','Tipo','Descrizione','Quantità','UM','Prezzo/um CHF','Costo/um CHF','Totale CHF','Fatturato']];
-    (regia||[]).forEach(r=>rReg.push([r.data,`\${r.operai?.nome||''} \${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
+    (regia||[]).forEach(r=>rReg.push([r.data,`${r.operai?.nome||''} ${r.operai?.cognome||''}`,r.tipo||'',r.descrizione||'',parseFloat(r.quantita||0).toFixed(3),r.um||'h',parseFloat(r.prezzo_unitario||0).toFixed(2),parseFloat(r.costo_unitario||0).toFixed(2),(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)).toFixed(2),r.fatturato?'Sì':'No']));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rReg),'Regia');
 
-    XLSX.writeFile(wb,`CT_Contabilita_\${cn}_\${oggi}.xlsx`);
+    XLSX.writeFile(wb,`CT_Contabilita_${cn}_${oggi}.xlsx`);
     showToast('Report Excel scaricato ✓');
   }catch(e){showToast('Errore: '+e.message,'e');}
 }
@@ -4105,6 +4106,7 @@ async function afterLogin(){
     document.getElementById('rep-mese').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     caricaTema();
     renderHome();
+    _armaIndietro(); // v16: anche alla Home c'e' la voce di guardia: il primo Indietro avvisa, il secondo esce
     setBread([{label:'Cantieri'}]);
     initNavbarDrag();
     aggiornaBadgeSituazione();
@@ -4501,10 +4503,15 @@ async function renderHome(){
   list.innerHTML=attivi.map(c=>{
     const ore=orePerCant[c.id]||0;
     const gru=gruPerCant[c.id]||null;
-    const stCls=c.stato==='Attivo'?'st-attivo':c.stato==='In pausa'?'st-pausa':'st-compl';
+    const _st=_v16StatoCantiere(c); // v16: stato vero = stato_commessa (Anagrafiche), non cantieri.stato
+    const _stHtml=_st.vuoto
+      ?`<div class="cant-status-vuoto st-pausa">⚠️ ${escHtml(_st.testo)}</div>`
+      :`<span class="cant-status cant-status-fl ${_st.cls}">${escHtml(_st.testo)}</span>`;
     return `<div class="cant-card" onclick="enterCantiere('${c.id}')">
-      <span class="cant-status cant-status-fl ${stCls}">${c.stato}</span>
+      ${_st.vuoto?'':_stHtml}
       <div class="cant-nome">${_cantEtichetta(c)}</div>
+      ${_st.vuoto?_stHtml:''}
+      ${_st.nota?`<div style="font-size:14px;color:var(--t3);margin-bottom:4px">${escHtml(_st.nota)}</div>`:''}
       <div class="cant-meta">${[c.luogo,utenteHaAccesso(PROF,'committente',null)&&c.committente?c.committente:null].filter(Boolean).join(' · ')||c.luogo||'—'}</div>
       ${(()=>{const _ia=[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');return _ia?`<div style="font-size:14px;color:var(--t2);margin-bottom:6px">${_ia}</div>`:'';})()}
       <div class="cant-stats">
@@ -4527,7 +4534,8 @@ async function enterCantiere(id){
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),active:true}]);
   renderCantiere();
 }
-function goHome(){curCant=null;_navHistory=['home'];const bb=document.getElementById('btn-back');if(bb)bb.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
+function goHome(){curCant=null;_navHistory=['home'];_armaIndietro(); // v16
+  const bb=document.getElementById('btn-back');if(bb)bb.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
 function goToCantiere(){if(curCant)enterCantiere(curCant.id);else goHome();}
 
 async function renderCantiere(){
@@ -4710,6 +4718,9 @@ function apriFotoCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al 
   renderFotoCantiere();
 }
 
+// v16: la tabella `foto` per l'operaio restituisce solo le righe che ha caricato lui (policy foto_select:
+// created_by = utente, oppure titolare/responsabile/caposquadra). Non e' un errore dell'app: lo si dice a schermo.
+function _v16FotoSoloMie(){return !['titolare','responsabile','caposquadra'].includes(_ruoloApp());}
 async function renderFotoCantiere(filtro){
   if(!filtro)filtro=window._fotoFiltroAttivo||'tutti';
   window._fotoFiltroAttivo=filtro;
@@ -4727,6 +4738,7 @@ async function renderFotoCantiere(filtro){
     </div>
     <div id="p5-zip-azioni"></div>
     <div id="p5-spazio"></div>
+    ${_v16FotoSoloMie()?'<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.4">ℹ️ Qui vedi solo le foto che hai caricato tu. Le foto degli altri le vedono caposquadra e ufficio.</div>':''}
     ${filtroHtml}
     <div class="security-badge">
       <span style="font-size:17px;flex-shrink:0">🔒</span>
@@ -4739,7 +4751,7 @@ async function renderFotoCantiere(filtro){
     if(error)throw error;
     const fotoFiltrata=filtro==='tutti'?(foto||[]):(foto||[]).filter(function(f){return (f.tipo_foto||'durante')===filtro;});
     if(!fotoFiltrata.length){
-      const msg=filtro==='tutti'?'Nessuna foto caricata.<br>Aggiungile dalla modifica giornata ✏️':'Nessuna foto per la categoria <b>'+tipoLabel[filtro]+'</b>.';
+      const msg=filtro==='tutti'?(_v16FotoSoloMie()?'Nessuna foto tua in questo cantiere.<br>Aggiungile dalla modifica giornata ✏️':'Nessuna foto caricata.<br>Aggiungile dalla modifica giornata ✏️'):'Nessuna foto per la categoria <b>'+tipoLabel[filtro]+'</b>.';
       el.innerHTML=el.innerHTML.replace('<div class="empty"><div class="spin" style="margin:0 auto"></div></div>','<div class="empty"><div class="empty-i">📷</div><p>'+msg+'</p></div>');
       return;
     }
@@ -5482,7 +5494,7 @@ async function generaPdfGiornata(data){
     const totalOre=(giornate||[]).reduce(function(s,g){return s+parseFloat(g.ore_totali||0);},0);
     const rows=(giornate||[]).map(function(g){
       const voceRows=(g.voci_lavoro||[]).map(function(v){return '<tr><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0">'+escHtml(v.lavorazioni?.nome||v.lavorazione_nome||'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace">'+parseFloat(v.ore||0).toFixed(2)+'h</td><td style="padding:4px 8px;border-bottom:1px solid #f0f0f0;color:#666">'+( v.quantita?v.quantita+' '+(v.um||''):'—')+'</td></tr>';}).join('');
-      const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:13px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta?'<span style="font-size:13px;background:#e08840;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px" data-i18n="sett_trasferta">🚗 Trasferta</span>':'');
+      const extraBadges=(parseFloat(g.ore_straordinari||0)>0?'<span style="font-size:13px;background:#4caf7d;color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px">+'+g.ore_straordinari+'h straord.</span>':'')+(g.zona_trasferta?'<span style="font-size:13px;background:#e08840;color:#1a1a1a;padding:1px 5px;border-radius:3px;margin-left:6px" data-i18n="sett_trasferta">🚗 Trasferta</span>':'');
       const extraPdf=(g.note?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px;white-space:pre-line">'+escHtml(g.note)+'</div>':'')+(g.materiale_giorno?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#888">🧱 Materiale utilizzato</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.materiale_giorno)+'</div></div>':'')+(g.attrezzatura_giorno?'<div style="font-size:14px;color:#555;border-top:1px solid #eee;padding-top:6px;margin-top:6px"><strong style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#888">🔧 Attrezzatura / Macchinari</strong><div style="white-space:pre-line;margin-top:2px">'+escHtml(g.attrezzatura_giorno)+'</div></div>':'');
       return '<div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:12px;break-inside:avoid"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div><strong style="font-size:17px">👷 '+escHtml(g.operai?.nome||'')+' '+escHtml(g.operai?.cognome||'')+'</strong>'+extraBadges+'</div><div style="font-size:22px;font-weight:700;color:#c8a84b">'+parseFloat(g.ore_totali||0).toFixed(2)+'h</div></div><div style="font-size:14px;color:#888;margin-bottom:8px">'+(g.ora_inizio||'—')+' → '+(g.ora_fine||'—')+' · pausa '+(g.pausa_minuti??60)+'min'+(g.meteo?' · '+g.meteo:'')+'</div>'+(voceRows?'<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:6px"><thead><tr style="background:#f7f7f7"><th style="padding:4px 8px;text-align:left;border-bottom:1px solid #ddd">Lavorazione</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Ore</th><th style="padding:4px 8px;border-bottom:1px solid #ddd">Qta</th></tr></thead><tbody>'+voceRows+'</tbody></table>':'')+extraPdf+'</div>';
     }).join('');
@@ -6507,7 +6519,7 @@ function _p2Etichette(l,soloTesto){
   if(!e.length)return '';
   if(soloTesto)return ' · '+e.join(' · ');
   return e.map(x=>x==='Eventuale'
-    ?'<span style="font-size:13px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700;white-space:nowrap">Eventuale</span>'
+    ?'<span style="font-size:13px;background:var(--orange);color:#1a1a1a;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700;white-space:nowrap">Eventuale</span>'
     :'<span style="font-size:13px;border:1px solid var(--t2);color:var(--t2);padding:0 5px;border-radius:3px;margin-left:6px;font-weight:700;white-space:nowrap">Da confermare</span>').join('');
 }
 // Opzioni delle tendine lavorazioni, raggruppate per capitolo. extra = voci gia' usate non piu' in elenco
@@ -6657,7 +6669,7 @@ async function renderVociDaConfermare(){
     const{data:ore,error:oe}=await sb.from('voci_lavoro').select('lavorazione_id,ore').in('lavorazione_id',voci.map(v=>v.id));
     if(oe)throw oe;
     const orePer={};(ore||[]).forEach(o=>{orePer[o.lavorazione_id]=(orePer[o.lavorazione_id]||0)+parseFloat(o.ore||0);});
-    box.innerHTML='<div class="sec" style="display:flex;align-items:center;gap:8px">Voci nuove da confermare <span style="background:var(--orange);color:#fff;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px">'+voci.length+'</span></div>';
+    box.innerHTML='<div class="sec" style="display:flex;align-items:center;gap:8px">Voci nuove da confermare <span style="background:var(--orange);color:#1a1a1a;font-size:14px;font-weight:700;border-radius:10px;padding:1px 8px">'+voci.length+'</span></div>';
     voci.forEach(v=>{
       const card=document.createElement('div');
       card.style.cssText='background:var(--s1);border:1px solid rgba(224,136,64,.4);border-radius:var(--r);padding:14px;margin-bottom:10px';
@@ -6924,29 +6936,11 @@ function openAnalisiMod(dStr){
 // ── ADMIN ──
 async function renderAdmin(){
   const _admc=document.getElementById('adm-cantieri');
-  const _admo=document.getElementById('adm-operai');
-  if(!_admc||!_admo)return; // screen non nel DOM
-  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${escHtml(c.luogo||'')} · ${escHtml(c.stato||'')}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')" title="Stato nell'App Cantieri">✏️ Stato</button><button class="btn-icon btn-sm" onclick="apriAnagrafiche({commessa:'${c.id}'})" title="Apri la commessa in Anagrafiche">🗂️ Anagrafiche</button></div></div>`).join('');
-  const oggi_adm=new Date().toISOString().split('T')[0];
-  _admo.innerHTML=OPERAI_TUTTI.map(o=>{
-    const exAt=!_opAttivo(o,oggi_adm);
-    return `<div style="background:var(--s1);border:1px solid ${exAt?'rgba(224,85,85,.2)':'var(--border)'};border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;opacity:${exAt?'.65':'1'}">
-      <div>
-        <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}${_v13Esterno(o)?' <span style="font-size:13px;background:#6b4fa3;color:#fff;border-radius:4px;padding:1px 6px">👷 Esterno</span>':''}</div>
-        <div style="font-size:14px;color:var(--t2)">${o.ruolo}${exAt?` &nbsp;<span style="color:var(--red);font-weight:700">&#128683; Fine ${o.data_fine_rapporto}</span>`:''}</div>
-      </div>
-      <button class="btn-icon btn-sm" style="flex-shrink:0" onclick="apriAnagrafiche({persona:'${o.id}'})" title="Apri la persona in Anagrafiche">🗂️ Anagrafiche</button>
-    </div>`;
-  }).join('');
-  const existingImp=document.getElementById('adm-impostazioni');
-  if(!existingImp){
-    const impDiv=document.createElement('div');impDiv.id='adm-impostazioni';
-    // Niente secondo campo imp-tariffa qui: creava un id DOM duplicato con quello
-    // statico di #scr-impostazioni e getElementById leggeva sempre l'altro.
-    // La tariffa si gestisce solo dalla schermata Impostazioni.
-    impDiv.innerHTML=`<div class="sec" style="margin-top:20px">Impostazioni</div><div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px"><div style="font-size:14px;color:var(--t2);margin-bottom:10px">Tariffa oraria, dati azienda, pasti e timbratura si gestiscono da Impostazioni.</div><button class="btn btn-g btn-sm" onclick="navTo('impostazioni')">⚙️ Vai a Impostazioni</button></div>`;
-    document.getElementById('scr-admin').insertBefore(impDiv,document.getElementById('adm-utenti').closest?.('.sec')||document.getElementById('scr-admin').lastChild);
-  }
+  if(!_admc)return; // screen non nel DOM
+  // v16: l'elenco persone dell'Admin (#adm-operai) non e' mai esistito nell'HTML (i due elenchi non si vedevano mai):
+  // le persone stanno in Personale, con «Apri Anagrafiche». Tolta la parte morta (operai e blocco «Impostazioni»,
+  // gia' coperto dal tasto «Impostazioni →»). Qui restano: cantieri, nome azienda, utenti.
+  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center"><div style="flex:1 1 200px;min-width:0"><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${[c.luogo?escHtml(c.luogo):'','Stato nell\'app: '+escHtml(c.stato||'—')].filter(Boolean).join(' · ')}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')" title="Stato nell'App Cantieri">✏️ Stato</button><button class="btn-icon btn-sm" onclick="apriAnagrafiche({commessa:'${c.id}'})" title="Apri la commessa in Anagrafiche">🗂️ Anagrafiche</button></div></div>`).join('');
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
@@ -7574,7 +7568,7 @@ async function _raOre(el,from,to,opF,cantF){
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px;overflow-x:auto">
       <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Per collaboratore</div>
       <table class="rtable"><thead><tr><th>Collaboratore</th><th>Ruolo</th><th>Giorni</th><th>Ore</th><th>Straord.</th></tr></thead><tbody>
-      ${opKeys.sort((a,b)=>byOp[b].ore-byOp[a].ore).map(k=>`<tr><td>${escHtml(byOp[k].op?.nome||'')+ ' '+escHtml(byOp[k].op?.cognome||'')}${byOp[k].op?.agenzia?'<span style="font-size:12px;background:var(--orange);color:#fff;border-radius:4px;padding:1px 4px;margin-left:4px">AGZ</span>':''}</td><td style="color:var(--t2)">${escHtml(byOp[k].op?.ruolo||'')}</td><td class="mono">${byOp[k].giorni}</td><td class="mono">${byOp[k].ore.toFixed(1)}h</td><td class="mono" style="color:var(--green)">${byOp[k].str>0?byOp[k].str.toFixed(1)+'h':'—'}</td></tr>`).join('')}
+      ${opKeys.sort((a,b)=>byOp[b].ore-byOp[a].ore).map(k=>`<tr><td>${escHtml(byOp[k].op?.nome||'')+ ' '+escHtml(byOp[k].op?.cognome||'')}${byOp[k].op?.agenzia?'<span style="font-size:12px;background:var(--orange);color:#1a1a1a;border-radius:4px;padding:1px 4px;margin-left:4px">AGZ</span>':''}</td><td style="color:var(--t2)">${escHtml(byOp[k].op?.ruolo||'')}</td><td class="mono">${byOp[k].giorni}</td><td class="mono">${byOp[k].ore.toFixed(1)}h</td><td class="mono" style="color:var(--green)">${byOp[k].str>0?byOp[k].str.toFixed(1)+'h':'—'}</td></tr>`).join('')}
       </tbody></table>
     </div>
     <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
@@ -8076,7 +8070,9 @@ window.addEventListener('popstate',function(){
     _armaIndietro();return;
   }
   // 3. alla Home → nessuna azione: il prossimo indietro esce dall'app
-  if(document.getElementById('scr-home')?.classList.contains('on')&&_navHistory.length<=1)return;
+  // v16: prima non si vedeva niente (la voce di guardia veniva consumata in silenzio): ora un avviso.
+  // Non la rimettiamo: se Umberto preme ancora Indietro, esce davvero.
+  if(document.getElementById('scr-home')?.classList.contains('on')&&_navHistory.length<=1){showToast('Premi ancora Indietro per uscire dall\'app');return;}
   // 4. altrimenti → schermata precedente dell'app
   goBack();_armaIndietro();
 });
@@ -8752,11 +8748,37 @@ function _cantEtichettaDaId(id,nome){const c=id?(CANTIERI||[]).find(x=>x.id===id
 function _cantCommessaInCorso(c){const st=String(c?.stato_commessa||'').trim();return !!c&&!_cantInterno(c)&&(st===''||st==='In corso');}
 // Scelta del cantiere per le ORE: commesse in corso + interni (per tutti i ruoli). Spese e il resto: solo commesse in corso.
 function _cantSceglibileOre(c){return _cantInterno(c)||_cantCommessaInCorso(c);}
+// v16: etichetta di stato di un cantiere nelle liste (Home, scelta cantiere). Lo stato vero e' `stato_commessa`
+// (Anagrafiche); la vecchia colonna `cantieri.stato` non decide piu' niente. Torna {testo, cls, nota}:
+// - interno: «Interno»; commessa «In corso»: «In corso»; stato_commessa vuoto: «Stato da mettere in Anagrafiche»
+//   (cls 'st-pausa' = arancio, `vuoto:true`); altro stato: il suo testo. `nota` = vecchio stato solo se dice
+//   qualcosa di diverso da «Attivo» (In pausa, Completato), come informazione.
+function _v16StatoCantiere(c){
+  if(!c)return {testo:'',cls:'st-compl',nota:'',vuoto:false};
+  const st=String(c.stato_commessa||'').trim();
+  const vecchio=String(c.stato||'').trim();
+  const nota=(vecchio&&vecchio!=='Attivo')?'Nell\'app Cantieri: '+vecchio:'';
+  if(_cantInterno(c))return {testo:'Interno',cls:'st-attivo',nota:nota,vuoto:false};
+  if(st==='')return {testo:'Stato da mettere in Anagrafiche',cls:'st-pausa',nota:nota,vuoto:true};
+  return {testo:st,cls:st==='In corso'?'st-attivo':'st-compl',nota:nota,vuoto:false};
+}
 // In modifica: se il cantiere gia' salvato non e' piu' nella scelta, lo si aggiunge e resta com'era.
 function _selTieniCantiere(sel,id){
   if(!sel||!id)return;
   _selTogliTenuti(sel);
   if(![...sel.options].some(o=>o.value===id)){const c=(CANTIERI||[]).find(x=>x.id===id);const o=new Option((_cantEtichetta(c)||'Cantiere')+' (non più nella scelta)',id);o.dataset.tenuto='1';sel.add(o);}
+  sel.value=id;
+}
+// v16: come _selTieniCantiere ma per le PERSONE. In modifica di una regia/spesa di chi non e' piu' nell'elenco
+// (ex o Esterno) il campo restava vuoto e un salvataggio la lasciava senza persona: ora la persona resta, segnata.
+function _v16SelTieniPersona(sel,id){
+  if(!sel||!id)return;
+  if(![...sel.options].some(o=>o.value===id)){
+    const op=_v13OpDi(id);
+    const nome=op?((op.nome||'')+' '+(op.cognome||'')).trim():'Persona';
+    const o=new Option((nome||'Persona')+(_v13Esterno(op)?' (Esterno)':' (non più nella scelta)'),id);
+    o.dataset.tenuto='1';sel.add(o);
+  }
   sel.value=id;
 }
 // Toglie le voci «(non più nella scelta)» lasciate da una modifica precedente (prima di una riga nuova).
@@ -9041,7 +9063,7 @@ async function visualizzaRegia(id){
 }
 
 function openModalSpesa(id){
-  editSpId=id;spFotoFile=null;_p3FotoEsistente=false;_selTogliTenuti(document.getElementById('sp-cant-sel')); // P2
+  editSpId=id;spFotoFile=null;_p3FotoEsistente=false;_selTogliTenuti(document.getElementById('sp-cant-sel'));_selTogliTenuti(document.getElementById('sp-op-sel')); // P2 + v16
  
   document.getElementById('sp-foto-prv').innerHTML='';
   populateSpeseSel();
@@ -9065,7 +9087,7 @@ function openModalSpesa(id){
       document.getElementById('mod-spesa-t').textContent=t('modal_modifica_spesa');
       _p3ImpostaDestinazione(s); // P3: anche cantieri non piu' nella scelta restano com'erano
       document.getElementById('sp-documento').value=s.documento||'';p3DocumentoCambiato();
-      _p3FotoEsistente=!!s.foto_path;document.getElementById('sp-op-sel').value=s.operaio_id||'';
+      _p3FotoEsistente=!!s.foto_path;_v16SelTieniPersona(document.getElementById('sp-op-sel'),s.operaio_id);if(!s.operaio_id)document.getElementById('sp-op-sel').value='';
       document.getElementById('sp-data').value=s.data||'';document.getElementById('sp-tipo-doc').value=s.tipo_doc||'Scontrino';
       document.getElementById('sp-tipo-spesa').value=s.tipo_spesa||'Materiale';document.getElementById('sp-desc').value=s.descrizione||'';
       document.getElementById('sp-importo').value=s.importo||'';document.getElementById('sp-valuta').value=s.valuta||'CHF';
@@ -9191,6 +9213,7 @@ async function renderRegia(){
 function openModalRegia(id){
   editRegId=id;
   _selTogliTenuti(document.getElementById('reg-cant-sel')); // P2
+  _selTogliTenuti(document.getElementById('reg-op-sel')); // v16
   if(!id){
     document.getElementById('mod-regia-t').textContent=t('modal_nuova_regia');
     document.getElementById('reg-data').value=new Date().toISOString().split('T')[0];
@@ -9200,7 +9223,7 @@ function openModalRegia(id){
   }else{
     sb.from('regia').select('*').eq('id',id).single().then(({data:r})=>{
       if(!r)return;document.getElementById('mod-regia-t').textContent=t('modal_modifica_regia');
-      _selTieniCantiere(document.getElementById('reg-cant-sel'),r.cantiere_id);document.getElementById('reg-op-sel').value=r.operaio_id||''; // P2
+      _selTieniCantiere(document.getElementById('reg-cant-sel'),r.cantiere_id);_v16SelTieniPersona(document.getElementById('reg-op-sel'),r.operaio_id);if(!r.operaio_id)document.getElementById('reg-op-sel').value=''; // P2 + v16
       document.getElementById('reg-data').value=r.data||'';document.getElementById('reg-tipo').value=r.tipo||'Ore';
       document.getElementById('reg-desc').value=r.descrizione||'';document.getElementById('reg-qty').value=r.quantita||'';
       document.getElementById('reg-um').value=r.um||'h';document.getElementById('reg-costo').value=r.costo_unitario||'';
@@ -10837,7 +10860,7 @@ async function renderPersonale(){
       div.id='op-card-'+o.id;
       div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
       const icon=ruoloIcon[o.ruolo]||'👤';
-      const agzBadge=o.agenzia?'<span style="font-size:12px;background:var(--orange);color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">AGZ'+(o.nome_agenzia?' · '+escHtml(o.nome_agenzia):'')+'</span>':'';
+      const agzBadge=o.agenzia?'<span style="font-size:12px;background:var(--orange);color:#1a1a1a;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">AGZ'+(o.nome_agenzia?' · '+escHtml(o.nome_agenzia):'')+'</span>':'';
       // v13: Esterno = etichetta con la ditta; niente accesso app, niente ore, niente stipendio
       const estBadge=_v13Esterno(o)?'<span style="font-size:13px;background:#6b4fa3;color:#fff;border-radius:4px;padding:1px 6px;margin-left:5px;font-weight:700">👷 Esterno'+(_v13Ditta[o.ditta_id]?' · '+escHtml(_v13Ditta[o.ditta_id]):'')+'</span>':'';
       div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -10947,7 +10970,7 @@ async function apriSchedaOp(id){
     docsEl.innerHTML=docs.map(function(d){
       let badge='';
       if(d.scadenza&&d.scadenza<oggi)badge='<span style="font-size:13px;background:var(--red);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">⚠️ SCADUTO</span>';
-      else if(d.scadenza&&d.scadenza<=tra30)badge='<span style="font-size:13px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">⚠️ IN SCADENZA</span>';
+      else if(d.scadenza&&d.scadenza<=tra30)badge='<span style="font-size:13px;background:var(--orange);color:#1a1a1a;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">⚠️ IN SCADENZA</span>';
       return '<div style="padding:7px 0;border-bottom:1px solid var(--border)">'
         +'<div style="font-size:15px;font-weight:600">'+escHtml(d.tipo)+badge+'</div>'
         +'<div style="font-size:14px;color:var(--t2)">'+(d.scadenza?'Scadenza: '+_data(d.scadenza):'Nessuna scadenza')+'</div>'
@@ -12154,7 +12177,7 @@ function _p2bData(d){
 }
 function _p2bHtmlGiorni(giorni,scelto){
   const titolo='<div class="sec" style="display:flex;align-items:center;gap:8px">Giorni con ore da confermare'
-    +(giorni.length?' <span style="background:var(--orange);color:#fff;font-size:15px;font-weight:700;border-radius:10px;padding:1px 9px">'+giorni.length+'</span>':'')+'</div>';
+    +(giorni.length?' <span style="background:var(--orange);color:#1a1a1a;font-size:15px;font-weight:700;border-radius:10px;padding:1px 9px">'+giorni.length+'</span>':'')+'</div>';
   if(!giorni.length)return titolo+'<div class="p2b-vuoto">✅ Nessun giorno con ore da confermare</div>';
   const nRit=giorni.filter(g=>g.inRitardo).length;
   let h=titolo;
@@ -12930,13 +12953,14 @@ function renderScegliCantiere(filtro){
     return;
   }
   el.innerHTML=lista.map(c=>{
-    const stCls=c.stato==='Attivo'?'st-attivo':'st-pausa';
+    const _st=_v16StatoCantiere(c); // v16: stato vero = stato_commessa
+    const stCls=_st.cls;
     const addr=[c.via,[c.cap,c.citta].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     return `<div onclick="selezionaCantierePerGiornata('${c.id}')"
       style="padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
       onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-        <span class="cant-status ${stCls}" style="position:static;font-size:13px;padding:2px 7px">${escHtml(c.stato)}</span>
+        <span class="cant-status ${stCls}" style="position:static;font-size:13px;padding:2px 7px;text-transform:none;letter-spacing:0">${escHtml(_st.testo)}</span>
         <span style="font-size:17px;font-weight:700;color:var(--gold)">${escHtml(_cantEtichetta(c))}</span>
       </div>
       ${c.luogo?`<div style="font-size:14px;color:var(--t2)">📌 ${escHtml(c.luogo)}</div>`:''}
