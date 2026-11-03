@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#c8a84b">
-<link rel="manifest" href="manifest.json?v=13">
+<link rel="manifest" href="manifest.json?v=14">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantiere">
 <title>Cantiere</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=13"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=14"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=13"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=13"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=13"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=13"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=14"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=14"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=14"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=14"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -453,7 +453,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
       <div class="sec" style="margin:0" data-i18n="home_cantieri_attivi">📋 Cantieri attivi</div>
       <div style="display:flex;gap:6px;align-items:center">
         <button class="btn-icon btn-sm" onclick="navTo('ricerca')" title="Cerca giornate" style="font-size:17px;padding:4px 8px">🔍</button>
-        <button class="btn-icon btn-sm admin-only" onclick="openModalCantiere(null)" data-i18n="btn_nuovo">➕ Nuovo</button>
+        <button class="btn-icon btn-sm admin-only" onclick="apriAnagrafiche('nuova-commessa')" title="Le commesse nuove si creano in Anagrafiche">🗂️ Nuova commessa</button>
       </div>
     </div>
     <div id="home-list"></div>
@@ -785,12 +785,14 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
       <button class="btn btn-g" style="flex-shrink:0;height:44px" onclick="salvaNomeAzienda()" data-i18n="btn_salva">💾 Salva</button>
     </div>
     <hr style="margin-bottom:14px">
-    <button class="btn btn-s" onclick="openModalCantiere(null)" style="margin-bottom:20px" data-i18n="btn_nuovo_cantiere">➕ Nuovo cantiere</button>
+    <button class="btn btn-g" onclick="apriAnagrafiche('commesse')" style="margin-bottom:6px;width:100%;font-size:17px;padding:14px">🗂️ Apri Anagrafiche — commesse</button>
+    <div style="font-size:14px;color:var(--t2);margin-bottom:20px;line-height:1.4">Nuove commesse, nome, indirizzo, cliente: si fanno in Anagrafiche. Qui si cambia solo lo «Stato nell'App Cantieri» (✏️ Stato).</div>
     <div class="sec" data-i18n="sec_personale_admin">Personale</div>
     <button class="btn btn-s" onclick="navTo('personale')" style="margin-bottom:12px;width:100%" data-i18n="btn_gestisci_personale">👷 Gestisci personale →</button>
     <div class="sec admin-only" data-i18n="sec_utenti_admin">Utenti</div>
     <div id="adm-utenti" class="admin-only"></div>
-    <div class="admin-only" style="margin-bottom:20px"><button class="btn btn-s" onclick="openModalInvita()" style="margin-top:10px" data-i18n="btn_invita_collab">✉️ Invita nuovo collaboratore</button></div>
+    <div class="admin-only" style="margin:10px 0 20px"><button class="btn btn-g" onclick="apriAnagrafiche('persone')" style="width:100%;font-size:17px;padding:14px">🗂️ Apri Anagrafiche — accessi</button>
+      <div style="font-size:14px;color:var(--t2);margin-top:6px;line-height:1.4">Accesso alle app, ruolo, blocco e nuova password: in Anagrafiche, nella scheda della persona.</div></div>
     <button class="btn btn-s admin-only" onclick="navTo('permessi')" style="display:none;margin-bottom:8px;width:100%" data-i18n="btn_perm_vis_admin">🔐 Permessi e visibilità →</button>
     <button class="btn btn-s admin-only" onclick="navTo('impostazioni')" style="margin-bottom:8px;width:100%" data-i18n="btn_imp_admin">⚙️ Impostazioni →</button>
     <div class="bsp"></div>
@@ -1182,7 +1184,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   <div class="scr" id="scr-personale">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="sec" style="margin:0" data-i18n="sec_personale">👷 Personale</div>
-      <button class="btn-icon btn-sm" onclick="openModalOp(null)" data-i18n="btn_aggiungi">➕ Aggiungi</button>
+      <button class="btn-icon btn-sm" onclick="apriAnagrafiche('nuova-persona')" title="Le persone nuove si scrivono in Anagrafiche">🗂️ Nuova persona</button>
     </div>
     <!-- Filtri -->
     <input type="text" class="fi" id="pers-ricerca" placeholder="🔍 Cerca per nome o cognome..." oninput="renderPersonale()" style="margin-bottom:10px">
@@ -1440,49 +1442,16 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 <div class="ov" id="mod-cant">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-cant-t" data-i18n="modal_nuovo_cantiere">Nuovo cantiere</div>
-    <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="c-nome"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_luogo_breve">Luogo (breve)</label><input type="text" class="fi" id="c-luogo" placeholder="es. San Nazzaro"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_via_indirizzo">Via / Indirizzo</label><input type="text" class="fi" id="c-via" placeholder="es. Via Lugano 12"></div>
-    <div class="row2">
-      <div class="fg"><label class="fl" data-i18n="lbl_cap">CAP</label><input type="text" class="fi" id="c-cap" placeholder="6500" style="font-family:'DM Mono',monospace"></div>
-      <div class="fg"><label class="fl" data-i18n="lbl_citta">Città</label><input type="text" class="fi" id="c-citta" placeholder="Bellinzona"></div>
-    </div>
-    <div class="fg"><label class="fl" data-i18n="lbl_paese">Paese</label><select class="fs" id="c-paese"><option value="CH">🇨🇭 CH — Svizzera</option><option value="IT">🇮🇹 IT — Italia</option><option value="DE">🇩🇪 DE — Germania</option><option value="AT">🇦🇹 AT — Austria</option><option value="FR">🇫🇷 FR — Francia</option><option value="ES">🇪🇸 ES — Spagna</option></select></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_committente_lbl">Committente (nome)</label><input type="text" class="fi" id="c-comm"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_stato">Stato</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select></div>
+    <div class="mod-t" id="mod-cant-t">Cantiere</div>
+    <!-- v14: nome, indirizzo, cliente, numero si cambiano SOLO in Anagrafiche. Qui: lettura + «Stato nell'App Cantieri». -->
+    <div id="c-dati" style="margin-bottom:12px"></div>
+    <div id="c-anag" style="margin-bottom:14px"></div>
+    <div class="fg"><label class="fl">Stato nell'App Cantieri</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select>
+      <div style="font-size:14px;color:var(--t2);margin-top:4px;line-height:1.4">Decide se il cantiere compare fra i lavori di questa app. Lo stato della commessa (In corso, Conclusa…) si mette in Anagrafiche.</div></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-cant')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="saveCant()" data-i18n="btn_salva_cant">Salva</button>
-    </div>
-    <div id="del-cant-w" style="margin-top:10px"></div>
-  </div>
-</div>
-
-<div class="ov" id="mod-pwd-op" style="z-index:210">
-  <div class="mod">
-    <div class="mod-h"></div>
-    <div class="mod-t">🔑 Nuova password</div>
-    <div id="pwdop-form">
-      <p id="pwdop-chi" style="font-size:15px;color:var(--t2);margin-bottom:14px;line-height:1.6"></p>
-      <div class="fg"><label class="fl">Nuova password (almeno 8 caratteri)</label>
-        <input type="text" class="fi" id="pwdop-pwd" autocomplete="off" placeholder="es. Cantiere-2026" style="font-family:'DM Mono',monospace"></div>
-      <div id="pwdop-err" style="display:none;font-size:15px;line-height:1.5;border-radius:var(--rsm);padding:10px 12px;margin-top:4px;white-space:pre-wrap;background:rgba(224,85,85,.12);border:1px solid var(--red);color:var(--red)"></div>
-      <hr>
-      <div class="row2">
-        <button class="btn btn-s" onclick="closeModal('mod-pwd-op')" data-i18n="btn_annulla">Annulla</button>
-        <button class="btn btn-g" id="pwdop-salva" onclick="p5bSalvaNuovaPassword()">✓ Salva password</button>
-      </div>
-    </div>
-    <div id="pwdop-esito" style="display:none">
-      <div id="pwdop-esito-titolo" style="font-size:17px;font-weight:700;margin-bottom:8px"></div>
-      <pre id="pwdop-esito-testo" style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;font-family:'DM Mono',monospace;font-size:16px;white-space:pre-wrap;word-break:break-all;user-select:all;margin:0 0 10px"></pre>
-      <div style="font-size:14px;color:var(--t2);margin-bottom:12px">⚠️ La password si vede solo adesso: copiala prima di chiudere.</div>
-      <div class="row2">
-        <button class="btn btn-s" onclick="closeModal('mod-pwd-op')">Chiudi</button>
-        <button class="btn btn-g" onclick="p5bCopiaPassword()">📋 Copia</button>
-      </div>
+      <button class="btn btn-g" onclick="saveCant()">💾 Salva stato</button>
     </div>
   </div>
 </div>
@@ -1490,44 +1459,11 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 <div class="ov" id="mod-op">
   <div class="mod">
     <div class="mod-h"></div>
-    <div class="mod-t" id="mod-op-t" data-i18n="modal_nuovo_op">Nuovo operaio</div>
-    <div class="row2">
-      <div class="fg"><label class="fl" data-i18n="lbl_nome">Nome</label><input type="text" class="fi" id="o-nome" autocomplete="off"></div>
-      <div class="fg"><label class="fl" data-i18n="lbl_cognome">Cognome</label><input type="text" class="fi" id="o-cogn" autocomplete="off"></div>
-    </div>
-    <div class="fg"><label class="fl">Ruolo <span style="font-weight:400;font-size:13px;color:var(--t2)">(seleziona o scrivi liberamente)</span></label>
-      <input class="fi" id="o-ruolo" list="ruoli-list" placeholder="es. Carpentiere, Elettricista..." autocomplete="off">
-      <datalist id="ruoli-list">
-        <option value="Caposquadra">
-        <option value="Responsabile cantiere">
-        <option value="Carpentiere">
-        <option value="Aiuto carpentiere">
-        <option value="Lattoniere">
-        <option value="Muratore">
-        <option value="Pittore">
-        <option value="Gruista">
-        <option value="Elettricista">
-        <option value="Idraulico">
-        <option value="Manovale">
-        <option value="Apprendista">
-        <option value="Operaio generico">
-        <option value="Tecnico di cantiere">
-        <option value="Ditta esterna">
-      </datalist></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_email_app">Email (per accesso app)</label><input type="email" class="fi" id="o-email" placeholder="es. mario.rossi@email.com" autocomplete="off"></div>
-    <div id="o-acc-stato" style="font-size:14px;color:var(--t2);margin:-6px 0 10px"></div>
-    <div id="o-pwd-wrap" style="display:none;margin:-4px 0 12px"><button type="button" class="btn btn-s" style="font-size:15px;padding:9px" onclick="p5bApriNuovaPassword()">🔑 Nuova password</button></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_telefono">Telefono</label><input type="tel" class="fi" id="o-telefono" autocomplete="off" placeholder="es. +41 79 123 45 67"></div>
-    <div class="fg"><label class="fl">Inizio rapporto</label><input type="date" class="fi" id="o-inizio" style="font-family:'DM Mono',monospace;font-size:15px"></div>
-    <div class="fg"><label class="fl" data-i18n="lbl_fine_rapporto">Fine rapporto (lascia vuoto se attivo)</label><div style="display:flex;gap:8px;align-items:center"><input type="date" class="fi" id="o-fine" style="font-family:'DM Mono',monospace;font-size:15px;flex:1"><button type="button" class="btn btn-s btn-sm" style="white-space:nowrap;width:auto;padding:8px 10px;font-size:14px" onclick="p5TempoIndeterminato()">✕ Tempo indeterminato</button></div></div>
-    <div id="o-fine-warn" class="warn" style="display:none">⚠️ Questa data è nel passato — l'operaio non apparirà nei dropdown di assegnazione</div>
-    <div class="toggle-wrap" style="margin-bottom:8px">
-      <div><div class="toggle-lbl" data-i18n="txt_collab_agenzia">Collaboratore di agenzia (interinale)</div><div class="toggle-sub" data-i18n="txt_collab_agenzia_sub">Mostra badge AGZ, filtrabile nel report</div></div>
-      <label class="toggle"><input type="checkbox" id="o-agenzia" onchange="document.getElementById('o-agenzia-wrap').style.display=this.checked?'block':'none'"><span class="toggle-sl"></span></label>
-    </div>
-    <div id="o-agenzia-wrap" style="display:none;margin-bottom:12px">
-      <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_nome_agenzia">Nome agenzia</label><input type="text" class="fi" id="o-nome-agenzia" placeholder="es. Manpower, Adecco, Randstad..."></div>
-    </div>
+    <div class="mod-t" id="mod-op-t">Cantieri visibili</div>
+    <!-- v14 (punto 8): i dati della persona, l'accesso, la password e i documenti si cambiano SOLO in Anagrafiche.
+         Qui resta solo quello che decide l'App Cantieri: quali cantieri vede la persona. -->
+    <div id="o-info" style="font-size:15px;color:var(--t2);margin-bottom:12px;line-height:1.5"></div>
+    <div id="o-anag" style="margin-bottom:14px"></div>
     <div id="op-vis-section" style="display:none">
       <hr style="margin:14px 0">
       <div style="font-size:15px;font-weight:700;margin-bottom:10px">🏗️ Cantieri visibili</div>
@@ -1540,37 +1476,12 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
         <div id="o-vis-lista" style="max-height:220px;overflow-y:auto;background:var(--s2);border-radius:var(--rsm);padding:4px 12px"></div>
       </div>
     </div>
-    <div id="op-docs-section" style="display:none">
-      <hr style="margin:14px 0">
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px" data-i18n="sec_docs_scadenze">📋 Documenti e scadenze</div>
-      <div id="op-docs-list" style="min-height:20px;margin-bottom:10px"></div>
-      <div style="background:var(--s2);border-radius:var(--rsm);padding:12px">
-        <div style="font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px;font-weight:700" data-i18n="txt_aggiungi_doc_sec">Aggiungi documento</div>
-        <div class="row2" style="margin-bottom:8px">
-          <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_tipo">Tipo</label>
-            <select class="fs" id="doc-tipo">
-              <option value="Patente">🪪 Patente</option>
-              <option value="Certificato sicurezza">🦺 Cert. sicurezza</option>
-              <option value="Visita medica">🩺 Visita medica</option>
-              <option value="Altro">📄 Altro</option>
-            </select>
-          </div>
-          <div class="fg" style="margin-bottom:0"><label class="fl" data-i18n="lbl_scadenza">Scadenza</label>
-            <input type="date" class="fi" id="doc-scad" style="font-family:'DM Mono',monospace;font-size:15px">
-          </div>
-        </div>
-        <div class="fg"><label class="fl" data-i18n="lbl_note_opz">Note (opzionale)</label><input type="text" class="fi" id="doc-note" placeholder="es. Patente B+E, n° 123456..."></div>
-        <button class="btn btn-g" style="margin-top:4px;padding:8px 16px;font-size:15px" onclick="addDocumentoOp()" data-i18n="btn_aggiungi_doc">➕ Aggiungi documento</button>
-      </div>
-    </div>
     <div id="o-acc-msg" style="display:none;font-size:15px;line-height:1.5;border-radius:var(--rsm);padding:10px 12px;margin-top:10px;white-space:pre-wrap"></div>
     <hr>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" id="o-salva" onclick="saveOp()" data-i18n="btn_salva">Salva</button>
+      <button class="btn btn-g" id="o-salva" onclick="saveOp()">💾 Salva cantieri visibili</button>
     </div>
-    <div id="del-op-w" style="margin-top:10px"></div>
-    <div id="o-elimina-def" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -1583,9 +1494,11 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <div style="font-size:15px;font-weight:700;margin-bottom:10px">📋 Documenti e scadenze</div>
     <div id="scheda-op-docs" style="min-height:20px;margin-bottom:10px"></div>
     <hr>
+    <button class="btn btn-g" id="scheda-op-mod" style="width:100%;font-size:17px;padding:14px">🗂️ Apri Anagrafiche — questa persona</button>
+    <div style="font-size:14px;color:var(--t2);margin:6px 0 12px;line-height:1.4">Dati, fine rapporto, documenti, accesso alle app e password si cambiano in Anagrafiche.</div>
     <div class="row2">
       <button class="btn btn-s" onclick="closeModal('mod-op-scheda')">Chiudi</button>
-      <button class="btn btn-g" id="scheda-op-mod">✏️ Modifica</button>
+      <button class="btn btn-s" id="scheda-op-vis">🏗️ Cantieri visibili</button>
     </div>
   </div>
 </div>
@@ -1879,42 +1792,6 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 </div>
 
 <!-- MODALI AGGIUNTIVI -->
-<div class="ov" id="mod-invita">
-  <div class="mod">
-    <div class="mod-h"></div>
-    <div class="mod-t">🔑 Crea accesso app</div>
-    <div id="inv-form">
-      <p style="font-size:15px;color:var(--t2);margin-bottom:16px;line-height:1.6">Crei tu l'account con email e password: nessuna email viene inviata. Alla fine ti mostro i dati da comunicare al collaboratore.</p>
-      <div class="row2">
-        <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="inv-nome" placeholder="Marco" autocomplete="off"></div>
-        <div class="fg"><label class="fl">Cognome</label><input type="text" class="fi" id="inv-cogn" placeholder="Rossi" autocomplete="off"></div>
-      </div>
-      <div class="fg"><label class="fl" data-i18n="lbl_email">Email</label><input type="email" class="fi" id="inv-email" placeholder="marco.rossi@email.com" autocomplete="off"></div>
-      <div class="fg"><label class="fl">Ruolo</label><select class="fs" id="inv-ruolo"></select></div>
-      <div class="fg">
-        <label class="fl">Password</label>
-        <input type="text" class="fi" id="inv-pwd" placeholder="es. Cantiere2026!" autocomplete="off" style="font-family:'DM Mono',monospace">
-        <div style="font-size:14px;color:var(--t2);margin-top:4px">Almeno 6 caratteri. Il collaboratore potrà cambiarla dall'app.</div>
-      </div>
-      <div id="inv-err" style="color:var(--red);font-size:15px;margin-top:8px;display:none"></div>
-      <hr>
-      <div class="row2">
-        <button class="btn btn-s" onclick="closeModal('mod-invita')" data-i18n="btn_annulla">Annulla</button>
-        <button class="btn btn-g" onclick="invitaCollaboratore()" id="btn-invita">✓ Crea accesso</button>
-      </div>
-    </div>
-    <div id="inv-esito" style="display:none">
-      <div id="inv-esito-titolo" style="font-size:17px;font-weight:700;margin-bottom:8px"></div>
-      <pre id="inv-esito-testo" style="background:var(--s2);border-radius:var(--rsm);padding:12px 14px;font-family:'DM Mono',monospace;font-size:16px;white-space:pre-wrap;word-break:break-all;user-select:all;margin:0 0 10px"></pre>
-      <div style="font-size:14px;color:var(--t2);margin-bottom:12px">⚠️ La password si vede solo adesso: copiala prima di chiudere.</div>
-      <div class="row2">
-        <button class="btn btn-s" onclick="closeModal('mod-invita')">Chiudi</button>
-        <button class="btn btn-g" onclick="p4CopiaCredenziali()">📋 Copia</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="ov" id="mod-piano-ass">
   <div class="mod">
     <div class="mod-h"></div>
@@ -2213,7 +2090,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='13';
+const APP_VERSIONE='14';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4072,7 +3949,7 @@ async function init(){
       await afterLogin();
       initFontSize();
       applyLanguage();
-      if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function(){});
+      // v14: niente service worker (sw.js non c'e' mai stato: era solo un 404 in console). Manifest e icone restano: l'app si installa lo stesso.
     } else {
       applyLanguage();
       showLogin();
@@ -4486,6 +4363,42 @@ function _v13ControlloAccesso(email,nome,cognome,lista){
 }
 // Nome della ditta di un Esterno (tm_contatti, letto solo se si puo'): ragione sociale, se no nome e cognome.
 function _v13NomeDitta(c){if(!c)return '';return String(c.ragione_sociale||'').trim()||[c.nome,c.cognome].filter(Boolean).join(' ').trim();}
+// ── v14 (punto 8): persone e commesse si scrivono SOLO in Anagrafiche ──────────────────────────
+// Qui si leggono e basta. Al posto di «Nuovo», «Modifica», «Rimuovi», «Crea accesso», «Nuova password»,
+// «Ruolo app» c'e' il tasto «🗂️ Apri Anagrafiche», che apre la scheda giusta (link con # all'id).
+// Restano scritte dal Cantiere (le altre app non le gestiscono): cantieri.stato («Stato nell'App Cantieri»,
+// regola «due padroni» di Anagrafiche), cantieri.lat/lng (posizione in mappa), cantieri_visibili e
+// operai.vede_tutti_cantieri (chi vede quale cantiere nell'App Cantieri).
+const V14_ANAGRAFICHE='https://carpenteria-ticinese.github.io/CT-rubrica/';
+const V14_FINESTRA='ct_app_rubrica'; // stesso nome che usa l'Hub: un secondo clic riusa la stessa scheda
+const V14_PUO_ANAGRAFICHE=['titolare','responsabile']; // Anagrafiche fa entrare solo loro
+const _V14_ID=/^[0-9a-zA-Z-]{1,64}$/;
+// Indirizzo di Anagrafiche per una scheda. dove: 'persone' | 'nuova-persona' | 'commesse' | 'nuova-commessa'
+// | {persona:id} | {commessa:id}. Id non valido = elenco (mai un indirizzo costruito con testo libero).
+function _v14LinkAnagrafiche(dove){
+  let h='';
+  if(dove&&typeof dove==='object'){
+    if(dove.persona)h=_V14_ID.test(String(dove.persona))?'persona/'+dove.persona:'persone';
+    else if(dove.commessa)h=_V14_ID.test(String(dove.commessa))?'commessa/'+dove.commessa:'commesse';
+  }else if(['persone','nuova-persona','commesse','nuova-commessa'].includes(dove))h=dove;
+  return V14_ANAGRAFICHE+(h?'#'+h:'');
+}
+function _v14PuoAnagrafiche(){return V14_PUO_ANAGRAFICHE.includes(_ruoloApp());}
+// Apre Anagrafiche nella sua scheda (nome fisso). Telefono che blocca le finestre: si apre qui.
+function apriAnagrafiche(dove){
+  const url=_v14LinkAnagrafiche(dove);
+  let w=null;
+  try{w=window.open(url,V14_FINESTRA);}catch(e){w=null;}
+  if(!w){location.href=url;return url;}
+  try{w.focus();}catch(e){}
+  return url;
+}
+// Tasto grande «🗂️ Apri Anagrafiche» (icona + scritta). sotto = riga piccola che spiega cosa si fa la'.
+function _v14TastoAnagrafiche(dove,scritta,sotto){
+  const d=JSON.stringify(dove).split('"').join('&quot;');
+  return '<button type="button" class="btn btn-g" style="width:100%;font-size:17px;padding:14px" onclick="apriAnagrafiche('+d+')">🗂️ '+escHtml(scritta||'Apri Anagrafiche')+'</button>'
+    +(sotto?'<div style="font-size:14px;color:var(--t2);margin-top:6px;line-height:1.4">'+escHtml(sotto)+'</div>':'');
+}
 async function loadOperai(){
   if(!(await _sessioneValida()))return false; // P2 punto 5
   try{
@@ -4649,7 +4562,7 @@ async function renderCantiere(){
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
             ${_mapsUrl?`<button onclick="window.open('${_mapsUrl}','_blank')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;white-space:nowrap">📍 Maps</button>`:''}
             ${['titolare','responsabile'].includes(_ruoloApp())?`<button onclick="p7ApriPosizione('${curCant.id}')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;white-space:nowrap">🗺️ Posizione${curCant.lat&&curCant.lng?' ✓':''}</button>`:''}
-            ${['titolare','responsabile'].includes(PROF?.ruolo)?`<button onclick="openModalCantiere('${curCant.id}')" style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;color:var(--gold);font-weight:700;white-space:nowrap">✏️ Modifica cantiere</button>`:''}
+            ${['titolare','responsabile'].includes(_ruoloApp())?`<button onclick="openModalCantiere('${curCant.id}')" style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;color:var(--gold);font-weight:700;white-space:nowrap">✏️ Stato · 🗂️ Anagrafiche</button>`:''}
           </div>
         </div>
       </div>
@@ -7001,7 +6914,7 @@ async function renderAdmin(){
   const _admc=document.getElementById('adm-cantieri');
   const _admo=document.getElementById('adm-operai');
   if(!_admc||!_admo)return; // screen non nel DOM
-  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${c.luogo||''} · ${c.stato}</div></div><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')">✏️</button></div>`).join('');
+  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${escHtml(c.luogo||'')} · ${escHtml(c.stato||'')}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')" title="Stato nell'App Cantieri">✏️ Stato</button><button class="btn-icon btn-sm" onclick="apriAnagrafiche({commessa:'${c.id}'})" title="Apri la commessa in Anagrafiche">🗂️ Anagrafiche</button></div></div>`).join('');
   const oggi_adm=new Date().toISOString().split('T')[0];
   _admo.innerHTML=OPERAI_TUTTI.map(o=>{
     const exAt=!_opAttivo(o,oggi_adm);
@@ -7010,7 +6923,7 @@ async function renderAdmin(){
         <div style="font-weight:700;color:${exAt?'var(--t2)':'var(--text)'}">${o.nome} ${o.cognome}${_v13Esterno(o)?' <span style="font-size:13px;background:#6b4fa3;color:#fff;border-radius:4px;padding:1px 6px">👷 Esterno</span>':''}</div>
         <div style="font-size:14px;color:var(--t2)">${o.ruolo}${exAt?` &nbsp;<span style="color:var(--red);font-weight:700">&#128683; Fine ${o.data_fine_rapporto}</span>`:''}</div>
       </div>
-      <button class="btn-icon btn-sm" data-action="edit-op" data-opid="${o.id}">✏️</button>
+      <button class="btn-icon btn-sm" style="flex-shrink:0" onclick="apriAnagrafiche({persona:'${o.id}'})" title="Apri la persona in Anagrafiche">🗂️ Anagrafiche</button>
     </div>`;
   }).join('');
   const existingImp=document.getElementById('adm-impostazioni');
@@ -7041,242 +6954,78 @@ async function aggiornaTariffa(){
     saveImpostazioni(); // aggiorna la cache localStorage e conferma con toast
   }catch(e){showToast('Errore salvataggio tariffa: '+e.message,'e');}
 }
+// v14 (punto 8): un cantiere nuovo si crea in Anagrafiche; qui si apre la sua scheda in sola lettura
+// e si cambia solo lo «Stato nell'App Cantieri» (cantieri.stato: «due padroni», lo scrive solo il Cantiere).
+// Niente si cancella: «Elimina cantiere» non c'e' piu' (si archivia in Anagrafiche: Conclusa o Persa).
 function openModalCantiere(id){
-  editCid=id;const c=id?CANTIERI.find(x=>x.id===id):null;
-  document.getElementById('mod-cant-t').textContent=c?t('modal_modifica_cant'):t('modal_nuovo_cantiere');
-  document.getElementById('c-nome').value=c?.nome||'';
-  document.getElementById('c-luogo').value=c?.luogo||'';
-  document.getElementById('c-via').value=c?.via||'';
-  document.getElementById('c-cap').value=c?.cap||'';
-  document.getElementById('c-citta').value=c?.citta||'';
-  document.getElementById('c-paese').value=c?.paese||'CH';
-  document.getElementById('c-comm').value=c?.committente||'';
-  document.getElementById('c-stato').value=c?.stato||'Attivo';
-  document.getElementById('del-cant-w').innerHTML=''; // P2 punto 7: i cantieri non si cancellano (si archiviano in Anagrafiche: Conclusa o Persa)
+  const c=id?(CANTIERI||[]).find(x=>x.id===id):null;
+  if(!c){apriAnagrafiche('nuova-commessa');return;}
+  if(!['titolare','responsabile'].includes(_ruoloApp())){showToast('Solo titolare e responsabile','e');return;}
+  editCid=id;
+  document.getElementById('mod-cant-t').textContent=_cantEtichetta(c)||c.nome||'Cantiere';
+  const _r=(lbl,val)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:15px"><span style="color:var(--t2);flex-shrink:0">'+lbl+'</span><span style="font-weight:600;text-align:right;word-break:break-word">'+(val||'—')+'</span></div>';
+  const indirizzo=[c.via,[c.cap,c.citta].filter(Boolean).join(' '),c.paese&&c.paese!=='CH'?c.paese:''].filter(Boolean).join(', ');
+  document.getElementById('c-dati').innerHTML=
+    (_cantInterno(c)?_r('Tipo','Interno (ore e spese della ditta)'):_r('Numero commessa',escHtml(c.numero_commessa))+_r('Stato commessa',escHtml(c.stato_commessa)))
+    +_r('Località',escHtml(c.luogo))+_r('Indirizzo',escHtml(indirizzo))+(_cantInterno(c)?'':_r('Committente',escHtml(c.committente)));
+  document.getElementById('c-anag').innerHTML=_v14TastoAnagrafiche({commessa:c.id},'Apri Anagrafiche — questa commessa','Nome, numero, indirizzo, cliente e stato della commessa si cambiano in Anagrafiche.');
+  document.getElementById('c-stato').value=c.stato||'Attivo';
   openModal('mod-cant');
 }
 async function saveCant(){
-  const nome=document.getElementById('c-nome').value.trim();if(!nome){_p7cSegna(['c-nome'],'Inserisci nome');showToast('Inserisci nome','e');return;}
-  const p={nome,luogo:document.getElementById('c-luogo').value.trim(),via:document.getElementById('c-via').value.trim()||null,cap:document.getElementById('c-cap').value.trim()||null,citta:document.getElementById('c-citta').value.trim()||null,paese:document.getElementById('c-paese').value||'CH',committente:document.getElementById('c-comm').value.trim()||null,stato:document.getElementById('c-stato').value};
+  if(!editCid)return;
+  if(!['titolare','responsabile'].includes(_ruoloApp())){showToast('Solo titolare e responsabile','e');return;}
+  const c=(CANTIERI||[]).find(x=>x.id===editCid);
+  const stato=document.getElementById('c-stato').value;
+  if(!['Attivo','In pausa','Completato'].includes(stato)){showToast('Stato non valido','e');return;}
+  if(c&&c.stato===stato){closeModal('mod-cant');return;} // niente da salvare
   try{
-    if(editCid){_p7Righe(await sb.from('cantieri').update(p).eq('id',editCid).select('id'),'cantieri');}
-    else{const{error}=await sb.from('cantieri').insert(p);if(error)throw error;}
-  }catch(e){showToast('Errore: '+e.message,'e');return;}
-  await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast(t('toast_salvato'));
+    // v14: SOLO la colonna stato. Il resto della commessa lo scrive Anagrafiche.
+    _p7Righe(await sb.from('cantieri').update({stato}).eq('id',editCid).select('id'),'cantieri');
+  }catch(e){if(!e.giaMostrato)showToast('Stato NON salvato: '+e.message,'e');return;}
+  await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Stato salvato ✓');
 }
-async function deleteCant(id){showToast('I cantieri non si cancellano: si archiviano in Anagrafiche (Conclusa o Persa).','e');return; // P2 punto 7
-  if(!confirm(t('conf_elimina_cant')))return;const _cDel=CANTIERI.find(x=>x.id===id);_p7Righe(await sb.from('cantieri').delete().eq('id',id).select('id'),'cantieri');logAzione('cantieri',id,'DELETE',{nome:_cDel?.nome}); // P29
-await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();}
+// v14 (punto 8): le persone si scrivono SOLO in Anagrafiche (nuova, modifica, fine rapporto, accesso,
+// password, documenti). Qui la finestra della persona tiene solo i «Cantieri visibili» (decisione dell'App
+// Cantieri: cantieri_visibili + operai.vede_tutti_cantieri) e il tasto «🗂️ Apri Anagrafiche».
+// Tolti: saveOp con insert/update della scheda, deleteOp («Rimuovi»), addDocumentoOp, eliminaDocumentoOp.
 function openModalOp(id){
-  editOid=id;
-  // Cerca in OPERAI_TUTTI (include ex-operai) così il titolare può modificarli
   const o=id?(OPERAI_TUTTI||OPERAI||[]).find(x=>x.id===id):null;
-  document.getElementById('mod-op-t').textContent=o?t('modal_modifica_op'):t('modal_nuovo_op');
-  document.getElementById('o-nome').value=o?.nome||'';
-  document.getElementById('o-cogn').value=o?.cognome||'';
-  document.getElementById('o-ruolo').value=o?.ruolo||'Carpentiere';
-  // Nuovi campi
-  const eEl=document.getElementById('o-email');if(eEl)eEl.value=o?.email||'';
-  const tEl=document.getElementById('o-telefono');if(tEl)tEl.value=o?.telefono||'';
-  const iEl=document.getElementById('o-inizio');if(iEl)iEl.value=o?.data_assunzione||'';
-  // P1c: campi "Aggiungi documento" vuoti a ogni apertura (non resta la data della persona precedente)
-  const dtEl=document.getElementById('doc-tipo');if(dtEl)dtEl.selectedIndex=0;
-  const dsEl=document.getElementById('doc-scad');if(dsEl)dsEl.value='';
-  const dnEl=document.getElementById('doc-note');if(dnEl)dnEl.value='';
-  const fEl=document.getElementById('o-fine');if(fEl)fEl.value=o?.data_fine_rapporto||'';
-  const agEl=document.getElementById('o-agenzia');if(agEl)agEl.checked=!!o?.agenzia;
-  const agNEl=document.getElementById('o-nome-agenzia');if(agNEl)agNEl.value=o?.nome_agenzia||'';
-  const agWrap=document.getElementById('o-agenzia-wrap');if(agWrap)agWrap.style.display=o?.agenzia?'block':'none';
-  const wEl=document.getElementById('o-fine-warn');
-  if(wEl&&o?.data_fine_rapporto)wEl.style.display=o.data_fine_rapporto<new Date().toISOString().split('T')[0]?'block':'none';
-  else if(wEl)wEl.style.display='none';
-  // Documenti e scadenze (solo in modifica)
-  const docsSection=document.getElementById('op-docs-section');
-  if(docsSection){docsSection.style.display=id?'block':'none';}
-  if(id){
-    const docsList=document.getElementById('op-docs-list');
-    if(docsList){docsList.innerHTML='<div style="font-size:14px;color:var(--t2)">'+t('lbl_caricamento_gen')+'</div>';}
-    renderDocumentiOp(id);
-  }
-  // Bottone elimina con data-attribute
-  const delW=document.getElementById('del-op-w');
-  delW.innerHTML='';
-  if(o){
-    const delBtn=document.createElement('button');delBtn.className='btn btn-d';delBtn.textContent='🗑️ Rimuovi';
-    delBtn.addEventListener('click',function(){deleteOp(id);});
-    delW.appendChild(delBtn);
-  }
-  _p4CompilaVisibilitaScheda(o); // P4
-  _p5MsgScheda('');_p5StatoAccountScheda(o); // C4
-  _p5bMostraTastoPassword(o); // P5b
-  _p5cPreparaEliminaDefinitiva(o); // P5c
+  if(!o){apriAnagrafiche('nuova-persona');return;}
+  if(!_v14PuoAnagrafiche()){showToast('Solo titolare e responsabile','e');return;}
+  editOid=id;
+  document.getElementById('mod-op-t').textContent=((o.nome||'')+' '+(o.cognome||'')).trim()||'Persona';
+  document.getElementById('o-info').textContent=[o.ruolo,_v13Esterno(o)?'Esterno':'',_opAttivo(o)?'':'non attivo'].filter(Boolean).join(' · ');
+  document.getElementById('o-anag').innerHTML=_v14TastoAnagrafiche({persona:o.id},'Apri Anagrafiche — questa persona','Dati, fine rapporto, documenti, accesso alle app e password si cambiano in Anagrafiche.');
+  const puo=_p4PuoGestireVisibilita()&&!_v13Esterno(o); // v13: un Esterno non entra nell'app
+  const sb2=document.getElementById('o-salva');if(sb2)sb2.style.display=puo?'':'none';
+  _p5MsgScheda('');
+  _p4CompilaVisibilitaScheda(puo?o:null); // P4
   openModal('mod-op');
 }
 async function saveOp(){
-  const nome=document.getElementById('o-nome').value.trim(),cogn=document.getElementById('o-cogn').value.trim();
-  if(!nome||!cogn){_p7cSegna(['o-nome','o-cogn'],'Inserisci nome e cognome');showToast('Inserisci nome e cognome','e');return;}
-  const fine=document.getElementById('o-fine')?.value||null;
-  const inizio=document.getElementById('o-inizio')?.value||null;
-  // P1b: tasto Salva bloccato durante il salvataggio (niente doppi inserimenti)
+  if(!editOid||!_p4PuoGestireVisibilita())return;
+  const prima=(OPERAI_TUTTI||[]).find(x=>x.id===editOid)||{};
+  if(_v13Esterno(prima))return;
   const btnSalva=document.getElementById('o-salva');
   const txtSalva=btnSalva?btnSalva.textContent:'';
   if(btnSalva){btnSalva.disabled=true;btnSalva.textContent='Salvataggio…';}
   try{
-    // P1b: avviso se esiste gia' una persona attiva con lo stesso nome e cognome
-    if(!editOid){
-      const _norm=x=>String(x||'').toLowerCase().replace(/\s+/g,'');
-      const _dup=(OPERAI_TUTTI||[]).find(o=>_opAttivo(o)&&_norm(o.nome)===_norm(nome)&&_norm(o.cognome)===_norm(cogn));
-      if(_dup&&!confirm('Esiste già '+(_dup.nome||'')+' '+(_dup.cognome||'')+'. Aggiungere comunque?'))return;
-    }
-    const isAgenzia=document.getElementById('o-agenzia')?.checked||false;
-    const p={
-      nome,cognome:cogn,
-      ruolo:document.getElementById('o-ruolo').value,
-      email:document.getElementById('o-email')?.value.trim()||null,
-      telefono:document.getElementById('o-telefono')?.value.trim()||null,
-      data_assunzione:inizio||null,
-      data_fine_rapporto:fine||null,
-      agenzia:isAgenzia,
-      nome_agenzia:isAgenzia?(document.getElementById('o-nome-agenzia')?.value.trim()||null):null
-    };
-    // C4: regola unica per "Fine rapporto", ricalcolata a ogni salvataggio:
-    // vuota = tempo indeterminato = attivo; oggi o futura = attivo; passata = non attivo.
-    // Eccezione: chi e' stato rimosso OGGI e si salva senza toccare la data resta rimosso
-    // (altrimenti "data oggi = attivo" lo riattiverebbe a ogni salvataggio).
-    const _oggiOp=new Date().toISOString().split('T')[0];
-    const prima=editOid?((OPERAI_TUTTI||[]).find(x=>x.id===editOid)||{}):{};
-    const _rimossoOggi=!!editOid&&prima.attivo===false&&prima.data_fine_rapporto===_oggiOp&&fine===_oggiOp;
-    p.attivo=!fine||fine>_oggiOp||(fine===_oggiOp&&!_rimossoOggi);
-    // P4 + C4: accesso app PRIMA di salvare la scheda. Se non riesce, la scheda non si salva.
-    let _p4Avviso='';const _avvisi=[];
-    if(editOid){
-      if(_p4PuoGestireVisibilita()&&('vede_tutti_cantieri' in prima))p.vede_tutti_cantieri=!!document.getElementById('o-vede-tutti')?.checked;
-      const emPrima=String(prima.email||'').trim().toLowerCase(),emDopo=String(p.email||'').trim().toLowerCase();
-      const attPrima=_opAttivo(prima),attDopo=p.attivo;
-      let sbloccato=false;
-      // 1. torna attiva: PRIMA si sblocca (sull'email di prima), poi il resto
-      if(attDopo&&!attPrima&&emPrima){
-        const r=await _p4GestisciAccesso('sblocca',editOid);
-        if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON riattivato, la scheda non è stata salvata.\n'+r.errore);
-        if(r.nessunAccount)_avvisi.push('Nessun account app con l\'email '+emPrima+': riattivata solo la scheda.');
-        sbloccato=r.ok;
-      }
-      // 2. cambio email (account e scheda insieme, nella funzione)
-      if(emPrima&&emDopo!==emPrima){
-        const r=await _p4GestisciAccesso('cambia-email',editOid,{nuova_email:emDopo});
-        if(!r.ok&&!r.nessunAccount){
-          let nota='';
-          if(sbloccato){ // si rimette com'era: l'account torna bloccato
-            const rb=await _p4GestisciAccesso('blocca',editOid);
-            nota=rb.ok?'\nL\'account è stato bloccato di nuovo, come prima.':'\nATTENZIONE: l\'account era stato sbloccato e NON si è riusciti a bloccarlo di nuovo: '+rb.errore;
-          }
-          throw new Error('email NON cambiata, la scheda non è stata salvata.\n'+r.errore+nota);
-        }
-        if(r.ok)p.email=emDopo;
-        else _avvisi.push('Nessun account app con l\'email '+emPrima+': è cambiata solo l\'email della scheda, nessun accesso è stato modificato.\nSe questa persona ha un account con un\'altra email, la scheda NON è collegata.');
-      }
-      // 3. non attiva (data passata): ogni salvataggio chiama "blocca"
-      if(!attDopo&&(emPrima||emDopo)){
-        const r=await _p4GestisciAccesso('blocca',editOid);
-        if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON bloccato, la scheda non è stata salvata.\n'+r.errore);
-        if(r.avviso)_p4Avviso=r.avviso;
-        if(r.nessunAccount&&attPrima)_avvisi.push('Nessun account app con l\'email '+(emDopo||emPrima)+': non c\'era un accesso da bloccare.');
-      }
-    }
-    if(editOid){
-      // P1-A: .select() restituisce le righe davvero modificate.
-      // Zero righe = il database non ha salvato: lo diciamo invece di scrivere "Salvato".
-      const{data:_upd,error}=await sb.from('operai').update(p).eq('id',editOid).select('id');
+    // «Vede tutti i cantieri»: impostazione dell'App Cantieri (colonna di operai che Anagrafiche non gestisce).
+    // Si scrive SOLO questa colonna e solo se e' cambiata.
+    const vt=!!document.getElementById('o-vede-tutti')?.checked;
+    if(('vede_tutti_cantieri' in prima)&&!!prima.vede_tutti_cantieri!==vt){
+      const{data:_upd,error}=await sb.from('operai').update({vede_tutti_cantieri:vt}).eq('id',editOid).select('id');
       if(error)throw error;
-      if(!_upd||!_upd.length)throw new Error('modifica NON salvata dal database (0 righe). Esci, rientra e riprova; se si ripete, segnalalo.');
-    }else{
-      const{data:_ins,error}=await sb.from('operai').insert(p).select('id');
-      if(error)throw error;
-      if(!_ins||!_ins.length)throw new Error('collaboratore NON salvato dal database. Riprova.');
+      if(!_upd||!_upd.length)throw new Error('«Vede tutti i cantieri» NON salvato dal database (0 righe). Esci, rientra e riprova.');
     }
-    if(editOid&&_p4PuoGestireVisibilita()){
-      try{await _p4SalvaCantieriInPiu(editOid);}
-      catch(_ve){await loadOperai();throw new Error('scheda salvata, ma i "Cantieri in più" NON sono stati salvati ('+_ve.message+')');}
-    }
-    await loadOperai();closeModal('mod-op');renderPersonale();showToast(t('toast_salvato'));
-    if(_p4Avviso)setTimeout(function(){showToast(_p4Avviso);},2600);
-    if(_avvisi.length)setTimeout(function(){alert(_avvisi.join('\n\n'));},300); // C4: mai in silenzio
+    try{await _p4SalvaCantieriInPiu(editOid);}
+    catch(_ve){await loadOperai();throw new Error('i "Cantieri in più" NON sono stati salvati ('+_ve.message+')');}
+    await loadOperai();closeModal('mod-op');
+    if(document.getElementById('scr-personale')?.classList.contains('on'))renderPersonale();
+    showToast(t('toast_salvato'));
   }catch(e){showToast('Errore: '+e.message,'e');_p5MsgScheda('Errore: '+e.message,'e');}
   finally{if(btnSalva){btnSalva.disabled=false;btnSalva.textContent=txtSalva;}}
-}
-// P1-A: "Rimuovi" non cancella: segna la persona come non attiva e mette la fine
-// rapporto a oggi (se non ce n'era una). Ore, foto e storico restano collegati.
-// Per riattivarla: Modifica → svuota "Fine rapporto" → Salva.
-async function deleteOp(id){
-  if(!confirm('Rimuovere questa persona?\n\nNon comparirà più negli elenchi. Le sue ore e il suo storico restano.\nPer riattivarla: Modifica → svuota "Fine rapporto" → Salva.'))return;
-  try{
-    const o=(OPERAI_TUTTI||[]).find(x=>x.id===id);
-    // P4: chi ha un account viene bloccato PRIMA; solo se riesce diventa non attivo
-    let _p4Avviso='';
-    let _avvisoNA='';
-    if(o&&o.email){
-      const r=await _p4GestisciAccesso('blocca',id);
-      if(!r.ok&&!r.nessunAccount)throw new Error('accesso app NON bloccato, la persona resta attiva.\n'+r.errore);
-      if(r.avviso)_p4Avviso=r.avviso;
-      if(r.nessunAccount)_avvisoNA='Nessun account app con l\'email '+o.email+': rimossa solo la scheda (non c\'era un accesso da bloccare).';
-    }
-    const oggi=new Date().toISOString().split('T')[0];
-    const upd={attivo:false};
-    if(!o||!o.data_fine_rapporto||o.data_fine_rapporto>oggi)upd.data_fine_rapporto=oggi;
-    const{data:_r,error}=await sb.from('operai').update(upd).eq('id',id).select('id');
-    if(error)throw error;
-    if(!_r||!_r.length)throw new Error('rimozione NON salvata dal database (0 righe).');
-    await loadOperai();closeModal('mod-op');
-    if(document.getElementById('scr-personale')?.classList.contains('on'))renderPersonale();else renderAdmin();
-    showToast('Rimosso ✓ — lo storico resta');
-    if(_p4Avviso)setTimeout(function(){showToast(_p4Avviso);},2600);
-    if(_avvisoNA)setTimeout(function(){alert(_avvisoNA);},300); // C4: mai in silenzio
-  }catch(e){showToast('Errore: '+e.message,'e');_p5MsgScheda('Errore: '+e.message,'e');}
-}
-
-// ── DOCUMENTI OPERAI ──
-async function renderDocumentiOp(operaioId){
-  const el=document.getElementById('op-docs-list');
-  if(!el)return;
-  const {data:docs}=await sb.from('documenti_operai').select('*').eq('operaio_id',operaioId).order('scadenza',{ascending:true,nullsFirst:false});
-  if(!docs||!docs.length){el.innerHTML='<div style="font-size:14px;color:var(--t2);padding:4px 0">'+t('empty_doc_reg')+'</div>';return;}
-  const oggi=new Date().toISOString().split('T')[0];
-  const tra30=new Date(Date.now()+30*24*60*60*1000).toISOString().split('T')[0];
-  el.innerHTML=docs.map(function(d){
-    let cl='var(--text)';let badge='';
-    if(d.scadenza){
-      if(d.scadenza<oggi){cl='var(--red)';badge='<span style="font-size:13px;background:var(--red);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">SCADUTO</span>';}
-      else if(d.scadenza<=tra30){cl='var(--orange)';badge='<span style="font-size:13px;background:var(--orange);color:#fff;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">IN SCADENZA</span>';}
-    }
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">'
-      +'<div><div style="font-size:15px;font-weight:600;color:'+cl+'">'+escHtml(d.tipo)+badge+'</div>'
-      +(d.scadenza?'<div style="font-size:14px;color:var(--t2)">'+t('lbl_scade')+': '+fmtDate(d.scadenza)+'</div>':'<div style="font-size:14px;color:var(--t2)">'+t('empty_scadenza')+'</div>')
-      +(d.note?'<div style="font-size:14px;color:var(--t2)">'+escHtml(d.note)+'</div>':'')
-      +'</div>'+(_ruoloApp()==='titolare'?'<button onclick="eliminaDocumentoOp(\''+d.id+'\')" style="background:none;border:1px solid rgba(224,85,85,.3);border-radius:5px;color:var(--red);font-size:14px;padding:3px 8px;cursor:pointer;flex-shrink:0">🗑️</button>':'')+'</div>';
-  }).join('');
-}
-async function addDocumentoOp(){
-  if(!editOid){showToast('Salva prima il collaboratore','e');return;}
-  const tipo=document.getElementById('doc-tipo')?.value;
-  const scad=document.getElementById('doc-scad')?.value||null;
-  const nota=document.getElementById('doc-note')?.value.trim()||null;
-  if(!tipo){_p7cSegna(['doc-tipo'],'Seleziona tipo documento');showToast('Seleziona tipo documento','e');return;}
-  try{
-    const{error}=await sb.from('documenti_operai').insert({operaio_id:editOid,tipo,scadenza:scad||null,note:nota});
-    if(error)throw error;
-    const scEl=document.getElementById('doc-scad');if(scEl)scEl.value='';
-    const noEl=document.getElementById('doc-note');if(noEl)noEl.value='';
-    renderDocumentiOp(editOid);
-    showToast('Documento aggiunto ✓');
-  }catch(e){showToast('Errore: '+e.message,'e');}
-}
-async function eliminaDocumentoOp(docId){
-  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare può eliminare i documenti','e');return;} // P5
-  if(!confirm(t('conf_elimina_doc')))return;
-  const{data,error}=await sb.from('documenti_operai').delete().eq('id',docId).select('id');
-  if(error||!data||!data.length){showToast('Documento NON eliminato: '+(error?error.message:'il database ha rifiutato (0 righe)'),'e');return;}
-  renderDocumentiOp(editOid);
-  showToast(t('toast_eliminato'));
 }
 
 // ── FOTO ──
@@ -8148,15 +7897,7 @@ function _p5MsgScheda(testo,tipo){
   el.textContent=testo;
   if(tipo==='e')try{el.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(_e){}
 }
-function _p5StatoAccountScheda(o){
-  const el=document.getElementById('o-acc-stato');if(!el)return;
-  if(!o){el.textContent='';return;}
-  // P2 punto 4: collegamento solo con operai.user_id
-  if(_v13Esterno(o)){el.textContent='👷 Persona Esterna: niente accesso all\'app.';return;} // v13
-  if(!o.user_id){el.textContent='⚠️ Scheda non collegata a un account app.';return;}
-  if(_ruoloApp()!=='titolare'||!_profiliAppCache){el.textContent='';return;}
-  el.textContent=_profiliAppCache[o.user_id]?'🔑 Account app collegato a questa scheda.':'⚠️ La scheda indica un account che non c\'è più.';
-}
+// v14: _p5StatoAccountScheda tolta (stato dell'accesso: in Anagrafiche).
 
 async function controllaAlertFoto(){
   try{
@@ -8712,27 +8453,8 @@ async function _p4SalvaCantieriInPiu(opId){
   lista.dataset.prima=JSON.stringify([...dopo]);
 }
 
-// ── Accesso app: funzione "gestisci-accesso" (cambia-email, blocca, sblocca) ──
-const P5_NON_RAGGIUNGIBILE='Funzione gestisci-accesso non raggiungibile: è installata su Supabase?';
-function p5TempoIndeterminato(){
-  const f=document.getElementById('o-fine');if(f)f.value='';
-  const w=document.getElementById('o-fine-warn');if(w)w.style.display='none';
-}
-async function _p4GestisciAccesso(azione,operaioId,extra){
-  try{
-    const{data,error}=await sb.functions.invoke('gestisci-accesso',{body:Object.assign({azione,operaio_id:operaioId},extra||{})});
-    if(error){
-      // C4: funzione assente o irraggiungibile → lo si dice chiaramente
-      if(error.name==='FunctionsFetchError'||error.name==='FunctionsRelayError'||/Failed to send a request/i.test(error.message||''))return{ok:false,errore:P5_NON_RAGGIUNGIBILE};
-      let j=null;try{j=await error.context?.json?.();}catch(_je){}
-      if(j&&j.codice==='nessun_account')return{ok:false,nessunAccount:true};
-      if(!j||(!j.error&&(error.context?.status===404)))return{ok:false,errore:P5_NON_RAGGIUNGIBILE};
-      return{ok:false,errore:j.error||j.message||error.message||'Errore sconosciuto'};
-    }
-    if(data&&data.error)return{ok:false,errore:data.error,nessunAccount:data.codice==='nessun_account'};
-    return{ok:true,avviso:data?.avviso||''};
-  }catch(e){return{ok:false,errore:P5_NON_RAGGIUNGIBILE+' ('+e.message+')'};}
-}
+// v14: tolte p5TempoIndeterminato e _p4GestisciAccesso (gestisci-accesso: blocca, sblocca, password, email
+// si fanno in Anagrafiche → Persone → scheda → Accesso alle app).
 // All'avvio e a ogni ritorno sull'app: se la persona collegata non e' piu' attiva, si esce.
 // Il titolare e' escluso: non si chiude fuori da solo.
 async function _p4ControllaAccessoAttivo(){
@@ -8758,18 +8480,6 @@ function _p4RiquadriHome(){
     const m=(b.getAttribute('onclick')||'').match(/navTo\('([^']+)'\)/);
     if(m)b.style.display=puoAprire(m[1])?'':'none';
   });
-}
-
-// ── Crea accesso app: riquadro finale con email e password da comunicare ──
-function p4CopiaCredenziali(){
-  const txt=document.getElementById('inv-esito-testo')?.textContent||'';
-  const fatto=()=>showToast('Copiato ✓');
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(fatto).catch(function(){_p4CopiaVecchioModo(txt)?fatto():showToast('Copia non riuscita: seleziona il testo a mano','e');});
-  }else if(_p4CopiaVecchioModo(txt))fatto();else showToast('Copia non riuscita: seleziona il testo a mano','e');
-}
-function _p4CopiaVecchioModo(txt){
-  try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}
 }
 
 // ══════════════════════════════════════════════════
@@ -11039,63 +10749,13 @@ async function _caricaProfiliApp(){
   }catch(e){console.warn('Elenco profili app:',e.message);return null;}
 }
 
+// v14 (punto 8): il ruolo nell'app si legge e basta. Si cambia in Anagrafiche (solo il titolare),
+// nella scheda della persona → «Cambia ruolo». Tolta cambiaRuoloApp (cambia-ruolo, azione «cambia»).
 function _ruoloAppHtml(pApp,o){
-  // I titolari non si gestiscono dall'app: la Edge Function li rifiuta, quindi
-  // non mostriamo nemmeno il menù.
-  if(pApp.ruolo==='titolare'){
-    return '<div style="margin-top:8px;font-size:14px;color:var(--gold)">🔑 Ruolo app: titolare — si modifica dal dashboard Supabase</div>';
-  }
-  const nomeOp=escHtml((o.nome||'')+' '+(o.cognome||'')).replace(/'/g,'&#39;');
-  // P4: il responsabile puo' scegliere solo caposquadra, operaio, magazziniere
-  const _rl=_ruoloApp()==='responsabile'?RUOLI_APP.filter(function(r){return ['caposquadra','operaio','magazziniere'].includes(r.v);}):RUOLI_APP;
-  if(!_rl.some(function(r){return r.v===pApp.ruolo;}))return '<div style="margin-top:8px;font-size:14px;color:var(--t2)">🔑 Ruolo app: '+escHtml(pApp.ruolo||'—')+'</div>';
-  const opts=_rl.map(function(r){
-    return '<option value="'+r.v+'"'+(r.v===pApp.ruolo?' selected':'')+'>'+r.l+'</option>';
-  }).join('');
-  return '<div style="margin-top:8px;display:flex;align-items:center;gap:8px">'
-    +'<span style="font-size:14px;color:var(--t2);white-space:nowrap">🔑 Ruolo app</span>'
-    +'<select class="fs" style="flex:1;font-size:14px;padding:6px 10px"'
-    +' data-ruolo-attuale="'+escHtml(pApp.ruolo||'')+'"'
-    +' data-uid="'+escHtml(pApp.user_id||'')+'"'
-    +' data-nome="'+nomeOp+'"'
-    +' onchange="cambiaRuoloApp(this)">'+opts+'</select>'
-    +'</div>';
+  const r=(RUOLI_APP.find(function(x){return x.v===pApp.ruolo;})||{}).l||(pApp.ruolo==='titolare'?'Titolare':(pApp.ruolo||'—'));
+  return '<div style="margin-top:8px;font-size:14px;color:var(--t2)">🔑 Ruolo app: <strong style="color:var(--text)">'+escHtml(r)+'</strong>'
+    +' <span style="color:var(--t3)">· si cambia in Anagrafiche</span></div>';
 }
-
-async function cambiaRuoloApp(sel){
-  const nuovo=sel.value;
-  const prec=sel.dataset.ruoloAttuale||'';
-  const uid=sel.dataset.uid;
-  const nomeOp=sel.dataset.nome||'il collaboratore';
-  if(!uid||nuovo===prec)return;
-  sel.disabled=true;
-  try{
-    const{data,error}=await sb.functions.invoke('cambia-ruolo',{
-      body:{azione:'cambia',user_id:uid,nuovo_ruolo:nuovo}
-    });
-    if(error){
-      let msg=error.message||'Errore sconosciuto';
-      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
-      throw new Error(msg);
-    }
-    if(data&&data.error)throw new Error(data.error);
-    // Aggiorna stato locale senza ricaricare la lista
-    sel.dataset.ruoloAttuale=nuovo;
-    if(_profiliAppCache){
-      Object.keys(_profiliAppCache).forEach(function(k){
-        if(_profiliAppCache[k].user_id===uid)_profiliAppCache[k].ruolo=nuovo;
-      });
-    }
-    const lbl=(RUOLI_APP.find(function(r){return r.v===nuovo;})||{}).l||nuovo;
-    showToast('Ruolo app di '+nomeOp+' → '+lbl+' ✓');
-  }catch(e){
-    sel.value=prec; // ripristina la scelta precedente: il cambio non e' avvenuto
-    showToast('Errore: '+e.message,'e');
-  }finally{
-    sel.disabled=false;
-  }
-}
-
 // v13: nomi delle ditte degli Esterni (tm_contatti, sola lettura). Non leggibile = solo «Esterno», nessun errore.
 async function _v13CaricaDitte(lista){
   const ids=[...new Set((lista||[]).filter(o=>_v13Esterno(o)&&o.ditta_id).map(o=>o.ditta_id))];
@@ -11128,8 +10788,8 @@ async function renderPersonale(){
     if(!lista.length){
       const ef=document.createElement('div');ef.className='empty';
       ef.innerHTML='<div class="empty-i">👷</div><p>Nessun collaboratore trovato.</p>';
-      const efBtn=document.createElement('button');efBtn.className='btn btn-g';efBtn.style.marginTop='12px';efBtn.textContent='➕ Aggiungi collaboratore';
-      efBtn.addEventListener('click',function(){openModalOp(null);});
+      const efBtn=document.createElement('button');efBtn.className='btn btn-g';efBtn.style.marginTop='12px';efBtn.textContent='🗂️ Nuova persona in Anagrafiche';
+      efBtn.addEventListener('click',function(){apriAnagrafiche('nuova-persona');});
       ef.appendChild(efBtn);el.innerHTML='';el.appendChild(ef);
       return;
     }
@@ -11165,8 +10825,10 @@ async function renderPersonale(){
         +(hasAccount?'&nbsp;<span style="color:var(--green);font-size:13px">● App attiva</span>':'')
         +(_v13Esterno(o)?'<div style="font-size:13px;color:var(--t3)">Niente accesso all\'app e niente ore: il suo costo è la fattura della ditta.</div>':'')
         +'</div></div>'
-        +'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')">✏️</button>'
-        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
+        +'<button class="btn-icon btn-sm" onclick="apriAnagrafiche({persona:\''+o.id+'\'})" title="Dati, accesso e password in Anagrafiche">🗂️ Anagrafiche</button>'
+        +(_v13Esterno(o)?'':'<button class="btn-icon btn-sm" onclick="openModalOp(\''+o.id+'\')" title="Quali cantieri vede nell\'App Cantieri">🏗️ Cantieri</button>')
+        +'</div></div>'
         +(pApp?_ruoloAppHtml(pApp,o):'')
         +''; // P5b: "Reset password (invia email)" tolto: ora "🔑 Nuova password" nella scheda
       // P1c: toccare la riga (non matita, menù o pulsanti) apre la scheda in sola lettura
@@ -11196,9 +10858,12 @@ async function renderPersonale(){
     }
     // Bottone invita
     const invBtn=document.createElement('button');invBtn.className='btn btn-s';
-    invBtn.style.cssText='width:100%;margin-top:12px';invBtn.textContent='🔑 Crea accesso app';
-    invBtn.addEventListener('click',function(){openModalInvita();});
+    invBtn.className='btn btn-g';invBtn.style.cssText='width:100%;margin-top:12px;font-size:17px;padding:14px';invBtn.textContent='🗂️ Apri Anagrafiche — persone e accessi';
+    invBtn.addEventListener('click',function(){apriAnagrafiche('persone');});
     el.appendChild(invBtn);
+    const invNota=document.createElement('div');invNota.style.cssText='font-size:14px;color:var(--t2);margin-top:6px;line-height:1.4';
+    invNota.textContent='Nuove persone, dati, fine rapporto, accesso alle app, ruolo e password: si fanno in Anagrafiche.';
+    el.appendChild(invNota);
     // Badge documenti in scadenza (async, non bloccante)
     (async function(){
       try{
@@ -11243,7 +10908,9 @@ async function apriSchedaOp(id){
     +_riga('Inizio rapporto',_data(o.data_assunzione))
     +_riga('Fine rapporto',o.data_fine_rapporto?_data(o.data_fine_rapporto):'— (attivo)')
     +_riga('Note',escHtml(o.note));
-  document.getElementById('scheda-op-mod').onclick=function(){closeModal('mod-op-scheda');openModalOp(id);};
+  document.getElementById('scheda-op-mod').onclick=function(){apriAnagrafiche({persona:id});}; // v14
+  const _vis=document.getElementById('scheda-op-vis');
+  if(_vis){_vis.style.display=(_p4PuoGestireVisibilita()&&!_v13Esterno(o))?'':'none';_vis.onclick=function(){closeModal('mod-op-scheda');openModalOp(id);};}
   const docsEl=document.getElementById('scheda-op-docs');
   docsEl.innerHTML='<div style="font-size:14px;color:var(--t2)">Caricamento…</div>';
   openModal('mod-op-scheda');
@@ -11269,110 +10936,8 @@ async function apriSchedaOp(id){
   }
 }
 
-// ── P5c: "Elimina definitivamente" (solo titolare, solo persone NON attive, senza dati e senza account) ──
-const P5C_NOMI_TABELLE={giornate:'giornate registrate',voci_lavoro:'righe di lavoro',ore_contrattuali:'righe di ore contrattuali',
-  spese:'spese',foto:'foto',assenze:'assenze',documenti_operai:'documenti',piano_giorno:'assegnazioni nel Piano',
-  regia:'righe di regia',bolle_consegna:'bolle',cantieri_visibili:'cantieri visibili',materiali:'materiali',
-  tm_paghe_anagrafica:'righe di anagrafica paghe',tm_paghe_periodo:'periodi paghe',tm_paghe_voce:'voci paghe'};
-function _p5cDescriviDati(dati){
-  // P7: i "cantieri in piu'" sono impostazioni della scheda (il database li cancella con lei): non bloccano
-  return Object.entries(dati||{}).filter(([t])=>t!=='cantieri_visibili').sort((a,b)=>b[1]-a[1]).map(([t,n])=>n+' '+(P5C_NOMI_TABELLE[t]||('righe in '+t))).join(', ');
-}
-async function _p5cPreparaEliminaDefinitiva(o){
-  const el=document.getElementById('o-elimina-def');if(!el)return;
-  el.innerHTML='';
-  return; // P2 punto 7: le persone non si cancellano (si archiviano: «Rimuovi» = attivo false)
-  if(!o||_ruoloApp()!=='titolare'||_opAttivo(o))return;
-  el.innerHTML='<div style="font-size:14px;color:var(--t2)">Controllo dei dati collegati…</div>';
-  const{data,error}=await sb.rpc('app_dati_collaboratore',{p_operaio:o.id});
-  if(editOid!==o.id)return; // nel frattempo e' stata aperta un'altra scheda
-  if(error||!data||data.errore){
-    el.innerHTML='<div style="font-size:14px;color:var(--t2)">"Elimina definitivamente" non disponibile: controllo dei dati non riuscito ('+escHtml(error?error.message:(data&&data.errore)||'nessuna risposta')+').</div>';
-    return;
-  }
-  const motivi=[];
-  const desc=_p5cDescriviDati(data.dati);
-  if(desc)motivi.push('Ha '+desc);
-  if(data.ha_account)motivi.push('Ha un account app ('+(data.email||'')+')');
-  if(motivi.length){
-    el.innerHTML='<div style="font-size:14px;color:var(--t2);background:var(--s2);border-radius:var(--rsm);padding:8px 12px">🔒 '+escHtml(motivi.join('. '))+': resta tra gli ex.</div>';
-    return;
-  }
-  el.innerHTML='<button class="btn btn-d" style="font-size:15px" onclick="p5cEliminaDefinitivamente()">🗑️ Elimina definitivamente</button>'
-    +'<div style="font-size:14px;color:var(--t3);margin-top:4px">Nessun dato collegato e nessun account app: la scheda si può cancellare del tutto.</div>';
-}
-async function p5cEliminaDefinitivamente(){
-  showToast('Le persone non si cancellano: si archiviano.','e');return; // P2 punto 7
-  if(_ruoloApp()!=='titolare'){showToast('Solo il titolare','e');return;}
-  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);if(!o)return;
-  if(_opAttivo(o)){_p5MsgScheda('Errore: la persona è attiva. Prima va rimossa.','e');return;}
-  const nome=((o.nome||'')+' '+(o.cognome||'')).replace(/\s+/g,' ').trim();
-  const scritto=prompt('Eliminare DEFINITIVAMENTE la scheda di '+nome+'?\n\nNon si potrà recuperare.\nPer confermare scrivi il nome per esteso:\n'+nome);
-  if(scritto===null)return;
-  if(scritto.replace(/\s+/g,' ').trim().toLowerCase()!==nome.toLowerCase()){_p5MsgScheda('Errore: il nome scritto non corrisponde a «'+nome+'». Niente è stato eliminato.','e');return;}
-  // si ricontrolla subito prima: nel frattempo potrebbe essere arrivato un dato
-  const{data,error}=await sb.rpc('app_dati_collaboratore',{p_operaio:o.id});
-  if(error||!data||data.errore){_p5MsgScheda('Errore: controllo dei dati non riuscito ('+(error?error.message:(data&&data.errore)||'nessuna risposta')+'). Niente è stato eliminato.','e');return;}
-  const desc=_p5cDescriviDati(data.dati);
-  if(desc||data.ha_account){_p5MsgScheda('Errore: '+(desc?'ha '+desc:'ha un account app')+'. Niente è stato eliminato.','e');_p5cPreparaEliminaDefinitiva(o);return;}
-  const{data:del,error:de}=await sb.from('operai').delete().eq('id',o.id).select('id');
-  if(de||!del||!del.length){_p5MsgScheda('Errore: il database non ha eliminato la scheda ('+(de?de.message:'0 righe')+'). La persona resta tra gli ex.','e');return;}
-  await loadOperai();closeModal('mod-op');renderPersonale();
-  showToast('Scheda di '+nome+' eliminata definitivamente');
-}
-
-// P5b: la nuova password la sceglie il titolare (o il responsabile) e si salva
-// con la funzione gestisci-accesso, azione "password". Errori sempre a schermo.
-function _p5bMostraTastoPassword(o){
-  const w=document.getElementById('o-pwd-wrap');if(!w)return;
-  const em=String(o?.email||'').trim().toLowerCase();
-  let vedi=!!o&&!!em&&['titolare','responsabile'].includes(_ruoloApp())&&!_v13Esterno(o); // v13: Esterni senza accesso
-  // il titolare conosce i ruoli degli account: niente tasto sui titolari
-  // (e il responsabile solo su caposquadra, operaio, magazziniere: lo ricontrolla la funzione)
-  const pa=_profiliAppCache&&o?.user_id?_profiliAppCache[o.user_id]:null; // P2 punto 4
-  if(pa&&pa.ruolo==='titolare')vedi=false;
-  if(pa&&_ruoloApp()==='responsabile'&&!['caposquadra','operaio','magazziniere'].includes(pa.ruolo))vedi=false;
-  w.style.display=vedi?'block':'none';
-}
-function p5bApriNuovaPassword(){
-  if(!editOid)return;
-  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);if(!o)return;
-  document.getElementById('pwdop-chi').textContent='Account di '+(o.nome||'')+' '+(o.cognome||'')+' ('+(o.email||'—')+'). Scegli tu la password: nessuna email viene inviata.';
-  document.getElementById('pwdop-pwd').value='';
-  const err=document.getElementById('pwdop-err');err.style.display='none';err.textContent='';
-  document.getElementById('pwdop-form').style.display='block';
-  document.getElementById('pwdop-esito').style.display='none';
-  const b=document.getElementById('pwdop-salva');b.disabled=false;b.textContent='✓ Salva password';
-  openModal('mod-pwd-op');
-}
-async function p5bSalvaNuovaPassword(){
-  const err=document.getElementById('pwdop-err');
-  const mostra=t=>{err.textContent=t;err.style.display='block';};
-  err.style.display='none';
-  const pwd=document.getElementById('pwdop-pwd').value;
-  if(pwd.length<8){mostra('La password deve avere almeno 8 caratteri.');return;}
-  const o=(OPERAI_TUTTI||[]).find(x=>x.id===editOid);
-  if(!o){mostra('Scheda non trovata: chiudi e riapri.');return;}
-  const b=document.getElementById('pwdop-salva');b.disabled=true;b.textContent='Salvataggio…';
-  const r=await _p4GestisciAccesso('password',o.id,{nuova_password:pwd});
-  b.disabled=false;b.textContent='✓ Salva password';
-  if(!r.ok){
-    mostra(r.nessunAccount?'Nessun account app con l\'email '+(o.email||'')+': la password non è stata cambiata.':(/^password non cambiata/i.test(r.errore)?r.errore:'Password NON cambiata.\n'+r.errore));
-    return;
-  }
-  document.getElementById('pwdop-esito-titolo').textContent='Comunica a '+(o.nome||'')+' '+(o.cognome||'')+':';
-  document.getElementById('pwdop-esito-testo').textContent='Email: '+(o.email||'')+'\nPassword: '+pwd;
-  document.getElementById('pwdop-form').style.display='none';
-  document.getElementById('pwdop-esito').style.display='block';
-  showToast('Password cambiata ✓');
-}
-function p5bCopiaPassword(){
-  const txt=document.getElementById('pwdop-esito-testo')?.textContent||'';
-  const fatto=()=>showToast('Copiato ✓');
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(fatto).catch(function(){_p4CopiaVecchioModo(txt)?fatto():showToast('Copia non riuscita: seleziona il testo a mano','e');});
-  }else if(_p4CopiaVecchioModo(txt))fatto();else showToast('Copia non riuscita: seleziona il testo a mano','e');
-}
+// v14: tolte «Elimina definitivamente» (P5c, gia' spenta dal P2 punto 7) e «Nuova password» (P5b):
+// le persone non si cancellano; la password si cambia in Anagrafiche.
 
 // ── SAL (pagamenti cantiere) ──
 let editSalId=null;
@@ -12917,81 +12482,9 @@ async function eliminaGru(id){
 }
 
 // ── INVITO COLLABORATORE ──
-function openModalInvita(){
-  if(!['titolare','responsabile'].includes(_ruoloApp())){showToast('Solo titolare e responsabile','e');return;}
-  ['inv-nome','inv-cogn','inv-email','inv-pwd'].forEach(function(id){const x=document.getElementById(id);if(x)x.value='';});
-  // P4: il responsabile vede solo i ruoli che puo' creare (la funzione sul server rifiuta gli altri)
-  const ruoli=_ruoloApp()==='responsabile'
-    ?[['caposquadra','Caposquadra'],['operaio','Operaio'],['magazziniere','Magazziniere']]
-    :[['caposquadra','Caposquadra'],['responsabile','Responsabile cantiere'],['operaio','Operaio'],['magazziniere','Magazziniere']];
-  document.getElementById('inv-ruolo').innerHTML=ruoli.map(function(r){return '<option value="'+r[0]+'">'+r[1]+'</option>';}).join('');
-  document.getElementById('inv-err').style.display='none';
-  document.getElementById('btn-invita').disabled=false;
-  document.getElementById('btn-invita').textContent='✓ Crea accesso';
-  document.getElementById('inv-form').style.display='block';
-  document.getElementById('inv-esito').style.display='none';
-  openModal('mod-invita');
-}
-
-async function invitaCollaboratore(){
-  const nome=document.getElementById('inv-nome').value.trim();
-  const cogn=document.getElementById('inv-cogn').value.trim();
-  const email=document.getElementById('inv-email').value.trim().toLowerCase();
-  const pwd=document.getElementById('inv-pwd')?.value.trim();
-  const ruolo=document.getElementById('inv-ruolo')?.value||'caposquadra';
-  const errEl=document.getElementById('inv-err');
-  errEl.style.display='none';
-  if(!nome||!cogn){errEl.textContent='Inserisci nome e cognome';errEl.style.display='block';return;}
-  if(!email||!email.includes('@')){errEl.textContent='Email non valida';errEl.style.display='block';return;}
-  if(!pwd||pwd.length<6){errEl.textContent='Password minimo 6 caratteri';errEl.style.display='block';return;}
-  // v13: un Esterno non ha accesso all'app. Controllo PRIMA di chiamare crea-collaboratore (nessuna chiamata).
-  const _v13c=_v13ControlloAccesso(email,nome,cogn,OPERAI_TUTTI);
-  if(_v13c.blocca){errEl.textContent=_v13c.blocca;errEl.style.display='block';return;}
-  if(_v13c.avviso&&!confirm(_v13c.avviso))return;
-  const btn=document.getElementById('btn-invita');
-  btn.disabled=true;btn.textContent='⏳...';
-  try{
-    // L'account viene creato dalla Edge Function 'crea-collaboratore', che gira
-    // lato server con la service_role key. Due motivi per non usare più
-    // sb.auth.signUp() da qui:
-    //  1. signUp() sostituiva la sessione del titolare con quella del nuovo
-    //     utente, facendo proseguire le scritture successive con i permessi
-    //     sbagliati;
-    //  2. signUp() richiede la registrazione libera aperta su Supabase, che
-    //     lascia registrare chiunque. La Edge Function usa admin.createUser,
-    //     che funziona anche a registrazione libera disattivata.
-    // La funzione verifica da sola che il chiamante sia 'titolare'.
-    const{data,error}=await sb.functions.invoke('crea-collaboratore',{
-      body:{email,password:pwd,nome,cognome:cogn,ruolo}
-    });
-    if(error){
-      // Sugli status non-2xx supabase-js espone la Response in error.context:
-      // il messaggio utile sta nel body JSON, non in error.message.
-      let msg=error.message||'Errore sconosciuto';
-      try{const j=await error.context?.json?.();if(j&&j.error)msg=j.error;}catch(_je){}
-      throw new Error(msg);
-    }
-    if(data&&data.error)throw new Error(data.error);
-    if(data&&data.avviso)showToast(data.avviso,'e'); // P2 punto 4: scheda non collegata all'account
-
-    // P4: nessuna email: si mostrano i dati da comunicare, con il tasto Copia
-    document.getElementById('inv-esito-titolo').textContent='Comunica a '+nome+' '+cogn+':';
-    document.getElementById('inv-esito-testo').textContent='Email: '+email+'\nPassword: '+pwd;
-    document.getElementById('inv-form').style.display='none';
-    document.getElementById('inv-esito').style.display='block';
-    showToast('Accesso creato ✓');
-    _profiliAppCache=null; // c'e' un account in piu': ricarica la mappa dei ruoli app
-    await loadOperai();
-    renderPersonale();
-
-  }catch(e){
-    errEl.textContent='Errore: '+e.message;
-    errEl.style.display='block';
-    console.error('Errore creazione collaboratore:',e);
-  }finally{
-    btn.disabled=false;btn.textContent='✓ Crea accesso';
-  }
-}
+// v14: «Crea accesso app» (openModalInvita, invitaCollaboratore → funzione crea-collaboratore) tolto:
+// l'accesso si da' in Anagrafiche → Persone → scheda → «Dai accesso».
+function openModalInvita(){apriAnagrafiche('persone');}
 // ══════════════════════════════════════════════════
 // IMPOSTAZIONI COMPLETE
 // ══════════════════════════════════════════════════
