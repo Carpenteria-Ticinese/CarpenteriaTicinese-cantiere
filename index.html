@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=16">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=16">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=16">
+<link rel="manifest" href="manifest.json?v=17">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=17">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=17">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=16"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=17"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=16"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=16"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=16"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=16"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=17"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=17"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=17"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=17"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1245,6 +1245,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
   <!-- CONFERMA ORE CAPOSQUADRA -->
   <div class="scr" id="scr-conferma-ore">
+    <div id="conferma-incomplete"></div>
     <div id="conferma-giorni"></div>
     <div id="conferma-ore-giorno" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
       <label class="fl" style="margin:0;white-space:nowrap">Data:</label>
@@ -1409,6 +1410,14 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   </div>
 </div>
 
+<div class="ov" id="mod-v17-foto">
+  <div class="mod">
+    <div class="mod-h"></div>
+    <div class="mod-t">📷 Foto</div>
+    <div id="v17-foto-testo" style="font-size:17px;line-height:1.5;margin-bottom:14px"></div>
+    <button class="btn btn-g" onclick="closeModal('mod-v17-foto')" style="width:100%" data-i18n="v17_ho_capito">Ho capito</button>
+  </div>
+</div>
 <div class="ov" id="mod-cant-log">
   <div class="mod">
     <div class="mod-h"></div>
@@ -1723,7 +1732,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <div class="fg"><label class="fl">⚠️ Danni o problemi</label><textarea class="ft" id="mg-danni" style="min-height:50px"></textarea></div>
     <div class="fg"><label class="fl" data-i18n="lbl_materiali">Materiali ricevuti</label><input type="text" class="fi" id="mg-mat" placeholder="es. BSH 200ml, Flumroc 50 lastre..."></div>
     <div class="fg">
-      <label class="fl">📷 Foto giornata</label>
+      <label class="fl">📷 Foto giornata — <select id="mg-foto-tipo" style="font-size:14px;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--text)"><option value="durante">Durante</option><option value="prima">Prima dei lavori</option><option value="dopo">Dopo i lavori</option><option value="dettaglio">Dettaglio</option><option value="danno">⚠️ Danno</option></select></label>
       <div id="mg-foto-esistenti" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px"></div>
       <div class="foto-drop" onclick="document.getElementById('mg-foto-inp').click()" style="padding:12px">
         <div style="font-size:22px">📷</div>
@@ -2093,7 +2102,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='16';
+const APP_VERSIONE='17';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2101,6 +2110,28 @@ try{
 const SB_URL='https://wgidgbauhivdctdxfjnk.supabase.co';
 const SB_KEY='sb_publishable_Ke7MTQGHPYVXvKInfOrUQQ_Ys6qKJvD';
 const sb=supabase.createClient(SB_URL,SB_KEY);
+// v17 (domanda P): «ogni operaio vede solo i suoi cantieri e i suoi dati; email, telefono e note degli altri solo titolare e responsabile».
+// Chi non e' titolare o responsabile legge i nomi degli altri dalla vista operai_squadra (SQL DIR_07a), mai dalla tabella operai
+// (dopo DIR_07b la tabella gli da' solo la sua scheda). Tutti gli embed `operai(...)` passano da qui: la chiave resta `operai`.
+const _V17_COLONNE_SQUADRA=['id','nome','cognome','ruolo','attivo','data_fine_rapporto','rapporto','user_id'];
+function _v17VedeSchede(){return ['titolare','responsabile'].includes(_ruoloApp());}
+function _v17SelectSquadra(sel){
+  if(typeof sel!=='string'||!sel.includes('operai(')||_v17VedeSchede())return sel;
+  return sel.replace(/\boperai\(([^()]*)\)/g,function(_,col){
+    const tenute=col.split(',').map(x=>x.trim()).filter(x=>x==='*'||_V17_COLONNE_SQUADRA.includes(x));
+    return 'operai:operai_squadra('+(tenute.length?tenute.join(','):'id')+')';
+  });
+}
+(function(){
+  const _da=sb.from.bind(sb);
+  sb.from=function(tab){
+    const q=_da(tab),sel=q.select.bind(q);
+    q.select=function(col,opz){return sel(_v17SelectSquadra(col),opz);};
+    return q;
+  };
+})();
+// Profili degli altri: titolare e responsabile dalla tabella, gli altri dalla vista profili_squadra (id, nome senza email, ruolo, attivo).
+function _v17Profili(){return sb.from(_v17VedeSchede()?'profili':'profili_squadra');}
 // ════════════════ SISTEMA MULTILINGUA IT/EN/DE/ES (P53) ════════════════
 const TRADUZIONI = {
   IT:{
@@ -2307,6 +2338,10 @@ const TRADUZIONI = {
     lbl_scarico_doc:'⏳ Scarico documenti...',
     lbl_voci_importate:' voci importate ✓',
     lbl_salvato_op:' salvato ✓',
+    v17_nota_foto:'ℹ️ Qui vedi tutte le foto del cantiere. Le foto dei danni le vedono titolare, responsabile e caposquadra.',v17_nota_danni:'Le foto dei danni non compaiono qui: le vedono titolare, responsabile e caposquadra.',v17_solo_interni:'Nessun cantiere assegnato, solo i lavori interni. Chiedi al titolare.',v17_filtro_danni:'⚠️ Danni',v17_nessuna_foto:'Nessuna foto da mostrare.',
+    v17_incompleta:'Incompleta: mancano gli orari',v17_salvata_incompleta:' salvato: giornata INCOMPLETA, mancano gli orari',v17_incomplete_titolo:'Giornate incomplete',v17_metti_orari:'✏️ Metti gli orari',v17_incomplete_ko:'Elenco delle giornate incomplete NON letto. Riapri la pagina.',
+    v17_danni_titolo:'⚠️ Danni segnalati',v17_danni_nessuno:'Nessun danno segnalato.',v17_danni_ko:'Danni segnalati non caricati: riapri il cantiere.',v17_danni_tutti:'Mostra tutti',
+    v17_danno_arrivata:'Foto del danno arrivata in ufficio.',v17_danno_arrivate:'Foto del danno arrivate in ufficio:',v17_danno_chi:'Le foto dei danni le vedono titolare, responsabile e caposquadra. Tu non le rivedi nell\'app: è normale, non è un errore.',v17_foto_ko:'Foto NON salvate:',v17_foto_ko2:'Rifalle dalla modifica della giornata ✏️.',v17_ho_capito:'Ho capito',
     lbl_errori:' errori',
     lbl_aggiornati:' aggiornati',
     lbl_arrotondamento:'Arrotondamento',
@@ -2639,6 +2674,10 @@ const TRADUZIONI = {
     lbl_scarico_doc:'⏳ Downloading documents...',
     lbl_voci_importate:' items imported ✓',
     lbl_salvato_op:' saved ✓',
+    v17_nota_foto:'ℹ️ Here you see all the photos of the site. Damage photos are visible to the owner, the manager and the foreman.',v17_nota_danni:'Damage photos do not appear here: they are visible to the owner, the manager and the foreman.',v17_solo_interni:'No site assigned, only internal work. Ask the owner.',v17_filtro_danni:'⚠️ Damage',v17_nessuna_foto:'No photos to show.',
+    v17_incompleta:'Incomplete: times missing',v17_salvata_incompleta:' saved: day INCOMPLETE, times missing',v17_incomplete_titolo:'Incomplete days',v17_metti_orari:'✏️ Add the times',v17_incomplete_ko:'List of incomplete days NOT loaded. Open the page again.',
+    v17_danni_titolo:'⚠️ Reported damage',v17_danni_nessuno:'No damage reported.',v17_danni_ko:'Reported damage not loaded: open the site again.',v17_danni_tutti:'Show all',
+    v17_danno_arrivata:'Damage photo received by the office.',v17_danno_arrivate:'Damage photos received by the office:',v17_danno_chi:'Damage photos are visible to the owner, the manager and the foreman. You will not see them again in the app: this is normal, not an error.',v17_foto_ko:'Photos NOT saved:',v17_foto_ko2:'Add them again from the edit day screen ✏️.',v17_ho_capito:'I understand',
     lbl_errori:' errors',
     lbl_aggiornati:' updated',
     lbl_arrotondamento:'Rounding',
@@ -2971,6 +3010,10 @@ const TRADUZIONI = {
     lbl_scarico_doc:'⏳ Dokumente herunterladen...',
     lbl_voci_importate:' Positionen importiert ✓',
     lbl_salvato_op:' gespeichert ✓',
+    v17_nota_foto:'ℹ️ Hier siehst du alle Fotos der Baustelle. Schadensfotos sehen der Inhaber, der Verantwortliche und der Vorarbeiter.',v17_nota_danni:'Schadensfotos erscheinen hier nicht: sie sehen der Inhaber, der Verantwortliche und der Vorarbeiter.',v17_solo_interni:'Keine Baustelle zugewiesen, nur interne Arbeiten. Frag den Inhaber.',v17_filtro_danni:'⚠️ Schäden',v17_nessuna_foto:'Keine Fotos anzuzeigen.',
+    v17_incompleta:'Unvollständig: Zeiten fehlen',v17_salvata_incompleta:' gespeichert: Tag UNVOLLSTÄNDIG, Zeiten fehlen',v17_incomplete_titolo:'Unvollständige Tage',v17_metti_orari:'✏️ Zeiten eintragen',v17_incomplete_ko:'Liste der unvollständigen Tage NICHT geladen. Seite neu öffnen.',
+    v17_danni_titolo:'⚠️ Gemeldete Schäden',v17_danni_nessuno:'Keine Schäden gemeldet.',v17_danni_ko:'Gemeldete Schäden nicht geladen: Baustelle neu öffnen.',v17_danni_tutti:'Alle zeigen',
+    v17_danno_arrivata:'Schadensfoto im Büro angekommen.',v17_danno_arrivate:'Schadensfotos im Büro angekommen:',v17_danno_chi:'Schadensfotos sehen der Inhaber, der Verantwortliche und der Vorarbeiter. Du siehst sie in der App nicht mehr: das ist normal, kein Fehler.',v17_foto_ko:'Fotos NICHT gespeichert:',v17_foto_ko2:'Füge sie über die Bearbeitung des Tages erneut hinzu ✏️.',v17_ho_capito:'Verstanden',
     lbl_errori:' Fehler',
     lbl_aggiornati:' aktualisiert',
     lbl_arrotondamento:'Rundung',
@@ -3297,6 +3340,10 @@ const TRADUZIONI = {
     lbl_scarico_doc:'⏳ Descargando documentos...',
     lbl_voci_importate:' elementos importados ✓',
     lbl_salvato_op:' guardado ✓',
+    v17_nota_foto:'ℹ️ Aquí ves todas las fotos de la obra. Las fotos de daños las ven el titular, el responsable y el capataz.',v17_nota_danni:'Las fotos de daños no aparecen aquí: las ven el titular, el responsable y el capataz.',v17_solo_interni:'Ninguna obra asignada, solo trabajos internos. Pregunta al titular.',v17_filtro_danni:'⚠️ Daños',v17_nessuna_foto:'No hay fotos para mostrar.',
+    v17_incompleta:'Incompleta: faltan los horarios',v17_salvata_incompleta:' guardado: jornada INCOMPLETA, faltan los horarios',v17_incomplete_titolo:'Jornadas incompletas',v17_metti_orari:'✏️ Poner los horarios',v17_incomplete_ko:'Lista de jornadas incompletas NO cargada. Vuelve a abrir la página.',
+    v17_danni_titolo:'⚠️ Daños señalados',v17_danni_nessuno:'Ningún daño señalado.',v17_danni_ko:'Daños señalados no cargados: vuelve a abrir la obra.',v17_danni_tutti:'Mostrar todos',
+    v17_danno_arrivata:'Foto del daño recibida en la oficina.',v17_danno_arrivate:'Fotos del daño recibidas en la oficina:',v17_danno_chi:'Las fotos de daños las ven el titular, el responsable y el capataz. No las volverás a ver en la app: es normal, no es un error.',v17_foto_ko:'Fotos NO guardadas:',v17_foto_ko2:'Vuelve a añadirlas desde la edición del día ✏️.',v17_ho_capito:'Entendido',
     lbl_errori:' errores',
     lbl_aggiornati:' actualizados',
     lbl_arrotondamento:'Redondeo',
@@ -4221,8 +4268,13 @@ async function loadCantieri(){
     console.error('loadCantieri error:',error.message,'(code:',error.code+')');showToast('Errore DB cantieri ('+error.code+'): contatta l\'amministratore','e');
     _P2_CANTIERI_ERRORE=true;return false; // l'elenco di prima resta: mai vuoto per un errore
   }
+  // v17: gli interni li vedono tutti, quindi zero righe non puo' essere: errore a schermo, mai elenco vuoto.
+  if(!(data||[]).length){
+    console.error('loadCantieri: zero righe');showToast('Cantieri non caricati: riapri l\'app. Se resta cosi\', avvisa il titolare.','e');
+    _P2_CANTIERI_ERRORE=true;return false;
+  }
   _P2_CANTIERI_ERRORE=false;
-  CANTIERI=data||[];
+  CANTIERI=data;
   return true;
 }
 
@@ -4413,12 +4465,30 @@ function _v14TastoAnagrafiche(dove,scritta,sotto){
   return '<button type="button" class="btn btn-g" style="width:100%;font-size:17px;padding:14px" onclick="apriAnagrafiche('+d+')">🗂️ '+escHtml(scritta||'Apri Anagrafiche')+'</button>'
     +(sotto?'<div style="font-size:14px;color:var(--t2);margin-top:6px;line-height:1.4">'+escHtml(sotto)+'</div>':'');
 }
+// v17: titolare e responsabile leggono la tabella (servono email, note, agenzia). Zero righe qui non puo' essere: errore, mai elenco vuoto.
+async function _v17LeggiSchede(){
+  const{data,error}=await sb.from('operai').select('*').order('cognome');
+  if(error)throw error;
+  if(!(data||[]).length)throw new Error('nessuna persona letta');
+  return data;
+}
+// v17: tutti gli altri leggono la vista (nomi della squadra) e dalla tabella solo la PROPRIA scheda, che ha anche vede_tutti_cantieri.
+async function _v17LeggiSquadra(){
+  const[sq,mia]=await Promise.all([sb.from('operai_squadra').select('*').order('cognome'),sb.from('operai').select('*').eq('user_id',USER.id)]);
+  if(sq.error)throw sq.error;
+  if(mia.error)throw mia.error;
+  const mie=mia.data||[],ids=new Set(mie.map(o=>o.id)),altri=(sq.data||[]).filter(o=>!ids.has(o.id));
+  // La vista dice che ho una scheda e la tabella non me la da': qualcosa nei permessi non va, non e' un elenco vuoto.
+  if(!mie.length&&altri.some(o=>o.user_id===USER.id))throw new Error('scheda personale non leggibile');
+  // Il caposquadra sceglie le persone per le ore: zero righe non puo' essere. Operaio senza scheda: lo dice _p2AvvisoNonCollegato.
+  if(_ruoloApp()==='caposquadra'&&!mie.length&&!altri.length)throw new Error('nessuna persona letta');
+  return mie.concat(altri).sort((a,b)=>String(a.cognome||'').localeCompare(String(b.cognome||'')));
+}
 async function loadOperai(){
   if(!(await _sessioneValida()))return false; // P2 punto 5
   try{
-    const{data,error}=await sb.from('operai').select('*').order('cognome');
-    if(error)throw error;
-    OPERAI_TUTTI=data||[];
+    const data=_v17VedeSchede()?await _v17LeggiSchede():await _v17LeggiSquadra(); // v17 (domanda P)
+    OPERAI_TUTTI=data;
     // v13: OPERAI = chi si puo' scegliere per ore, spese, regia, assenze, piano: attivi e NON Esterni
     OPERAI=OPERAI_TUTTI.filter(o=>_v13Lavora(o));
     V13_SENZA_RAPPORTO=OPERAI_TUTTI.length>0&&!OPERAI_TUTTI.some(o=>'rapporto' in o);
@@ -4500,7 +4570,9 @@ async function renderHome(){
     if(g.tipo==='paghiamo')gruPerCant[g.cantiere_id].da+=(parseFloat(g.importo)||0);
     else gruPerCant[g.cantiere_id].inc+=(parseFloat(g.importo)||0);
   });
-  list.innerHTML=attivi.map(c=>{
+  // v17: chi non ha cantieri assegnati vede solo gli interni: glielo si dice, non deve sembrare un errore
+  const _v17Nota=(_p4FiltraCantieri()&&attivi.every(_cantInterno))?'<div id="v17-solo-interni" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:12px;font-size:16px;line-height:1.4">🏗️ '+t('v17_solo_interni')+'</div>':'';
+  list.innerHTML=_v17Nota+attivi.map(c=>{
     const ore=orePerCant[c.id]||0;
     const gru=gruPerCant[c.id]||null;
     const _st=_v16StatoCantiere(c); // v16: stato vero = stato_commessa (Anagrafiche), non cantieri.stato
@@ -4586,6 +4658,7 @@ async function renderCantiere(){
           </div>
         </div>
       </div>
+      <div id="v17-danni-box"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
         <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
         <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
@@ -4670,6 +4743,7 @@ async function renderCantiere(){
               <div style="cursor:pointer;flex:1" onclick="openCantLog('${g.id}')">
                 <span style="font-size:15px;font-weight:600">👷 ${g.operai?.nome||''} ${g.operai?.cognome||''}</span>
                 ${g.meteo?`<span style="font-size:14px;margin-left:8px">${g.meteo.split(' ')[0]}</span>`:''}
+                ${_v17Incompleta(g)?_v17EtichettaIncompleta():''}
                 ${_p7bRiassuntoLavori(g)}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -4693,6 +4767,7 @@ async function renderCantiere(){
       ${giornatePerData.length>15?`<div style="text-align:center;font-size:15px;color:var(--t3);padding:10px">... e altre ${giornatePerData.length-15} giornate — esporta Excel per vedere tutto</div>`:''}
       ${!giornatePerData.length?`<div class="empty"><div class="empty-i">📋</div><p>${t('empty_attivita')}<br>${t('empty_tocca_init')}</p></div>`:''}
     `;
+    _v17CaricaDanni(curCant.id); // v17
     _p6RenderChiLavora(); // P6: "👷 Chi lavora qui" (solo titolare e responsabile)
   }catch(err){
     el.innerHTML=`<div class="empty"><div class="empty-i">⚠️</div><p>${t('lbl_errore_car')}:<br>${err.message}</p><button class="btn btn-s" style="margin-top:14px;width:auto;padding:10px 20px" onclick="renderCantiere()">${t('lbl_riprova')}</button></div>`;
@@ -4718,18 +4793,105 @@ function apriFotoCantiere(){pushNav('cantiere-sotto'); // P7: indietro torna al 
   renderFotoCantiere();
 }
 
-// v16: la tabella `foto` per l'operaio restituisce solo le righe che ha caricato lui (policy foto_select:
-// created_by = utente, oppure titolare/responsabile/caposquadra). Non e' un errore dell'app: lo si dice a schermo.
-function _v16FotoSoloMie(){return !['titolare','responsabile','caposquadra'].includes(_ruoloApp());}
+// v17 (decisione di Umberto, 4.11): titolare e responsabile vedono tutto; il caposquadra tutte le foto dei SUOI cantieri, danni compresi;
+// operaio e magazziniere le foto dei loro cantieri, senza i danni.
+// Il limite sta nel database (SQL CANT_05: policy foto_leggi e cantiere_foto_file_leggi). Con RLS la foto nascosta non da' errore:
+// semplicemente non c'e'. Quindi per chi non vede i danni nessun «zero» deve sembrare un fatto: lo si dice a parole.
+function _v17VedeFotoDanni(){return ['titolare','responsabile','caposquadra'].includes(_ruoloApp());}
+// Riga di nota dentro una griglia di foto (solo per chi non vede i danni)
+function _v17RigaNotaDanni(colonne){return _v17VedeFotoDanni()?'':'<div style="grid-column:span '+colonne+';font-size:14px;color:var(--t2);line-height:1.4">'+t('v17_nota_danni')+'</div>';}
+// Carica il file e scrive la riga. '' = salvata, altrimenti il motivo.
+// MAI .select() sull'insert: operaio e magazziniere non possono rileggere una foto di danno e il database rifiuterebbe tutta la riga.
+async function _v17SalvaFoto(path,file,riga){
+  try{
+    const{error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
+    if(ue)return ue.message||'file non caricato';
+    const{error:ie}=await sb.from('foto').insert(riga);
+    if(ie)return ie.message||'riga non salvata';
+    return '';
+  }catch(e){return e.message||'errore di rete';}
+}
+// Testo della finestra dopo il salvataggio. '' = niente da dire (la finestra non si apre).
+function _v17TestoEsitoFoto(dannoOk,ko,motivo){
+  let h='';
+  if(dannoOk>0&&!_v17VedeFotoDanni())h+='<p style="margin:0 0 10px"><strong>📷 '+(dannoOk===1?t('v17_danno_arrivata'):t('v17_danno_arrivate')+' '+dannoOk)+'</strong></p><p style="margin:0 0 10px">'+t('v17_danno_chi')+'</p>';
+  if(ko>0)h+='<p style="margin:0 0 10px;color:var(--red);font-weight:700">⚠️ '+t('v17_foto_ko')+' '+ko+'. '+t('v17_foto_ko2')+'</p>'+(motivo?'<p style="margin:0 0 10px;font-size:14px;color:var(--t2)">'+escHtml(motivo)+'</p>':'');
+  return h;
+}
+function _v17MostraEsitoFoto(dannoOk,ko,motivo){
+  const h=_v17TestoEsitoFoto(dannoOk,ko,motivo);if(!h)return false;
+  document.getElementById('v17-foto-testo').innerHTML=h;
+  openModal('mod-v17-foto');
+  return true;
+}
+// v17 (Umberto, 4.11): salvare senza orari si puo'. La giornata resta «incompleta» finche' mancano: basta guardare ora_inizio e ora_fine, niente colonne nuove.
+// ore_totali e' una colonna generata: senza orari e' vuota, e tutti i conti la leggono come 0.
+// La timbratura in corso (cantiere_da_assegnare) non ha ancora gli orari per sua natura: non e' incompleta.
+function _v17Incompleta(g){return !!g&&g.cantiere_da_assegnare!==true&&(!g.ora_inizio||!g.ora_fine);}
+function _v17EtichettaIncompleta(){return '<div class="v17-incompleta" style="display:inline-block;background:var(--red);color:#1a1a1a;border-radius:5px;padding:3px 8px;font-size:14px;font-weight:700;margin-top:4px">⚠️ '+t('v17_incompleta')+'</div>';}
+function _v17VedeIncomplete(){return ['titolare','responsabile','caposquadra'].includes(_ruoloApp());}
+function _v17IncompleteHtml(righe){
+  if(!righe.length)return '';
+  return '<div id="v17-incomplete" style="background:var(--s2);border:2px solid var(--red);border-radius:var(--rsm);padding:10px 14px;margin-bottom:14px"><div style="font-size:17px;font-weight:700;color:var(--red);margin-bottom:6px">⚠️ '+t('v17_incomplete_titolo')+' ('+righe.length+')</div>'
+    +righe.map(g=>'<div class="v17-inc-riga" style="border-top:1px solid var(--border);padding:8px 0"><div style="font-size:16px;font-weight:700">'+escHtml(fmtDate(g.data))+' · '+escHtml(((g.operai?.nome||'')+' '+(g.operai?.cognome||'')).trim()||'—')+'</div><div style="font-size:15px;color:var(--t2);margin-bottom:6px;overflow-wrap:anywhere">🏗️ '+escHtml(_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||'—')+'</div><button type="button" class="btn btn-s" style="width:100%;min-height:48px" onclick="v12CorreggiOrari(\''+g.id+'\')">'+t('v17_metti_orari')+'</button></div>').join('')+'</div>';
+}
+// Titolare e responsabile: tutte. Caposquadra: solo i suoi cantieri. Sta nella schermata Conferma ore, che hanno loro tre.
+async function renderGiornateIncomplete(){
+  const box=document.getElementById('conferma-incomplete');
+  if(!box)return;
+  if(!_v17VedeIncomplete()){box.innerHTML='';return;}
+  try{
+    if(!(await _sessioneValida()))return;
+    let cantIds=null;
+    if(_p4FiltraCantieri()){
+      cantIds=_cantVisibili().map(c=>c.id);
+      if(!cantIds.length){box.innerHTML='';return;}
+    }
+    const righe=await _p7TmTutte(function(){
+      let q=sb.from('giornate').select('id,data,cantiere_id,ora_inizio,ora_fine,cantiere_da_assegnare,operai(nome,cognome),cantieri(nome)').or('ora_inizio.is.null,ora_fine.is.null');
+      if(cantIds)q=q.in('cantiere_id',cantIds);
+      return q.order('data',{ascending:false}).order('id');
+    });
+    box.innerHTML=_v17IncompleteHtml(righe.filter(_v17Incompleta));
+  }catch(e){
+    if(_erroreDiSessione(e)){await _sessioneScaduta();return;}
+    box.innerHTML='<div class="warn on" style="font-size:16px;margin-bottom:12px">⚠️ '+t('v17_incomplete_ko')+' ('+escHtml(e.message)+')</div>';
+  }
+}
+// v17 (Umberto, 4.11): il testo «Danni o problemi» lo vede la squadra del cantiere. Viene dalla vista giornate_danni_squadra (SQL CANT_05),
+// che non ha ore: giornate_leggi resta com'e'. Un errore si dice a parole, mai «nessun danno».
+function _v17DanniHtml(righe,tutti){
+  const R=righe||[],mostrate=tutti?R:R.slice(0,5);
+  const corpo=R.length?mostrate.map(d=>'<div style="border-top:1px solid var(--border);padding:8px 0;font-size:16px;line-height:1.4;overflow-wrap:anywhere"><div style="font-size:14px;color:var(--t2);margin-bottom:2px">'+escHtml(fmtDate(d.data))+(d.scritto_da?' · 👤 '+escHtml(d.scritto_da):'')+'</div>'+escHtml(d.danni)+'</div>').join(''):'<div style="font-size:15px;color:var(--t2)">'+t('v17_danni_nessuno')+'</div>';
+  const altri=(!tutti&&R.length>5)?'<button type="button" class="btn btn-s" style="width:100%;min-height:48px;margin-top:8px" onclick="_v17MostraTuttiDanni()">'+t('v17_danni_tutti')+' ('+R.length+')</button>':'';
+  return '<div id="v17-danni" style="background:var(--s2);border:1px solid '+(R.length?'var(--red)':'var(--border)')+';border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px"><div style="font-size:16px;font-weight:700;margin-bottom:6px">'+t('v17_danni_titolo')+(R.length?' ('+R.length+')':'')+'</div>'+corpo+altri+'</div>';
+}
+let _v17DanniRighe=[];
+function _v17MostraTuttiDanni(){const box=document.getElementById('v17-danni-box');if(box)box.innerHTML=_v17DanniHtml(_v17DanniRighe,true);}
+async function _v17CaricaDanni(cantId){
+  const box=document.getElementById('v17-danni-box');if(!box)return;
+  try{
+    const{data,error}=await sb.from('giornate_danni_squadra').select('giornata_id,data,danni,scritto_da').eq('cantiere_id',cantId).order('data',{ascending:false});
+    if(error)throw error;
+    if(curCant?.id!==cantId)return; // nel frattempo si e' aperto un altro cantiere
+    _v17DanniRighe=data||[];
+    box.innerHTML=_v17DanniHtml(_v17DanniRighe,false);
+  }catch(e){
+    console.warn('Danni segnalati:',e.message);
+    box.innerHTML='<div style="background:var(--s2);border:1px solid var(--red);border-radius:var(--rsm);padding:10px 14px;margin-bottom:12px;font-size:15px;color:var(--red);font-weight:700">⚠️ '+t('v17_danni_ko')+'</div>';
+  }
+}
 async function renderFotoCantiere(filtro){
   if(!filtro)filtro=window._fotoFiltroAttivo||'tutti';
+  if(filtro==='danno'&&!_v17VedeFotoDanni())filtro='tutti'; // v17: il filtro Danni solo per chi le puo' vedere
   window._fotoFiltroAttivo=filtro;
   const el=document.getElementById('foto-cant-content');
-  const tipoLabel={tutti:'Tutti',prima:'🏗️ Prima',durante:'📸 Durante',dopo:'✅ Dopo',dettaglio:'🔍 Dettaglio'};
-  const filtroHtml='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
-    ['tutti','prima','durante','dopo','dettaglio'].map(function(t){
-      const att=filtro===t;
-      return '<button onclick="renderFotoCantiere(\''+t+'\')" style="padding:4px 12px;border-radius:20px;border:1px solid '+(att?'var(--gold)':'var(--border)')+';background:'+(att?'rgba(200,168,75,.15)':'transparent')+';color:'+(att?'var(--gold)':'var(--t2)')+';font-size:14px;cursor:pointer;font-family:inherit">'+tipoLabel[t]+'</button>';
+  const tipoLabel={tutti:'Tutti',prima:'🏗️ Prima',durante:'📸 Durante',dopo:'✅ Dopo',dettaglio:'🔍 Dettaglio',danno:t('v17_filtro_danni')};
+  // v17: tasti grandi (si usano con i guanti), sempre icona + scritta
+  const filtroHtml='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    ['tutti','prima','durante','dopo','dettaglio'].concat(_v17VedeFotoDanni()?['danno']:[]).map(function(k){
+      const att=filtro===k,col=k==='danno'?'var(--red)':'var(--gold)';
+      return '<button id="foto-filtro-'+k+'" onclick="renderFotoCantiere(\''+k+'\')" style="min-height:48px;padding:8px 14px;border-radius:24px;border:'+(k==='danno'?'2px':'1px')+' solid '+(att||k==='danno'?col:'var(--border)')+';background:'+(att?(k==='danno'?'rgba(224,85,85,.15)':'rgba(200,168,75,.15)'):'transparent')+';color:'+(att||k==='danno'?col:'var(--t2)')+';font-size:16px;font-weight:'+(att||k==='danno'?'700':'400')+';cursor:pointer;font-family:inherit">'+tipoLabel[k]+'</button>';
     }).join('')+'</div>';
   el.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -4738,7 +4900,7 @@ async function renderFotoCantiere(filtro){
     </div>
     <div id="p5-zip-azioni"></div>
     <div id="p5-spazio"></div>
-    ${_v16FotoSoloMie()?'<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.4">ℹ️ Qui vedi solo le foto che hai caricato tu. Le foto degli altri le vedono caposquadra e ufficio.</div>':''}
+    ${_v17VedeFotoDanni()?'':'<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin-bottom:12px;font-size:15px;line-height:1.4">'+t('v17_nota_foto')+'</div>'}
     ${filtroHtml}
     <div class="security-badge">
       <span style="font-size:17px;flex-shrink:0">🔒</span>
@@ -4751,7 +4913,7 @@ async function renderFotoCantiere(filtro){
     if(error)throw error;
     const fotoFiltrata=filtro==='tutti'?(foto||[]):(foto||[]).filter(function(f){return (f.tipo_foto||'durante')===filtro;});
     if(!fotoFiltrata.length){
-      const msg=filtro==='tutti'?(_v16FotoSoloMie()?'Nessuna foto tua in questo cantiere.<br>Aggiungile dalla modifica giornata ✏️':'Nessuna foto caricata.<br>Aggiungile dalla modifica giornata ✏️'):'Nessuna foto per la categoria <b>'+tipoLabel[filtro]+'</b>.';
+      const msg=filtro==='tutti'?(_v17VedeFotoDanni()?'Nessuna foto caricata.':t('v17_nessuna_foto'))+'<br>Aggiungile dalla modifica giornata ✏️':'Nessuna foto per la categoria <b>'+tipoLabel[filtro]+'</b>.';
       el.innerHTML=el.innerHTML.replace('<div class="empty"><div class="spin" style="margin:0 auto"></div></div>','<div class="empty"><div class="empty-i">📷</div><p>'+msg+'</p></div>');
       return;
     }
@@ -4775,7 +4937,7 @@ async function renderFotoCantiere(filtro){
           const chi=f.caricato_da||(f.nome_file||'—');
           const ext=(f.nome_file||'foto.jpg').split('.').pop();
           const dlName=`CT_${f.data||'foto'}_${(chi).replace(/[^a-zA-Z0-9]/g,'_')}.${ext}`;
-          const tipoShort={prima:'PRE',durante:'',dopo:'POST',dettaglio:'DET'};
+          const tipoShort={prima:'PRE',durante:'',dopo:'POST',dettaglio:'DET',danno:'⚠️ DANNO'};
           const tipoBadge=(filtro==='tutti'&&f.tipo_foto&&f.tipo_foto!=='durante')?'<span style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,.75);color:var(--gold);font-size:11px;padding:1px 4px;border-radius:3px;font-weight:700">'+(tipoShort[f.tipo_foto]||f.tipo_foto)+'</span>':'';
           if(ue||!u?.signedUrl){
             grid.innerHTML+=`<div style="background:var(--s2);border-radius:var(--rsm);aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--red)">⚠️</div>`;
@@ -4843,7 +5005,7 @@ async function downloadFotoZip(){
   try{
     const {data:foto,error}=await sb.from('foto').select('*').eq('cantiere_id',curCant.id).order('data',{ascending:true});
     if(error)throw error;
-    if(!foto||!foto.length){showToast('Nessuna foto da scaricare','e');return;}
+    if(!foto||!foto.length){showToast(_v17VedeFotoDanni()?'Nessuna foto da scaricare':t('v17_nessuna_foto')+' '+t('v17_nota_danni'),'e');return;}
     await caricaJSZip();
     const zip=new JSZip();
     const cn=curCant.nome.replace(/[^a-zA-Z0-9]/g,'_');
@@ -5055,17 +5217,18 @@ function _v11OrariCambiati(orig,ini,fine,pausa){
 function _v11TogliConferma(orig,ini,fine,pausa){return !!(orig&&orig.confermata&&_v11OrariCambiati(orig,ini,fine,pausa));}
 async function apriModificaGiornata(gid){
   modificaGid=gid;mgFotoFiles=[];
+  {const _fts=document.getElementById('mg-foto-tipo');if(_fts)_fts.value='durante';} // v17
   document.getElementById('mg-foto-nuove').innerHTML='';
   document.getElementById('mg-foto-esistenti').innerHTML='<div style="font-size:14px;color:var(--t2);grid-column:span 3">'+t('lbl_caricamento_gen')+'</div>';
   const {data:g}=await sb.from('giornate').select('*, operai(nome,cognome,ruolo), cantieri(nome)').eq('id',gid).single();
   if(!g)return;
-  _v11MgOrig={gid:gid,ini:g.ora_inizio||'07:00',fine:g.ora_fine||'17:00',pausa:g.pausa_minuti??60,confermata:g.ore_confermate!=null}; // v11: come li mostra il modulo
+  _v11MgOrig={gid:gid,ini:g.ora_inizio||'',fine:g.ora_fine||'',pausa:g.pausa_minuti??60,confermata:g.ore_confermate!=null}; // v11: come li mostra il modulo
   const {data:mats}=await sb.from('materiali').select('*').eq('cantiere_id',g.cantiere_id).eq('data',g.data);
   const {data:fotoEsist}=await sb.from('foto').select('*').eq('giornata_id',gid);
   const {data:vociEsist}=await sb.from('voci_lavoro').select('*, lavorazioni(nome,um)').eq('giornata_id',gid);
-  document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}`;
-  document.getElementById('mg-ini').value=g.ora_inizio||'07:00';
-  document.getElementById('mg-fine').value=g.ora_fine||'17:00';
+  document.getElementById('modifica-g-info').innerHTML=`<strong>${g.operai?.nome||''} ${g.operai?.cognome||''}</strong> · ${g.operai?.ruolo||''}<br>${fmtDate(g.data)} · ${_cantEtichettaDaId(g.cantiere_id,g.cantieri?.nome)||''}${_v17Incompleta(g)?'<br>'+_v17EtichettaIncompleta():''}`;
+  document.getElementById('mg-ini').value=g.ora_inizio||''; // v17: vuoto resta vuoto, mai orari inventati
+  document.getElementById('mg-fine').value=g.ora_fine||'';
   document.getElementById('mg-pausa').value=g.pausa_minuti??60; // v11: pausa 0 resta 0
   document.getElementById('mg-note').value=g.note||'';
   document.getElementById('mg-materiale-g').value=g.materiale_giorno||'';
@@ -5082,9 +5245,9 @@ async function apriModificaGiornata(gid){
   const _mgPWrap=document.getElementById('mg-pasto-wrap');const _mgPCb=document.getElementById('mg-pasto');
   if(_mgPWrap&&_mgPCb){const _isTit=PROF?.ruolo==='titolare';const _soloTit=IMPOSTAZIONI.pasto_solo_titolare==='1';if(IMPOSTAZIONI.pasti_abilitati==='1'&&(_isTit||!_soloTit)){_mgPWrap.style.display='block';_mgPCb.checked=!!g.pasto_riconosciuto;}else{_mgPWrap.style.display='none';}}
   const grid=document.getElementById('mg-foto-esistenti');
-  if(!(fotoEsist||[]).length){grid.innerHTML='<div style="font-size:14px;color:var(--t2);grid-column:span 3">'+t('log_nessuna_foto')+'</div>';}
+  if(!(fotoEsist||[]).length){grid.innerHTML=_v17VedeFotoDanni()?'<div style="font-size:14px;color:var(--t2);grid-column:span 3">'+t('log_nessuna_foto')+'</div>':_v17RigaNotaDanni(3);}
   else{
-    grid.innerHTML='';
+    grid.innerHTML=_v17RigaNotaDanni(3);
     for(const f of fotoEsist){
       try{
         const {data:u}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,7200);
@@ -5103,7 +5266,7 @@ function calcOreModifica(){
   const ini=document.getElementById('mg-ini').value,fine=document.getElementById('mg-fine').value;
   const _pausaMgRaw=document.getElementById('mg-pausa').value;
   const pausa=_pausaMgRaw===''||_pausaMgRaw===null?60:Math.max(0,parseInt(_pausaMgRaw)||0);
-  if(!ini||!fine)return;
+  if(!ini||!fine){document.getElementById('mg-ore').textContent='0.00';return;} // v17
   const [h1,m1]=ini.split(':').map(Number),[h2,m2]=fine.split(':').map(Number);
   document.getElementById('mg-ore').textContent=Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60).toFixed(2);
 }
@@ -5227,7 +5390,7 @@ async function salvaModificaGiornata(){
     const attrezzaturaG=document.getElementById('mg-attrezzatura-g')?.value.trim()||'';
     const _mgPWrap2=document.getElementById('mg-pasto-wrap');const _mgPCb2=document.getElementById('mg-pasto');const _pastiOnMg=IMPOSTAZIONI.pasti_abilitati==='1';
     const _v11Riconferma=_v11MgOrig&&_v11MgOrig.gid===modificaGid&&_v11TogliConferma(_v11MgOrig,ini,fine,pausa); // v11
-    const {data:_gUpd,error}=await sb.from('giornate').update({ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,note:note||null,danni:(document.getElementById('mg-danni')?.value.trim()||null),meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{}),...(_v11Riconferma?{ore_confermate:null,confermato_da:null,data_conferma:null}:{})}).eq('id',modificaGid).select();
+    const {data:_gUpd,error}=await sb.from('giornate').update({ora_inizio:ini||null,ora_fine:fine||null,pausa_minuti:pausa,note:note||null,danni:(document.getElementById('mg-danni')?.value.trim()||null),meteo:meteoEl?meteoEl.dataset.m:null,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,...(_pastiOnMg&&_mgPWrap2?.style.display!=='none'?{pasto_riconosciuto:_mgPCb2?.checked||false}:{}),...(_v11Riconferma?{ore_confermate:null,confermato_da:null,data_conferma:null}:{})}).eq('id',modificaGid).select();
     if(error)throw error;
     // P2b: 0 righe = il database non ha salvato
     if(!_gUpd||!_gUpd.length)throw new Error('il database non ha modificato la giornata (0 righe)');
@@ -5294,15 +5457,16 @@ async function salvaModificaGiornata(){
     }
     if(_p2DaConfMg)_p2AvvisaCapisquadra(_p2DaConfMg,CANTIERI.find(c=>c.id===g.cantiere_id)?.nome,g.cantiere_id);
     if(curCant&&curCant.id===g.cantiere_id)await loadLavs(g.cantiere_id);
+    let _v17MgDannoOk=0,_v17MgFotoKo=0,_v17MgFotoMotivo='';
     if(mgFotoFiles.length){
+      const _tipoFoto=document.getElementById('mg-foto-tipo')?.value||'durante'; // v17
       const cn=g.cantiere_id||'senza-cantiere'; // P2 punto 6: id del cantiere nel percorso (i vecchi restano dove sono)
       for(const file of mgFotoFiles){
-        try{
-          const ext=file.name.split('.').pop().toLowerCase();
-          const path=`${cn}/${g.data}/${Date.now()}_${Math.random().toString(36).slice(2,6)}.${ext}`;
-          const {error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
-          if(!ue)await sb.from('foto').insert({cantiere_id:g.cantiere_id,giornata_id:modificaGid,data:g.data,storage_path:path,nome_file:file.name,operaio_id:USER.id,caricato_da:PROF?.nome||USER.email,created_by:USER.id});
-        }catch(fe){console.warn('Errore upload foto:',fe);}
+        const ext=file.name.split('.').pop().toLowerCase();
+        const path=`${cn}/${g.data}/${Date.now()}_${Math.random().toString(36).slice(2,6)}.${ext}`;
+        const _motivo=await _v17SalvaFoto(path,file,{cantiere_id:g.cantiere_id,giornata_id:modificaGid,data:g.data,storage_path:path,nome_file:file.name,operaio_id:USER.id,caricato_da:PROF?.nome||USER.email,tipo_foto:_tipoFoto,created_by:USER.id});
+        if(_motivo){_v17MgFotoKo++;_v17MgFotoMotivo=_motivo;console.warn('Errore upload foto:',_motivo);} // v17: si dice a schermo (prima solo in console)
+        else if(_tipoFoto==='danno')_v17MgDannoOk++;
       }
       mgFotoFiles=[];
     }
@@ -5310,6 +5474,7 @@ async function salvaModificaGiornata(){
 closeModal('mod-modifica-g');showToast(_v11Riconferma?'Giornata aggiornata ✓ — orari cambiati: le ore tornano DA CONFERMARE':'Giornata aggiornata ✓');_v12DopoModifica();
     if(_p7bOltre.length&&!_p2KoMg)showToast('Giornata aggiornata. ⚠️ OLTRE IL PREVENTIVO: '+_p7bTestoOltre(_p7bOltre),'e');
     if(_p2KoMg)showToast('Giornata aggiornata. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
+    _v17MostraEsitoFoto(_v17MgDannoOk,_v17MgFotoKo,_v17MgFotoMotivo); // v17
   }catch(err){showToast('Giornata NON salvata, riprova. ('+err.message+')','e');}
   finally{btn.textContent='💾 Salva modifiche';btn.disabled=false;}
 }
@@ -5443,7 +5608,7 @@ async function openCantLog(gid){
     <div style="background:var(--s2);border-radius:var(--rsm);padding:12px;margin-bottom:14px">
       <div style="font-size:var(--fs-lg);font-weight:700">${fmtDate(g.data)} ${g.meteo||''}</div>
       <div style="font-family:'DM Mono';font-size:24px;color:var(--gold);margin-top:6px">${parseFloat(g.ore_totali||0).toFixed(2)}h</div>
-      <div style="font-size:14px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti??60}min pausa</div>
+      <div style="font-size:14px;color:var(--t2);margin-top:2px">${g.ora_inizio||'—'} → ${g.ora_fine||'—'} · -${g.pausa_minuti??60}min pausa</div>${_v17Incompleta(g)?_v17EtichettaIncompleta():''}
     </div>
     ${vociHtml?`<div class="sec">${t('lbl_lavori_svolti')}</div><div style="overflow-x:auto;margin-bottom:14px"><table class="rtable"><thead><tr><th>${t('th_lavorazione')}</th><th>${t('th_ore')}</th><th>${t('th_quantita')}</th></tr></thead><tbody>${vociHtml}</tbody></table></div>`:''}
     ${(mats||[]).length?`<div class="sec">${t('lbl_materiali')}</div><div style="font-size:15px;color:var(--t2);margin-bottom:14px">${mats.map(m=>m.descrizione).join(', ')}</div>`:''}
@@ -5453,7 +5618,7 @@ async function openCantLog(gid){
     ${g.danni?`<div class="sec" style="color:var(--red)">⚠️ Danni o problemi</div><div style="font-size:15px;color:var(--text);line-height:1.6;margin-bottom:14px;white-space:pre-line">${escHtml(g.danni)}</div>`:''}
     <div class="sec">${t('log_foto_hdr')} (${(foto||[]).length})</div>
     <div id="cantlog-foto-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
-      ${!(foto||[]).length?'<div style="font-size:15px;color:var(--t2);grid-column:span 2">'+t('log_nessuna_foto')+'</div>':'<div style="grid-column:span 2;font-size:14px;color:var(--t2)">'+t('log_caricamento')+'</div>'}
+      ${!(foto||[]).length?(_v17VedeFotoDanni()?'<div style="font-size:15px;color:var(--t2);grid-column:span 2">'+t('log_nessuna_foto')+'</div>':_v17RigaNotaDanni(2)):'<div style="grid-column:span 2;font-size:14px;color:var(--t2)">'+t('log_caricamento')+'</div>'}
     </div>
     <hr>
     <div class="row2" style="margin-top:4px">
@@ -5465,7 +5630,7 @@ async function openCantLog(gid){
   openModal('mod-cant-log');
   if((foto||[]).length){
     const grid=document.getElementById('cantlog-foto-grid');
-    if(!grid)return;grid.innerHTML='';
+    if(!grid)return;grid.innerHTML=_v17RigaNotaDanni(2);
     for(const f of foto){
       try{
         const {data:u,error:ue}=await sb.storage.from('cantiere-foto').createSignedUrl(f.storage_path,7200);
@@ -5547,7 +5712,7 @@ async function generaPdfGiornata(data){
       +hotelHtml+noteHtml
       +'<div style="margin-bottom:16px">'+rows+'</div>'
       +matsHtml
-      +((fotoRows&&fotoRows.length)?'<div style="margin-bottom:16px;font-size:14px;color:#666">📷 <strong>'+fotoRows.length+'</strong> foto allegate alla giornata (non incluse nel documento)</div>':'')
+      +((fotoRows&&fotoRows.length)?'<div style="margin-bottom:16px;font-size:14px;color:#666">📷 <strong>'+fotoRows.length+'</strong> foto allegate alla giornata (non incluse nel documento)'+(_v17VedeFotoDanni()?'':'. '+t('v17_nota_danni'))+'</div>':'')
       +(IMPOSTAZIONI.rapportino_firma==='1'
         ?'<div style="margin-top:40px;padding-top:16px;border-top:1px solid #ddd"><div style="font-size:14px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+t('lbl_vista_approvata')+'</div><div style="display:flex;justify-content:space-between"><div style="width:45%"><div style="height:40px"></div><div style="border-bottom:1px solid #999;margin-bottom:6px"></div><div style="font-size:14px;color:#888">'+t('lbl_vista_approvata')+'</div></div><div style="width:45%"><div style="height:40px"></div><div style="border-bottom:1px solid #999;margin-bottom:6px"></div><div style="font-size:14px;color:#888">Data</div></div></div></div>'
         :'<div style="margin-top:40px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between"><div style="width:45%"><div style="height:40px"></div><div style="border-bottom:1px solid #999;margin-bottom:6px"></div><div style="font-size:14px;color:#888">Firma caposquadra / responsabile</div></div><div style="width:45%"><div style="height:40px"></div><div style="border-bottom:1px solid #999;margin-bottom:6px"></div><div style="font-size:14px;color:#888">Firma cliente / committente</div></div></div>')
@@ -5934,13 +6099,13 @@ async function _p7cRiassunto(cantId,dal,al){
     sb.from('giornate').select('id,data,ore_totali,operaio_id,meteo,materiale_giorno,attrezzatura_giorno,danni,operai(nome,cognome),voci_lavoro(lavorazione_id,lavorazione_nome,ore,quantita,um,di_squadra)').eq('cantiere_id',cantId).gte('data',dal).lte('data',al).order('data'),
     sb.from('lavorazioni').select('id,codice,nome,um,quantita_prevista,origine,stato,archiviata,eventuale,categoria,ordine').eq('cantiere_id',cantId),
     sb.from('materiali').select('data,descrizione').eq('cantiere_id',cantId).gte('data',dal).lte('data',al),
-    sb.from('foto').select('id').eq('cantiere_id',cantId).eq('tipo_foto','danno').gte('data',dal).lte('data',al)
+    _v17VedeFotoDanni()?sb.from('foto').select('id').eq('cantiere_id',cantId).eq('tipo_foto','danno').gte('data',dal).lte('data',al):Promise.resolve({data:null}) // v17: agli altri il database darebbe uno zero sbagliato
   ]);
   if(ge)throw ge;if(le)throw le;
   const gg=gior||[];
   const R={dal,al,giorni:new Set(gg.map(g=>g.data)).size,persone:new Set(gg.map(g=>g.operaio_id)).size,
     oreTot:gg.reduce((a,g)=>a+(parseFloat(g.ore_totali)||0),0),voci:[],oltre:[],nonIniziate:[],fuori:[],
-    materiali:[],macchinari:[],ricevuti:[],pioggia:[],neve:[],danni:[],fotoDanno:(fotoD||[]).length,confronto:false};
+    materiali:[],macchinari:[],ricevuti:[],pioggia:[],neve:[],danni:[],fotoDanno:_v17VedeFotoDanni()?(fotoD||[]).length:null,confronto:false};
   const tutte=[];gg.forEach(g=>(g.voci_lavoro||[]).forEach(v=>{v._data=g.data;tutte.push(v);}));
   const kV=v=>v.lavorazione_id||('_'+(v.lavorazione_nome||'—'));
   _p7bQtaUnaVolta(tutte,kV,v=>v._data);
@@ -6021,7 +6186,7 @@ function _p7cRiassuntoHtml(R,pdf){
   h+=sez('🧱 Materiali usati ('+R.materiali.length+')'+(R.ricevuti.length?' · ricevuti ('+R.ricevuti.length+')':''),null,(R.materiali.length?lista(R.materiali,txt,4):'—')+(R.ricevuti.length?'<br><span style="color:'+C.mut+'">Ricevuti:</span> '+lista(R.ricevuti,txt,3):''));
   h+=sez('🔧 Macchinari ('+R.macchinari.length+')',null,R.macchinari.length?lista(R.macchinari,txt,4):'—');
   h+=sez('🌧️ Giorni di pioggia: '+R.pioggia.length+(R.neve.length?' · ❄️ neve: '+R.neve.length:''),null,R.pioggia.length||R.neve.length?[...R.pioggia,...R.neve].sort().map(d=>e(fmtDate(d))).join(', '):'nessuno');
-  h+=sez('⚠️ Danni ('+R.danni.length+')'+(R.fotoDanno?' · '+R.fotoDanno+' foto «danno»':''),R.danni.length||R.fotoDanno?C.red:null,R.danni.length?lista(R.danni,x=>e(fmtDate(x.data))+' '+e(x.persona)+': '+e(_p2Corta(x.testo,100)),5):'nessuno');
+  h+=sez('⚠️ Danni ('+R.danni.length+')'+(R.fotoDanno?' · '+R.fotoDanno+' foto «danno»':''),R.danni.length||R.fotoDanno?C.red:null,(R.danni.length?lista(R.danni,x=>e(fmtDate(x.data))+' '+e(x.persona)+': '+e(_p2Corta(x.testo,100)),5):(R.fotoDanno===null?'nessun danno scritto':'nessuno'))+(R.fotoDanno===null?'<br><span style="color:'+C.mut+'">'+e(t('v17_nota_danni'))+'</span>':''));
   return h;
 }
 function _p7cRiassuntoFoglio(R,nomeCant){
@@ -6037,7 +6202,7 @@ function _p7cRiassuntoFoglio(R,nomeCant){
   a.push(['Materiali ricevuti',R.ricevuti.length]);R.ricevuti.forEach(x=>a.push(['',x.data,x.testo]));
   a.push(['Macchinari',R.macchinari.length]);R.macchinari.forEach(x=>a.push(['',x.data,x.testo]));
   a.push([]);a.push(['Giorni di pioggia',R.pioggia.length,R.pioggia.join(', ')]);if(R.neve.length)a.push(['Giorni di neve',R.neve.length,R.neve.join(', ')]);
-  a.push(['Danni',R.danni.length,'Foto «danno»',R.fotoDanno]);R.danni.forEach(x=>a.push(['',x.data,x.persona,x.testo]));
+  a.push(['Danni',R.danni.length,'Foto «danno»',R.fotoDanno===null?t('v17_nota_danni'):R.fotoDanno]);R.danni.forEach(x=>a.push(['',x.data,x.persona,x.testo]));
   return a;
 }
 
@@ -6212,7 +6377,7 @@ function calcOre1(){
   const ini=document.getElementById('g1-ini').value,fine=document.getElementById('g1-fine').value;
   const _pausaRaw=document.getElementById('g1-pausa').value;
   const pausa=_pausaRaw===''||_pausaRaw===null?60:Math.max(0,parseInt(_pausaRaw)||0);
-  if(!ini||!fine)return;
+  if(!ini||!fine){document.getElementById('g1-ore').textContent='0.00';return;} // v17
   const [h1,m1]=ini.split(':').map(Number),[h2,m2]=fine.split(':').map(Number);
   document.getElementById('g1-ore').textContent=Math.max(0,((h2*60+m2)-(h1*60+m1)-pausa)/60).toFixed(2);
 }
@@ -6222,7 +6387,7 @@ function goStep2(){
   const _pausaRaw=document.getElementById('g1-pausa').value;
   const pausa=_pausaRaw===''||_pausaRaw===null?60:Math.max(0,parseInt(_pausaRaw)||0);
   const meteoEl=document.querySelector('.meteo-b.on');
-  if(!data||!ini||!fine){_p7cSegna(['g1-data','g1-ini','g1-fine'],'Inserisci data e orari');showToast('Inserisci data e orari','e');return;}
+  if(!data){_p7cSegna(['g1-data'],'Inserisci la data');showToast('Inserisci la data','e');return;} // v17: senza orari si va avanti, la giornata sara' «incompleta»
   GIO.data=data;GIO.ini=ini;GIO.fine=fine;GIO.pausa=pausa;GIO.meteo=meteoEl?meteoEl.dataset.m:null;
   GIO.mat=document.getElementById('g1-mat').value.trim();GIO.visite=document.getElementById('g1-visite').value.trim();
   setupStep2();
@@ -6231,7 +6396,7 @@ function setupStep2(){
   const ore=calcOreRaw(GIO.ini,GIO.fine,GIO.pausa);
   document.getElementById('g2-meteo-icon').textContent=GIO.meteo?GIO.meteo.split(' ')[0]:'—';
   document.getElementById('g2-cant-nome').textContent=_cantEtichetta(curCant);
-  document.getElementById('g2-info').textContent=`${GIO.data} · ${GIO.ini} → ${GIO.fine} · -${GIO.pausa}min`;
+  document.getElementById('g2-info').textContent=`${GIO.data} · ${GIO.ini||'—'} → ${GIO.fine||'—'} · -${GIO.pausa}min`;
   document.getElementById('g2-ore').textContent=ore.toFixed(2)+'h';
   document.getElementById('g2-ini').value=GIO.ini;document.getElementById('g2-fine').value=GIO.fine;document.getElementById('g2-pausa').value=GIO.pausa;
   calcOre2();refreshOperaiSelect();
@@ -6239,6 +6404,7 @@ function setupStep2(){
   const _sqw=document.getElementById('g2-squadra-wrap');if(_sqw)_sqw.style.display=_p7cCapo()?'block':'none';p7cCaricaSquadra(); // P7c
   {const _bc=document.getElementById('btn-vai-conferma');if(_bc)_bc.style.display=puoAprire('conferma-ore')?'':'none';}
   document.getElementById('g2-voci').innerHTML='';document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
+    {const _fts=document.getElementById('foto-tipo-upload');if(_fts)_fts.value='durante';} // v17: «Danno» non resta scelto per le foto dopo
   fFiles=[];fB64=[];renderSalvati();pushNav('giornata-2');showScr('giornata-2');
   document.getElementById('top-title').textContent=t('sec_operai_giornata');
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),onclick:'goToCantiere()'},{label:'Giornata '+GIO.data},{label:'Operai'}]);
@@ -6321,7 +6487,7 @@ function refreshOperaiSelect(){
 function renderSalvati(){
   const el=document.getElementById('g2-salvati');
   if(!GIO.operaiSalvati.length){el.innerHTML='<div style="font-size:15px;color:var(--t3);margin-bottom:12px">'+t('empty_op')+'</div>';return;}
-  el.innerHTML=GIO.operaiSalvati.map((op,i)=>`<div class="op-giornata"><div class="op-g-header"><div><div class="op-g-nome">✅ ${op.nome}</div><div style="font-size:14px;color:var(--t2)">${op.ini} → ${op.fine}</div></div><div class="op-g-ore">${op.ore.toFixed(2)}h</div></div>${op.voci.length?`<div class="chips">${op.voci.slice(0,3).map(v=>`<span class="chip">${v.nome.split('(')[0].trim().substring(0,30)}</span>`).join('')}${op.voci.length>3?`<span class="chip">+${op.voci.length-3}</span>`:''}</div>`:''}</div>`).join('');
+  el.innerHTML=GIO.operaiSalvati.map((op,i)=>`<div class="op-giornata"><div class="op-g-header"><div><div class="op-g-nome">✅ ${op.nome}</div>${(op.ini&&op.fine)?`<div style="font-size:14px;color:var(--t2)">${op.ini} → ${op.fine}</div>`:_v17EtichettaIncompleta()}</div><div class="op-g-ore">${op.ore.toFixed(2)}h</div></div>${op.voci.length?`<div class="chips">${op.voci.slice(0,3).map(v=>`<span class="chip">${v.nome.split('(')[0].trim().substring(0,30)}</span>`).join('')}${op.voci.length>3?`<span class="chip">+${op.voci.length-3}</span>`:''}</div>`:''}</div>`).join('');
 }
 function calcOre2(){
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
@@ -6352,7 +6518,8 @@ async function salvaOperaio(){
   const opId=document.getElementById('g2-operaio').value;if(!opId){_p7cSegna(['g2-operaio'],'Seleziona un operaio');showToast('Seleziona un operaio','e');return;}
   if(_v13Esterno(_v13OpDi(opId))){showToast('Questa persona è Esterna: niente ore nell\'App Cantieri (il suo costo è la fattura).','e');return;} // v13
   const ini=document.getElementById('g2-ini').value,fine=document.getElementById('g2-fine').value;
-  const pausa=_v11Pausa(document.getElementById('g2-pausa').value,60); // v11: 0 e' un valore veroif(!ini||!fine){_p7cSegna(['g2-ini','g2-fine'],'Inserisci orari');showToast('Inserisci orari','e');return;}
+  const pausa=_v11Pausa(document.getElementById('g2-pausa').value,60); // v11: 0 e' un valore vero
+  const _v17SenzaOrari=!ini||!fine; // v17 (Umberto, 4.11): si salva comunque; la giornata resta «incompleta» finche' mancano
   const ore=calcOreRaw(ini,fine,pausa);const note=document.getElementById('g2-note').value.trim();
   const materialeG=document.getElementById('g2-materiale-g')?.value.trim()||'';
   const attrezzaturaG=document.getElementById('g2-attrezzatura-g')?.value.trim()||'';
@@ -6360,17 +6527,19 @@ async function salvaOperaio(){
   const zonaTrasferta=document.getElementById('g2-trasferta')?.checked?'trasferta':null;
   const btn=document.getElementById('btn-salva-op');btn.textContent='⏳...';btn.disabled=true;
   try{
-    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini,ora_fine:fine,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,danni:(document.getElementById('g2-danni')?.value.trim()||null),pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
+    const {data:newG,error:ge}=await sb.from('giornate').insert({cantiere_id:GIO.cantId,operaio_id:opId,data:GIO.data,ora_inizio:ini||null,ora_fine:fine||null,pausa_minuti:pausa,meteo:GIO.meteo||null,note:note||null,visite:GIO.visite||null,ore_straordinari:oreStr||null,zona_trasferta:zonaTrasferta,materiale_giorno:materialeG||null,attrezzatura_giorno:attrezzaturaG||null,danni:(document.getElementById('g2-danni')?.value.trim()||null),pasto_riconosciuto:document.getElementById('g2-pasto')?.checked||false,created_by:USER.id}).select().single();
     if(ge)throw ge;
     let _p2Ko=false,_p2ErrVoci=''; // P7c: i lavori (voci e quantita') si scrivono nel riquadro "Lavori della squadra"
     let _p7bErrMat='';
     if(GIO.mat&&GIO.operaiSalvati.length===0){const{data:_mr,error:_me}=await sb.from('materiali').insert({cantiere_id:GIO.cantId,data:GIO.data,descrizione:GIO.mat,created_by:USER.id}).select('id');if(_me||!_mr||!_mr.length)_p7bErrMat=_me?_me.message:'0 righe';}
+    let _v17DannoOk=0,_v17FotoKo=0,_v17FotoMotivo=''; // v17: quello che e' successo alle foto si dice a parole
+    const _tipoFoto=document.getElementById('foto-tipo-upload')?.value||'durante';
     for(const file of fFiles){
       const cn=GIO.cantId||curCant.id; // P2 punto 6: id del cantiere nel percorso (i vecchi restano dove sono)
       const path=`${cn}/${GIO.data}/${Date.now()}_${file.name}`;
-      const {error:ue}=await sb.storage.from('cantiere-foto').upload(path,file);
-      const _tipoFoto=document.getElementById('foto-tipo-upload')?.value||'durante';
-      if(!ue)await sb.from('foto').insert({cantiere_id:GIO.cantId,giornata_id:newG.id,data:GIO.data,storage_path:path,nome_file:file.name,operaio_id:USER.id,caricato_da:PROF?.nome||USER.email,tipo_foto:_tipoFoto,created_by:USER.id});
+      const _motivo=await _v17SalvaFoto(path,file,{cantiere_id:GIO.cantId,giornata_id:newG.id,data:GIO.data,storage_path:path,nome_file:file.name,operaio_id:USER.id,caricato_da:PROF?.nome||USER.email,tipo_foto:_tipoFoto,created_by:USER.id});
+      if(_motivo){_v17FotoKo++;_v17FotoMotivo=_motivo;}
+      else if(_tipoFoto==='danno')_v17DannoOk++;
     }
     // Regia da operaio — v11: legata alla giornata (giornata_id), errore a schermo (prima solo in console)
     let _v11ErrRegia='';
@@ -6386,6 +6555,7 @@ async function salvaOperaio(){
     GIO.operaiSalvati.push({opId,gid:newG.id,nome:op?.nome+' '+op?.cognome,ini,fine,ore,voci:[]});
     refreshOperaiSelect();renderSalvati();p7cCaricaSquadra(); // P7c: le ore delle persone servono al confronto
     document.getElementById('foto-prv').innerHTML='';document.getElementById('g2-note').value='';
+    {const _fts=document.getElementById('foto-tipo-upload');if(_fts)_fts.value='durante';} // v17: «Danno» non resta scelto per le foto dopo
     const _gDan=document.getElementById('g2-danni');if(_gDan)_gDan.value='';
     const _gMat=document.getElementById('g2-materiale-g');if(_gMat)_gMat.value='';
     const _gAtt=document.getElementById('g2-attrezzatura-g');if(_gAtt)_gAtt.value='';
@@ -6395,11 +6565,12 @@ async function salvaOperaio(){
     {const _alt=document.getElementById('g2-altro');if(_alt)_alt.open=false;} // P7c
     ['g2-reg-desc','g2-reg-qty','g2-reg-prezzo'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
     const _rum=document.getElementById('g2-reg-um');if(_rum)_rum.value='h';
-    fFiles=[];fB64=[];showToast((op?.nome||'')+t('lbl_salvato_op'));
+    fFiles=[];fB64=[];if(_v17SenzaOrari)showToast((op?.nome||'')+t('v17_salvata_incompleta'),'e');else showToast((op?.nome||'')+t('lbl_salvato_op'));
     if(_v11ErrRegia)showToast('Giornata salvata, ma la REGIA NON è stata salvata ('+_v11ErrRegia+'). Scrivila da Regia.','e');
     else if(_p2ErrVoci)showToast('Attenzione: giornata salvata ma i lavori svolti NON sono stati salvati ('+_p2ErrVoci+'). Aprila con ✏️ e reinseriscili.','e');
     else if(_p2Ko)showToast('Salvato. La voce libera è salvata solo come testo: non è stato possibile aggiungerla all\'elenco del cantiere','e');
     else if(_p7bErrMat)showToast('Salvato, ma i "Materiali ricevuti" NON sono stati salvati ('+_p7bErrMat+')','e');
+    _v17MostraEsitoFoto(_v17DannoOk,_v17FotoKo,_v17FotoMotivo);
   }catch(e){showToast('Errore: '+e.message,'e');}
   finally{btn.textContent=t('btn_salva_operaio');btn.disabled=false;}
 }
@@ -6631,7 +6802,7 @@ async function _p2VoceLibera(cantId,testo,um){
 // Avviso nel sistema notifiche: ai capisquadra (se non ce ne sono: responsabile e titolare)
 async function _p2AvvisaCapisquadra(n,cantNome,cantId){
   try{
-    let{data:dest,error}=await sb.from('profili').select('id,nome').eq('ruolo','caposquadra').neq('id',USER.id);
+    let{data:dest,error}=await _v17Profili().select('id,nome').eq('ruolo','caposquadra').neq('id',USER.id); // v17
     if(error)throw error;
     // P7: solo i capisquadra che nel Piano sono su quel cantiere (ultima assegnazione o da 7 giorni fa a 7 avanti):
     // gli altri non lo vedono e non potrebbero confermare. Se non ce n'e' nessuno: responsabile e titolare.
@@ -6644,7 +6815,7 @@ async function _p2AvvisaCapisquadra(n,cantNome,cantId){
       dest=dest.filter(p=>_p7SchedeDelProfilo(p,null).some(o=>sulCantiere.has(o.id)));
     }
     if(!dest||!dest.length){
-      const r=await sb.from('profili').select('id').in('ruolo',['responsabile','titolare']).neq('id',USER.id);
+      const r=await _v17Profili().select('id').in('ruolo',['responsabile','titolare']).neq('id',USER.id); // v17
       if(r.error)throw r.error;dest=r.data||[];
     }
     if(!dest.length)return;
@@ -8872,7 +9043,7 @@ function _p3BloccoPrecontabilita(s){
 async function _p3NomeUtente(uid){
   if(!uid)return '—';
   if(uid===USER?.id)return PROF?.nome||USER.email;
-  const{data,error}=await sb.from('profili').select('nome').eq('id',uid).maybeSingle();
+  const{data,error}=await _v17Profili().select('nome').eq('id',uid).maybeSingle(); // v17
   if(error)return '—';
   return data?.nome||'utente sconosciuto';
 }
@@ -11409,7 +11580,7 @@ async function inviaNotifica(){
     let profili=[];
     if(dest==='tutti_attivi'||dest==='tutti'){
       // P7: solo gli account la cui scheda e' attiva ("tutti": in piu' solo chi lavora oggi nel Piano)
-      const{data,error:pe}=await sb.from('profili').select('id,nome,ruolo').neq('id',USER.id);
+      const{data,error:pe}=await _v17Profili().select('id,nome,ruolo').neq('id',USER.id); // v17
       if(pe)throw pe;
       const pmap=await _caricaProfiliApp(); // solo titolare: account per email
       const oggi=nowZurich().date;
@@ -11422,7 +11593,7 @@ async function inviaNotifica(){
         return !alLavoro||sch.some(o=>alLavoro.has(o.id));
       });
     }else if(dest==='caposquadra'||dest==='responsabile'){
-      const{data}=await sb.from('profili').select('id,ruolo').eq('ruolo',dest).neq('id',USER.id);
+      const{data}=await _v17Profili().select('id,ruolo').eq('ruolo',dest).neq('id',USER.id); // v17
       profili=data||[];
     }
     if(!profili.length){showToast('Nessun destinatario trovato','e');return;}
@@ -12024,6 +12195,7 @@ async function renderConfermaOre(){
   if(!el)return;
   renderVociDaConfermare(); // P2
   renderGiorniDaConfermare(); // v11: tutti i giorni con ore da confermare
+  renderGiornateIncomplete(); // v17
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   const dataInput=document.getElementById('conferma-ore-data');
   const data=dataInput?.value||nowZurich().date;
