@@ -6,20 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=19">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=19">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=19">
+<link rel="manifest" href="manifest.json?v=20">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=20">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=20">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=19"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=20"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=19"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=19"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=19"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=19"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=20"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=20"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=20"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=20"></script>
+<script src="lib/spartizione-formule.js?v=20"></script>
+<script src="lib/spartizione-scheda.js?v=20"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -333,6 +335,69 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .v12-tasto{min-height:60px;font-size:19px}
 .v12-msg{font-size:18px;font-weight:700;line-height:1.35;color:#fff;background:#c62828;border-radius:var(--rsm);padding:12px 14px 2px;margin-bottom:10px}
 .p2b-avviso-rit{font-size:17px;font-weight:800;color:#fff;background:#c62828;border-radius:var(--rsm);padding:10px 12px;margin-bottom:10px}
+
+/* v20: scheda Spartizione. Telefono, guanti, occhiali: tasti da 56 px, testi da 16 px in su, icona sempre con scritta. */
+#scr-spartizione{font-size:17px}
+.spz-titolo{font-size:24px;margin:0 0 12px}
+.spz-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin:0 0 12px}
+.spz-card h3{font-size:19px;margin:0 0 8px}
+.spz-card>summary{font-size:18px;font-weight:700;min-height:44px;display:flex;align-items:center;cursor:pointer}
+.spz-campo{display:block;margin:0 0 12px}
+.spz-campo>span:first-child{display:block;font-weight:700;margin-bottom:5px;font-size:17px}
+.spz-campo em{display:block;font-style:normal;color:var(--t2);font-size:16px;margin-top:4px}
+.spz-err{display:block;color:var(--red);font-size:16px;font-weight:700}
+.spz-err:empty{display:none}
+.spz-sel{width:100%;min-height:56px;font-size:18px;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px}
+.spz-input{display:flex;align-items:center;gap:8px}
+.spz-input input{flex:1 1 auto;min-width:0;width:100%;min-height:56px;font-size:24px;font-weight:700;background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 12px}
+.spz-input b{flex:0 0 auto;font-size:20px;min-width:38px}
+.spz-et{font-weight:700;margin:0 0 6px}
+.spz-unita{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 12px}
+.spz-unita-2{grid-template-columns:1fr 1fr}
+.spz-u{min-height:56px;font-size:20px;font-weight:700;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);cursor:pointer}
+.spz-u.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.spz-riga{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.spz-riga .spz-tasto{flex:1 1 140px;width:auto}
+.spz-tasto{min-height:56px;font-size:17px}
+.spz-rifai{min-height:64px;font-size:20px;margin-top:4px}
+#spz-fatto{font-weight:700;margin-top:8px;color:var(--green)}
+#spz-fatto:empty{display:none}
+.spz-nota{background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;margin:0 0 12px;font-size:16px;line-height:1.35}
+.spz-avviso{background:rgba(224,136,64,.14);border:1px solid var(--orange);border-radius:var(--rsm);padding:10px 12px;margin:0 0 12px;font-size:16px;line-height:1.35}
+.spz-nome{font-size:20px;font-weight:700;margin:0 0 10px}
+.spz-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.spz-tab{flex:1 1 130px;min-height:56px;font-size:17px;font-weight:700;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);cursor:pointer;padding:6px 8px;word-break:break-word}
+.spz-tab.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.spz-numeri{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+.spz-num{background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px;min-width:0}
+.spz-num span{display:block;font-size:16px;color:var(--t2)}
+.spz-num b{display:block;font-size:22px;overflow-wrap:anywhere}
+.spz-num em{display:block;font-style:normal;font-size:15px;color:var(--t2)}
+.spz-num.spz-div{border:2px dashed var(--orange)}
+.spz-perche{font-size:15px;margin-top:4px;color:var(--t2)}
+.spz-perche summary{min-height:32px;cursor:pointer}
+.spz-perche span{overflow-wrap:anywhere}
+.spz-opz{display:block;width:100%;text-align:left;min-height:56px;font-size:16px;line-height:1.35;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);padding:8px 10px;margin:0 0 8px;cursor:pointer}
+.spz-opz.on{border-color:var(--gold);background:var(--gdim)}
+.spz-opz.spenta{opacity:.75;cursor:default;border-style:dashed}
+table.spz-tab{width:100%;border-collapse:collapse;font-size:17px;margin:0 0 12px}
+table.spz-tab th{text-align:left;font-size:15px;color:var(--t2);padding:4px}
+table.spz-tab td{padding:6px 4px;border-top:1px solid var(--border);height:52px}
+table.spz-tab .dx{text-align:right}
+table.spz-tab tr.on td{background:var(--gdim)}
+table.spz-tab tbody tr{cursor:pointer}
+.spz-sp{width:46px}
+.spz-check{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:3px solid var(--t2);border-radius:8px;font-size:24px;font-weight:700}
+.spz-diversa{font-size:15px;color:var(--orange);font-weight:700}
+.spz-disegno{background:#fff;border-radius:var(--rsm);padding:6px;margin:0 0 10px}
+.spz-disegno svg{display:block;width:100%;height:auto}
+.spz-avvisi{list-style:none;padding:0;margin:0 0 12px}
+.spz-avvisi li{background:rgba(224,136,64,.14);border:1px solid var(--orange);border-radius:var(--rsm);padding:10px 12px;margin:0 0 8px;font-size:16px;line-height:1.35}
+.spz-mat{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;border-top:1px solid var(--border);padding:10px 0}
+.spz-mat>div:first-child{min-width:0;flex:1 1 auto}
+.spz-mat small{display:block;font-size:15px;color:var(--t2);overflow-wrap:anywhere}
+.spz-q{flex:0 0 44%;text-align:right;font-size:16px}
+.spz-q b{font-size:24px;display:block}
 </style>
 </head>
 <body>
@@ -1285,6 +1350,8 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
   </div>
 
   <!-- TIRI GRU -->
+  <div class="scr" id="scr-spartizione"><div id="spz-content"></div></div>
+
   <div class="scr" id="scr-gru">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="sec" style="margin:0" data-i18n="sec_gru">Tiri Gru</div>
@@ -1347,6 +1414,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     <div class="nb" id="nb-pagamenti" onclick="navTo('pagamenti')" style="display:none"><div class="nb-icon">💳</div><div class="nb-label" data-i18n="nav_incassi">Incassi</div></div>
     <div class="nb" id="nb-mappa" onclick="navTo('mappa')" style="display:none"><div class="nb-icon">🗺️</div><div class="nb-label" data-i18n="nav_mappa">Mappa</div></div>
     <div class="nb" id="nb-admin" onclick="navTo('admin')" style="display:none"><div class="nb-icon">⚙️</div><div class="nb-label" data-i18n="nav_admin">Admin</div></div>
+    <div class="nb" id="nb-spartizione" onclick="navTo('spartizione')" style="display:none"><div class="nb-icon">📐</div><div class="nb-label" data-i18n="nav_spartizione">Spartizione</div></div>
     <div class="nb" id="nb-gru" onclick="navTo('gru')"><div class="nb-icon">🏗️</div><div class="nb-label" data-i18n="nav_gru">Gru</div></div>
     <div class="nb" id="nb-notifiche" onclick="navTo('notifiche')">
       <div class="nb-icon" style="position:relative">🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
@@ -2098,7 +2166,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='19';
+const APP_VERSIONE='20';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -2138,7 +2206,7 @@ const TRADUZIONI = {
     nav_situazione:'Da sistemare',nav_report:'Report',nav_contabilita:'Contabilità',
     nav_mio_giorno:'Il mio giorno',nav_bolle:'Bolle',nav_piano:'Piano del g.',
     nav_personale:'Personale',nav_incassi:'Incassi',nav_mappa:'Mappa',
-    nav_admin:'Admin',nav_gru:'Gru',nav_notifiche:'Notifiche',nav_magazzino:'Magazzino',
+    nav_spartizione:'Spartizione',nav_admin:'Admin',nav_gru:'Gru',nav_notifiche:'Notifiche',nav_magazzino:'Magazzino',
     // ── Top-bar titoli ──
     top_cantieri:'Cantieri',top_nuova:'Nuova giornata',top_report:'Report',
     top_impostazioni:'Impostazioni',top_piano:'Piano del giorno',top_situazione:'Da sistemare',
@@ -2485,7 +2553,7 @@ const TRADUZIONI = {
     nav_situazione:'To do',nav_report:'Report',nav_contabilita:'Accounting',
     nav_mio_giorno:'My day',nav_bolle:'Deliveries',nav_piano:'Day plan',
     nav_personale:'Staff',nav_incassi:'Payments',nav_mappa:'Map',
-    nav_admin:'Admin',nav_gru:'Crane',nav_notifiche:'Notices',nav_magazzino:'Warehouse',
+    nav_spartizione:'Tile layout',nav_admin:'Admin',nav_gru:'Crane',nav_notifiche:'Notices',nav_magazzino:'Warehouse',
     top_cantieri:'Sites',top_nuova:'New day',top_report:'Report',
     top_impostazioni:'Settings',top_piano:'Day plan',top_situazione:'To do',
     top_spese:'Expenses & Docs',top_personale:'Staff',top_contabilita:'Accounting',
@@ -2821,7 +2889,7 @@ const TRADUZIONI = {
     nav_situazione:'Zu erledigen',nav_report:'Bericht',nav_contabilita:'Buchhaltung',
     nav_mio_giorno:'Mein Tag',nav_bolle:'Lieferscheine',nav_piano:'Tagesplan',
     nav_personale:'Personal',nav_incassi:'Zahlungen',nav_mappa:'Karte',
-    nav_admin:'Admin',nav_gru:'Kran',nav_notifiche:'Benachricht.',nav_magazzino:'Lager',
+    nav_spartizione:'Ziegelteilung',nav_admin:'Admin',nav_gru:'Kran',nav_notifiche:'Benachricht.',nav_magazzino:'Lager',
     top_cantieri:'Baustellen',top_nuova:'Neuer Tag',top_report:'Bericht',
     top_impostazioni:'Einstellungen',top_piano:'Tagesplan',top_situazione:'Zu erledigen',
     top_spese:'Ausgaben & Doks',top_personale:'Personal',top_contabilita:'Buchhaltung',
@@ -3150,7 +3218,7 @@ const TRADUZIONI = {
     nav_situazione:'Pendientes',nav_report:'Informe',nav_contabilita:'Contabilidad',
     nav_mio_giorno:'Mi día',nav_bolle:'Albaranes',nav_piano:'Plan del día',
     nav_personale:'Personal',nav_incassi:'Cobros',nav_mappa:'Mapa',
-    nav_admin:'Admin',nav_gru:'Grúa',nav_notifiche:'Avisos',nav_magazzino:'Almacén',
+    nav_spartizione:'Reparto tejas',nav_admin:'Admin',nav_gru:'Grúa',nav_notifiche:'Avisos',nav_magazzino:'Almacén',
     top_cantieri:'Obras',top_nuova:'Nuevo día',top_report:'Informe',
     top_impostazioni:'Ajustes',top_piano:'Plan del día',top_situazione:'Pendientes',
     top_spese:'Gastos & Docs',top_personale:'Personal',top_contabilita:'Contabilidad',
@@ -4755,6 +4823,7 @@ async function renderCantiere(){
         <div style="font-size:16px;font-weight:700">👤 ${escHtml(curCant.committente)}</div>
       </div>`:''}
       <button class="btn btn-g" style="margin-bottom:10px" onclick="startNuovaGiornata()">${t('btn_nuova_giornata')}</button>
+      ${puoAprire('spartizione')?`<button id="btn-spartizione" class="btn btn-s" style="margin-bottom:10px" onclick="spzDaCantiere()">📐 ${t('nav_spartizione')}</button>`:''}
       <div class="row2" style="margin-bottom:8px">
         ${['titolare','responsabile'].includes(_ruoloApp())?'<button class="btn btn-s" onclick="apriIncollaPreventivo()">📋 Incolla voci del preventivo</button>':''}
         <button class="btn btn-s" onclick="exportCantiere()">${t('btn_esporta_dati')}</button>
@@ -8276,14 +8345,14 @@ async function salvaImpostazioniFoto(){
 // e Admin (tariffa e impostazioni).
 const MENU_RUOLO={
   titolare:'*',
-  responsabile:['home','nuova','spese','situazione','mio-giorno','conferma-ore','bolle','piano','personale','pagamenti','mappa','gru','notifiche','magazzino','ore','ricerca'],
-  caposquadra:['home','nuova','spese','mio-giorno','conferma-ore','bolle','gru','notifiche','ore','ricerca'],
+  responsabile:['home','nuova','spese','situazione','mio-giorno','conferma-ore','bolle','piano','personale','pagamenti','mappa','gru','notifiche','magazzino','ore','ricerca','spartizione'],
+  caposquadra:['home','nuova','spese','mio-giorno','conferma-ore','bolle','gru','notifiche','ore','ricerca','spartizione'],
   operaio:['home','nuova','spese','mio-giorno','bolle','notifiche','ore','ricerca'],
   magazziniere:['home','magazzino','notifiche','mio-giorno','ore','ricerca']
 };
 // Schermate senza tasto proprio: seguono il permesso della schermata madre
 const MENU_PADRE={'report-avanzato':'report','impostazioni':'admin','permessi':'admin','tempi':'piano'}; // P7: tempi medi = come il Piano
-const MENU_TASTI={home:'nb-home',nuova:'nb-giornata',spese:'nb-spese',situazione:'nb-situazione',report:'nb-report',contabilita:'nb-contabilita','mio-giorno':'nb-mio-giorno','conferma-ore':'nb-conferma-ore',bolle:'nb-bolle',piano:'nb-piano',personale:'nb-personale',pagamenti:'nb-pagamenti',mappa:'nb-mappa',admin:'nb-admin',gru:'nb-gru',notifiche:'nb-notifiche',magazzino:'nb-magazzino',ore:'nb-ore'};
+const MENU_TASTI={home:'nb-home',nuova:'nb-giornata',spese:'nb-spese',situazione:'nb-situazione',report:'nb-report',contabilita:'nb-contabilita','mio-giorno':'nb-mio-giorno','conferma-ore':'nb-conferma-ore',bolle:'nb-bolle',piano:'nb-piano',personale:'nb-personale',pagamenti:'nb-pagamenti',mappa:'nb-mappa',admin:'nb-admin',gru:'nb-gru',notifiche:'nb-notifiche',magazzino:'nb-magazzino',ore:'nb-ore',spartizione:'nb-spartizione'};
 function _ruoloApp(){const r=PROF&&PROF.ruolo;return MENU_RUOLO[r]?r:'operaio';}
 // P2b: sezioni tolte per tutti, titolare compreso. Il codice e i dati restano:
 // per riattivarne una basta toglierla da questa lista.
@@ -8365,7 +8434,7 @@ function navTo(dest){
     return;
   }
   document.querySelectorAll('.nb').forEach(n=>n.classList.remove('on'));
-  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa','conferma-ore':'nb-conferma-ore'};
+  const nbMap={home:'nb-home',nuova:'nb-home',spese:'nb-spese',report:'nb-report',admin:'nb-admin',situazione:'nb-situazione',contabilita:'nb-contabilita',bolle:'nb-bolle','mio-giorno':'nb-mio-giorno',piano:'nb-piano',gru:'nb-gru',pagamenti:'nb-pagamenti',personale:'nb-personale',magazzino:'nb-magazzino',notifiche:'nb-notifiche',mappa:'nb-mappa','conferma-ore':'nb-conferma-ore',spartizione:'nb-spartizione'};
   const nb=document.getElementById(nbMap[dest]||'nb-home');if(nb)nb.classList.add('on');
   if(dest==='home')goHome();
   else if(dest==='nuova'){if(curCant)startNuovaGiornata();else apriScegliCantiere();}
@@ -8397,6 +8466,7 @@ function navTo(dest){
   else if(dest==='mio-giorno'){pushNav('mio-giorno');showScr('mio-giorno');document.getElementById('top-title').textContent=t('top_mio_giorno');setBread([{label:'Il mio giorno'}]);renderMioGiorno();return;}
   else if(dest==='bolle'){pushNav('bolle');showScr('bolle');document.getElementById('top-title').textContent=t('top_bolle');renderBolle();setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:'Bolle di consegna'}]);}
   else if(dest==='magazzino'){pushNav('magazzino');showScr('magazzino');document.getElementById('top-title').textContent=t('top_magazzino');setBread([{label:'Magazzino'}]);renderMagazzino();}
+  else if(dest==='spartizione'){pushNav('spartizione');showScr('spartizione');document.getElementById('top-title').textContent=t('nav_spartizione');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('nav_spartizione')}]);spzApri();return;}
   else if(dest==='notifiche'){pushNav('notifiche');showScr('notifiche');document.getElementById('top-title').textContent='Notifiche';setBread([{label:'Notifiche'}]);renderNotifiche();}
   else if(dest==='ricerca'){pushNav('ricerca');showScr('ricerca');document.getElementById('top-title').textContent=t('top_ricerca');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ricerca')}]);initRicerca();}
   else if(dest==='ore'){pushNav('ore');showScr('ore');document.getElementById('top-title').textContent=t('top_ore');setBread([{label:'Cantieri',onclick:"navTo('home')"},{label:t('top_ore')}]);renderOre();}
