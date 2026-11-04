@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=17">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=17">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=17">
+<link rel="manifest" href="manifest.json?v=18">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=18">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=18">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=17"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=18"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=17"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=17"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=17"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=17"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=18"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=18"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=18"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=18"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1191,12 +1191,8 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
     </div>
     <!-- Filtri -->
     <input type="text" class="fi" id="pers-ricerca" placeholder="🔍 Cerca per nome o cognome..." oninput="renderPersonale()" style="margin-bottom:10px">
-    <div class="row2" style="margin-bottom:8px">
-      <select class="fs" id="pers-filtro-stato" onchange="renderPersonale()">
-        <option value="attivi">Attivi</option>
-        <option value="tutti">Tutti (inclusi ex)</option>
-        <option value="ex">Solo ex-collaboratori</option>
-      </select>
+    <button type="button" class="btn btn-s" id="pers-btn-archivio" onclick="_v18PersCambiaArchivio()" aria-expanded="false" style="width:100%;min-height:48px;margin-bottom:8px">🗄️ Mostra archivio</button>
+    <div style="margin-bottom:8px">
       <select class="fs" id="pers-filtro-ruolo" onchange="renderPersonale()">
         <option value="">Tutti i ruoli</option>
         <option value="Carpentiere">Carpentiere</option>
@@ -2102,7 +2098,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='17';
+const APP_VERSIONE='18';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4373,8 +4369,85 @@ async function verificaOreContrattuali(){
 // P1-A: una persona e' attiva se non e' stata rimossa (attivo=false)
 // e non ha una fine rapporto gia' passata. Unico punto di verita'.
 function _opAttivo(o,giorno){
-  const g=giorno||new Date().toISOString().split('T')[0];
+  // v18: «oggi» in ora svizzera (prima UTC: dopo mezzanotte l'ex restava attivo 1-2 ore). L'ultimo giorno si lavora ancora.
+  const g=giorno||new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Zurich'});
   return o.attivo!==false&&(!o.data_fine_rapporto||o.data_fine_rapporto>=g);
+}
+// ── v18 (Umberto, 4.11.2026): Archivio. Chi ha la fine rapporto passata sparisce dagli elenchi normali,
+// si vede solo con «Mostra archivio». Storico intatto: le righe vecchie tengono il nome (OPERAI_TUTTI li ha tutti).
+let _v18PersArchivio=false,_v18OreArchivio=false,_v18CantArchivio=false,_v18AdmArchivio=false;
+function _v18GiornoDopo(iso){const p=String(iso).slice(0,10).split('-').map(Number);return new Date(Date.UTC(p[0],p[1]-1,p[2]+1)).toISOString().slice(0,10);}
+function _v18DataCH(iso){const p=String(iso||'').slice(0,10).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:'';}
+// «In archivio dal …» = il giorno dopo l'ultimo giorno di lavoro. Tolta senza data (attivo=false): solo «In archivio».
+function _v18TestoArchivio(o,giorno){
+  const g=giorno||new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Zurich'});
+  return o&&o.data_fine_rapporto&&o.data_fine_rapporto<g?'In archivio dal '+_v18DataCH(_v18GiornoDopo(o.data_fine_rapporto)):'In archivio';
+}
+function _v18TestoTasto(aperto,n){return '🗄️ '+(aperto?'Nascondi':'Mostra')+' archivio ('+n+')';}
+function _v18DividiArchivio(lista,giorno){
+  const out={attivi:[],archivio:[]};
+  (lista||[]).forEach(o=>(_opAttivo(o,giorno)?out.attivi:out.archivio).push(o));
+  return out;
+}
+function _v18EtichettaOp(o,giorno){
+  const nome=((o.nome||'')+' '+(o.cognome||'')).trim()||o.email||o.id;
+  if(_opAttivo(o,giorno))return nome;
+  const t=_v18TestoArchivio(o,giorno);
+  return nome+' ('+t.charAt(0).toLowerCase()+t.slice(1)+')';
+}
+// Riepilogo Ore: niente Esterni; gli ex solo con «Mostra archivio», in fondo.
+function _v18ElencoOre(tutti,mostra,giorno){
+  const d=_v18DividiArchivio((tutti||[]).filter(o=>!_v13Esterno(o)),giorno);
+  return mostra?d.attivi.concat(d.archivio):d.attivi;
+}
+// Responsabile foto: si sceglie solo chi lavora. Se quello gia' salvato e' un ex resta, segnato: salvare non lo cambia di nascosto.
+function _v18ElencoFotoResp(tutti,salvato,giorno){
+  return (tutti||[]).filter(o=>!_v13Esterno(o)&&(_opAttivo(o,giorno)||o.id===salvato));
+}
+// Account con tutte le schede in archivio. Senza scheda: non si sa, resta nell'elenco.
+function _v18ProfiloInArchivio(p,giorno){
+  const sch=(OPERAI_TUTTI||[]).filter(o=>o.user_id&&o.user_id===p.id);
+  return sch.length>0&&!sch.some(o=>_opAttivo(o,giorno));
+}
+function _v18PersCambiaArchivio(){_v18PersArchivio=!_v18PersArchivio;renderPersonale();}
+function _v18OreCambiaArchivio(){_v18OreArchivio=!_v18OreArchivio;renderOre();}
+function _v18CantCambiaArchivio(){_v18CantArchivio=!_v18CantArchivio;_p6RenderChiLavora();}
+function _v18AdmCambiaArchivio(){_v18AdmArchivio=!_v18AdmArchivio;renderAdmin();}
+// ── v18: periodi di rapporto per le ore teoriche ──
+// I periodi CHIUSI stanno in anag_periodi_rapporto (Anagrafiche, ANAG_10: la scrive solo «Riattiva»), quello in corso in operai.
+// La tabella la legge solo l'ufficio e sul vero puo' non esserci ancora: null = non letta, si conta solo dal periodo in corso.
+let _v18PeriodiAssenti=false;
+async function _v18LeggiPeriodi(opId){
+  if(!opId||_v18PeriodiAssenti||!_v17VedeSchede())return null;
+  try{
+    const{data,error}=await sb.from('anag_periodi_rapporto').select('data_inizio,data_fine').eq('operaio_id',opId);
+    if(error){
+      if(error.code==='PGRST205'||error.code==='42P01'||error.status===404)_v18PeriodiAssenti=true; // tabella non ancora nel database
+      console.warn('Periodi di rapporto non letti:',error.message);
+      return null;
+    }
+    return data||[];
+  }catch(e){console.warn('Periodi di rapporto non letti:',e.message);return null;}
+}
+// certo = inizio e fine note. Un periodo con una data mancante conta solo nei mesi con giornate vere: mai inventare.
+function _v18PeriodiOre(o,chiusi){
+  const out=(chiusi||[]).map(p=>({inizio:p.data_inizio||null,fine:p.data_fine||null,chiuso:true,certo:!!(p.data_inizio&&p.data_fine)}));
+  const op=o||{};
+  out.push({inizio:op.data_assunzione||null,fine:op.data_fine_rapporto||null,chiuso:false,certo:!!op.data_assunzione&&(op.attivo!==false||!!op.data_fine_rapporto)});
+  return out;
+}
+// Per ogni mese: si contano le ore teoriche? Si' se il mese tocca un periodo. Mese intero, come prima (nessuna frazione).
+function _v18MesiTeorici(anno,periodi,mesiConGiornate){
+  const conGiornate=mesiConGiornate||new Set(),esito=[];
+  for(let m=0;m<12;m++){
+    const mm=String(m+1).padStart(2,'0'),primo=anno+'-'+mm+'-01',ultimo=anno+'-'+mm+'-'+String(new Date(Date.UTC(anno,m+1,0)).getUTCDate()).padStart(2,'0');
+    esito.push((periodi||[]).some(p=>(!p.inizio||p.inizio<=ultimo)&&(!p.fine||p.fine>=primo)&&(p.certo||conGiornate.has(m))));
+  }
+  return esito;
+}
+function _v18TestoPeriodi(periodi){
+  return (periodi||[]).filter(p=>p.inizio||p.fine).slice().sort((a,b)=>String(a.inizio||'').localeCompare(String(b.inizio||'')))
+    .map(p=>p.inizio&&p.fine?_v18DataCH(p.inizio)+'–'+_v18DataCH(p.fine):p.inizio?'dal '+_v18DataCH(p.inizio):'fino al '+_v18DataCH(p.fine)).join('; ');
 }
 // ── v13 (2.11.2026): Rapporto Dipendente / Esterno — operai.rapporto, colonna di Anagrafiche (qui sola lettura) ──
 // Esterno = lavora per noi con la sua ditta (es. lattoniere): niente login, niente ore, niente stipendio,
@@ -7116,7 +7189,8 @@ async function renderAdmin(){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
   sb.from('impostazioni').select('valore').eq('chiave','nome_azienda').single().then(({data})=>{const el=document.getElementById('adm-nome-az');if(el&&data?.valore)el.value=data.valore;});
-    const _admu=document.getElementById('adm-utenti');if(_admu)_admu.innerHTML=(profili||[]).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">${p.nome}</div><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('');
+    const _admu=document.getElementById('adm-utenti');if(_admu)_admu.innerHTML=(profili||[]).filter(p=>_v18AdmArchivio||!_v18ProfiloInArchivio(p)).map(p=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">${p.nome}${_v18ProfiloInArchivio(p)?' · 🗄️ In archivio':''}</div><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:10px;background:${p.ruolo==='titolare'?'var(--gdim)':'rgba(76,175,125,.1)'};color:${p.ruolo==='titolare'?'var(--gold)':'var(--green)'}">${p.ruolo}</span></div>`).join('')
+      +((profili||[]).some(p=>_v18ProfiloInArchivio(p))?`<button class="btn btn-s" id="adm-btn-archivio" style="width:100%;min-height:48px" onclick="_v18AdmCambiaArchivio()">${_v18TestoTasto(_v18AdmArchivio,(profili||[]).filter(p=>_v18ProfiloInArchivio(p)).length)}</button>`:'');
   }
 }
 async function aggiornaTariffa(){
@@ -7172,7 +7246,7 @@ function openModalOp(id){
   if(!_v14PuoAnagrafiche()){showToast('Solo titolare e responsabile','e');return;}
   editOid=id;
   document.getElementById('mod-op-t').textContent=((o.nome||'')+' '+(o.cognome||'')).trim()||'Persona';
-  document.getElementById('o-info').textContent=[o.ruolo,_v13Esterno(o)?'Esterno':'',_opAttivo(o)?'':'non attivo'].filter(Boolean).join(' · ');
+  document.getElementById('o-info').textContent=[o.ruolo,_v13Esterno(o)?'Esterno':'',_opAttivo(o)?'':_v18TestoArchivio(o)].filter(Boolean).join(' · ');
   document.getElementById('o-anag').innerHTML=_v14TastoAnagrafiche({persona:o.id},'Apri Anagrafiche — questa persona','Dati, fine rapporto, documenti, accesso alle app e password si cambiano in Anagrafiche.');
   const puo=_p4PuoGestireVisibilita()&&!_v13Esterno(o); // v13: un Esterno non entra nell'app
   const sb2=document.getElementById('o-salva');if(sb2)sb2.style.display=puo?'':'none';
@@ -8659,7 +8733,10 @@ async function _p4ControllaAccessoAttivo(){
   return true;
 }
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&USER&&document.getElementById('app')?.classList.contains('on'))_p4ControllaAccessoAttivo();
+  if(document.visibilityState==='visible'&&USER&&document.getElementById('app')?.classList.contains('on')){
+    OPERAI=(OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o)); // v18: app rimasta aperta di notte: il nuovo giorno vale subito
+    _p4ControllaAccessoAttivo();
+  }
 });
 
 // ── Home: riquadri rapidi solo per le sezioni consentite ──
@@ -8762,8 +8839,11 @@ async function _p6RenderChiLavora(){
   qui.sort((a,b)=>_p6NomeOp(a.o).localeCompare(_p6NomeOp(b.o)));
   // 2. persone con questo cantiere in "Cantieri in piu'"
   const quiId=new Set(qui.map(x=>x.o.id));
-  const extra=[...new Set(vis.map(r=>r.operaio_id))].map(id=>({id,o:opDi(id)}))
+  const extraTutti=[...new Set(vis.map(r=>r.operaio_id))].map(id=>({id,o:opDi(id)}))
     .sort((a,b)=>_p6NomeOp(a.o).localeCompare(_p6NomeOp(b.o)));
+  // v18: chi e' in archivio non compare; con «Mostra archivio» si vede (serve per togliergli il cantiere).
+  const extraArch=extraTutti.filter(x=>x.o&&!_opAttivo(x.o,oggi)).length;
+  const extra=extraTutti.filter(x=>_v18CantArchivio||!x.o||_opAttivo(x.o,oggi));
   const riga='display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:15px';
   const opzioni=(OPERAI_TUTTI||[]).filter(o=>_v13Lavora(o,oggi)).map(o=>'<option value="'+o.id+'">'+escHtml(_p6NomeOp(o))+'</option>').join('');
   box.innerHTML=hdr
@@ -8779,10 +8859,11 @@ async function _p6RenderChiLavora(){
     +'<div style="font-size:14px;color:var(--t3);margin-top:6px">Crea nel Piano di oggi una riga con questo cantiere, senza mezzo.</div></div>'
     +'<div style="font-size:14px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 4px">Può vederlo, ma lavora altrove</div>'
     +(extra.length?extra.map(x=>'<div style="'+riga+'"><span>👁 '+escHtml(x.o?_p6NomeOp(x.o):'Scheda non trovata')
-        +(x.o&&!_opAttivo(x.o,oggi)?' <span style="color:var(--t3)">(non attivo)</span>':'')
+        +(x.o&&!_opAttivo(x.o,oggi)?' <span style="color:var(--t3)">('+_v18TestoArchivio(x.o,oggi)+')</span>':'')
         +(quiId.has(x.id)?' <span style="color:var(--t3)">(lavora anche qui)</span>':'')+'</span>'
         +'<button onclick="_p6TogliVisibile(\''+x.id+'\')" title="Togli l\'accesso a questo cantiere" style="background:rgba(224,85,85,.1);border:1px solid rgba(224,85,85,.25);border-radius:var(--rsm);padding:4px 10px;cursor:pointer;color:var(--red);font-weight:700">✕</button></div>').join('')
       :'<div style="font-size:15px;color:var(--t2);padding:4px 0">Nessuno ha questo cantiere in "Cantieri in più".</div>')
+    +(extraArch?'<button class="btn btn-s" id="p6-btn-archivio" style="margin-top:8px;min-height:48px" onclick="_v18CantCambiaArchivio()">'+_v18TestoTasto(_v18CantArchivio,extraArch)+'</button>':'')
     +'</div>';
 }
 function _p6MostraMetti(on){
@@ -10989,12 +11070,9 @@ async function renderPersonale(){
   if(!el)return;
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    const filtroStato=document.getElementById('pers-filtro-stato')?.value||'attivi';
     const filtroRuolo=document.getElementById('pers-filtro-ruolo')?.value||'';
-    const oggi=new Date().toISOString().split('T')[0];
+    const oggi=nowZurich().date; // v18
     let lista=(OPERAI_TUTTI||[]);
-    if(filtroStato==='attivi')lista=lista.filter(o=>_opAttivo(o,oggi));
-    else if(filtroStato==='ex')lista=lista.filter(o=>!_opAttivo(o,oggi));
     if(filtroRuolo)lista=lista.filter(o=>o.ruolo===filtroRuolo);
     const filtroAgenzia=document.getElementById('pers-filtro-agenzia')?.value||'';
     if(filtroAgenzia==='agenzia')lista=lista.filter(o=>!!o.agenzia);
@@ -11002,9 +11080,14 @@ async function renderPersonale(){
     const ricerca=(document.getElementById('pers-ricerca')?.value||'').trim().toLowerCase();
     if(ricerca)lista=lista.filter(o=>(o.nome+' '+o.cognome).toLowerCase().includes(ricerca)||(o.cognome+' '+o.nome).toLowerCase().includes(ricerca));
     lista=lista.slice().sort(function(a,b){return (a.cognome||'').localeCompare(b.cognome||'')||( a.nome||'').localeCompare(b.nome||'');});
-    if(!lista.length){
+    // v18: gli ex stanno solo nella sezione Archivio, con il tasto. Il numero c'e' sempre, anche cercando.
+    const _v18Div=_v18DividiArchivio(lista,oggi);
+    const _v18Tasto=document.getElementById('pers-btn-archivio');
+    if(_v18Tasto){_v18Tasto.textContent=_v18TestoTasto(_v18PersArchivio,_v18Div.archivio.length);_v18Tasto.setAttribute('aria-expanded',String(_v18PersArchivio));}
+    lista=_v18Div.attivi;
+    if(!lista.length&&!_v18PersArchivio){
       const ef=document.createElement('div');ef.className='empty';
-      ef.innerHTML='<div class="empty-i">👷</div><p>Nessun collaboratore trovato.</p>';
+      ef.innerHTML='<div class="empty-i">👷</div><p>Nessun collaboratore trovato.'+(_v18Div.archivio.length?' In archivio: '+_v18Div.archivio.length+'.':'')+'</p>';
       const efBtn=document.createElement('button');efBtn.className='btn btn-g';efBtn.style.marginTop='12px';efBtn.textContent='🗂️ Nuova persona in Anagrafiche';
       efBtn.addEventListener('click',function(){apriAnagrafiche('nuova-persona');});
       ef.appendChild(efBtn);el.innerHTML='';el.appendChild(ef);
@@ -11018,7 +11101,7 @@ async function renderPersonale(){
     // profili non ha la colonna email. Se la funzione non c'e' ancora, resta null
     // e la schermata continua a funzionare senza i menù "Ruolo app".
     const profiliApp=await _caricaProfiliApp();
-    const _v13Ditta=await _v13CaricaDitte(lista); // v13: nome della ditta degli Esterni (se leggibile)
+    const _v13Ditta=await _v13CaricaDitte(_v18Div.attivi.concat(_v18PersArchivio?_v18Div.archivio:[])); // v13: nome della ditta degli Esterni (se leggibile)
     el.innerHTML='';
     if(V13_SENZA_RAPPORTO){const w=document.createElement('div');w.className='warn on';w.style.marginBottom='10px';w.textContent='⚠️ '+V13_MSG_RAPPORTO+' Per ora tutti sono contati come Dipendenti.';el.appendChild(w);}
     const ruoloIcon={Carpentiere:'🪚',Caposquadra:'⭐',Lattoniere:'🔧',Apprendista:'🎓','Aiuto carpentiere':'🪛','Operaio generico':'👷'};
@@ -11029,7 +11112,7 @@ async function renderPersonale(){
       const hasAccount=!!o.user_id;
       const div=document.createElement('div');
       div.id='op-card-'+o.id;
-      div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px;opacity:'+(isEx?'.65':'1');
+      div.style.cssText='background:var(--s1);border:1px solid '+(isEx?'rgba(224,85,85,.3)':'var(--border)')+';border-radius:var(--r);padding:14px;margin-bottom:8px';
       const icon=ruoloIcon[o.ruolo]||'👤';
       const agzBadge=o.agenzia?'<span style="font-size:12px;background:var(--orange);color:#1a1a1a;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">AGZ'+(o.nome_agenzia?' · '+escHtml(o.nome_agenzia):'')+'</span>':'';
       // v13: Esterno = etichetta con la ditta; niente accesso app, niente ore, niente stipendio
@@ -11038,8 +11121,8 @@ async function renderPersonale(){
         +'<div>'
         +'<div style="font-size:17px;font-weight:800">'+icon+' '+o.nome+' '+o.cognome+agzBadge+estBadge+'<span id="op-badge-'+o.id+'"></span></div>'
         +'<div style="font-size:14px;color:var(--t2)">'+o.ruolo
-        +(isEx?'&nbsp;<span style="color:var(--red);font-weight:700">· Ex'+(o.data_fine_rapporto?' (fine '+o.data_fine_rapporto+')':' (rimosso)')+'</span>':'')
-        +(hasAccount?'&nbsp;<span style="color:var(--green);font-size:13px">● App attiva</span>':'')
+        +(isEx?'&nbsp;<span class="v18-in-archivio" style="color:var(--red);font-weight:700">· 🗄️ '+_v18TestoArchivio(o,oggi)+'</span>':'')
+        +(hasAccount&&!isEx?'&nbsp;<span style="color:var(--green);font-size:13px">● App attiva</span>':'')
         +(_v13Esterno(o)?'<div style="font-size:13px;color:var(--t3)">Niente accesso all\'app e niente ore: il suo costo è la fattura della ditta.</div>':'')
         +'</div></div>'
         +'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">'
@@ -11072,6 +11155,13 @@ async function renderPersonale(){
       });
     }else{
       lista.forEach(function(o){el.appendChild(_buildOperaioDiv(o));});
+    }
+    if(_v18PersArchivio){ // v18: sezione Archivio, sotto gli attivi
+      const hA=document.createElement('div');hA.id='pers-sez-archivio';hA.className='sec';hA.style.marginTop='14px';
+      hA.textContent='🗄️ Archivio ('+_v18Div.archivio.length+')';
+      el.appendChild(hA);
+      if(_v18Div.archivio.length)_v18Div.archivio.forEach(function(o){el.appendChild(_buildOperaioDiv(o));});
+      else{const vA=document.createElement('div');vA.style.cssText='font-size:15px;color:var(--t2);padding:4px 0';vA.textContent='Nessuno in archivio.';el.appendChild(vA);}
     }
     // Bottone invita
     const invBtn=document.createElement('button');invBtn.className='btn btn-s';
@@ -11123,7 +11213,8 @@ async function apriSchedaOp(id){
     +_riga('Email',escHtml(o.email))
     +_riga('Telefono',escHtml(o.telefono))
     +_riga('Inizio rapporto',_data(o.data_assunzione))
-    +_riga('Fine rapporto',o.data_fine_rapporto?_data(o.data_fine_rapporto):'— (attivo)')
+    +_riga('Fine rapporto',o.data_fine_rapporto?_data(o.data_fine_rapporto):(_opAttivo(o)?'— (attivo)':'—'))
+    +(_opAttivo(o)?'':_riga('Stato','🗄️ '+_v18TestoArchivio(o))) // v18
     +_riga('Note',escHtml(o.note));
   document.getElementById('scheda-op-mod').onclick=function(){apriAnagrafiche({persona:id});}; // v14
   const _vis=document.getElementById('scheda-op-vis');
@@ -12768,7 +12859,7 @@ async function caricaImpostazioniSchermata(){
     const alertResp=document.getElementById('foto-alert-resp');
     if(alertGiorno&&map.foto_alert_giorno)alertGiorno.value=map.foto_alert_giorno;
     if(alertResp){
-      alertResp.innerHTML='<option value="">— Tutti —</option>'+(OPERAI_TUTTI||[]).filter(o=>!_v13Esterno(o)).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+(o.nome||o.email||o.id)+'</option>').join('');
+      alertResp.innerHTML='<option value="">— Tutti —</option>'+_v18ElencoFotoResp(OPERAI_TUTTI,map.foto_resp_id).map(o=>'<option value="'+o.id+'"'+(map.foto_resp_id===o.id?' selected':'')+'>'+escHtml(_opAttivo(o)?(o.nome||o.email||o.id):_v18EtichettaOp(o))+'</option>').join(''); // v18: gli ex non si scelgono
     }
     _aggiornaPushStato();
     // Rapportino firma
@@ -13204,6 +13295,9 @@ async function renderOre(){
     const{data:op}=await sb.from('operai').select('id').eq('user_id',USER.id).maybeSingle(); // P2 punto 4
     opId=op?.id||null;
   }
+  // v18: l'ufficio sceglie fra chi lavora; gli ex solo con «Mostra archivio». Se la persona scelta non e' piu' in elenco si passa alla prima.
+  const _elencoOre=isAdmin?_v18ElencoOre(OPERAI_TUTTI,_v18OreArchivio):[];
+  if(_elencoOre.length&&!_elencoOre.some(o=>o.id===opId))opId=_elencoOre[0].id;
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     // Carica giornate ed eccezione ore in parallelo
@@ -13213,7 +13307,7 @@ async function renderOre(){
     ]);
     // data_assunzione separata per gestire errore colonna mancante
     let operaioInfo=null;
-    if(opId){try{const{data:_da}=await sb.from('operai').select('data_assunzione').eq('id',opId).maybeSingle();operaioInfo=_da||null;}catch(e){operaioInfo=null;}}
+    if(opId){try{const{data:_da}=await sb.from('operai').select('data_assunzione,data_fine_rapporto,attivo').eq('id',opId).maybeSingle();operaioInfo=_da||null;}catch(e){operaioInfo=null;}}
 
     const festivi=new Set(['01-01','08-01','12-25','12-26']);
 
@@ -13240,27 +13334,17 @@ async function renderOre(){
     // Mesi in cui l'operaio ha almeno una giornata registrata
     const mesiConGiornate=new Set((giornate||[]).map(g=>new Date(g.data+'T12:00').getMonth()));
 
-    // Primo mese attivo: da data_assunzione se disponibile, altrimenti dai mesi con giornate
-    let primoMeseAttivo=-1; // -1 = usa mesiConGiornate o anno intero
-    if(operaioInfo?.data_assunzione){
-      const da=new Date(operaioInfo.data_assunzione+'T12:00');
-      if(da.getFullYear()===annoSel) primoMeseAttivo=da.getMonth();
-      else if(da.getFullYear()<annoSel) primoMeseAttivo=0;
-      else primoMeseAttivo=12;
-    }
+    // v18: mesi dentro i periodi di rapporto (i chiusi se leggibili + quello in corso), altrimenti dai mesi con giornate.
+    // Prima bastava data_assunzione: dopo «Riattiva» i mesi del periodo vecchio finivano a zero.
+    const chiusi=await _v18LeggiPeriodi(opId);
+    const periodi=_v18PeriodiOre(operaioInfo,chiusi);
+    const mesiInclusi=_v18MesiTeorici(annoSel,periodi,mesiConGiornate);
     // P1b: senza data di inizio e senza giornate non sappiamo da quando contare: nessun arretrato
     const senzaInizio=!operaioInfo?.data_assunzione&&mesiConGiornate.size===0;
 
     const mesi=[];
     for(let m=0;m<12;m++){
-      let includiMese;
-      if(primoMeseAttivo>=0){
-        includiMese=m>=primoMeseAttivo;
-      } else if(mesiConGiornate.size>0){
-        includiMese=mesiConGiornate.has(m);
-      } else {
-        includiMese=!senzaInizio;
-      }
+      const includiMese=mesiInclusi[m];
       // Ore teoriche mese = oreAnnuali × (giorni_lav_mese / totale_giorni_lav_anno)
       const teoriche=(includiMese&&totGiorniLavAnno>0)
         ? oreAnnuali*(giorniLavPerMese[m]/totGiorniLavAnno)
@@ -13277,12 +13361,17 @@ async function renderOre(){
     const kpiDiff=kpiMese.effettive-kpiMese.teoriche;
     const nomiMesi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
     let opSel='';
-    if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:15px">${(OPERAI_TUTTI||[]).filter(o=>!_v13Esterno(o)).map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${o.nome||''} ${o.cognome||''}</option>`).join('')}</select>`;}
+    if(isAdmin){opSel=`<select id="ore-operaio" onchange="renderOre()" style="background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;color:var(--t1);font-size:15px;max-width:100%">${_elencoOre.map(o=>`<option value="${o.id}"${o.id===opId?' selected':''}>${escHtml(_v18EtichettaOp(o))}</option>`).join('')}</select><button type="button" class="btn btn-s" id="ore-btn-archivio" onclick="_v18OreCambiaArchivio()" style="width:auto;min-height:48px">${_v18TestoTasto(_v18OreArchivio,_v18DividiArchivio((OPERAI_TUTTI||[]).filter(o=>!_v13Esterno(o))).archivio.length)}</button>`;}
 
     // Nota sul periodo considerato
     let notaPeriodo='';
-    if(operaioInfo?.data_assunzione&&primoMeseAttivo>0){notaPeriodo=` · Assunto da ${nomiMesi[primoMeseAttivo]} ${annoSel}`;}
-    else if(primoMeseAttivo<0&&mesiConGiornate.size>0&&mesiConGiornate.size<12){notaPeriodo=` · Teoriche calcolate su ${mesiConGiornate.size} mesi attivi`;}
+    const _daIso=operaioInfo?.data_assunzione||'';
+    if(chiusi&&chiusi.length){notaPeriodo=` · Periodi: ${_v18TestoPeriodi(periodi)}`;} // v18
+    else if(_daIso&&_daIso.slice(0,4)===String(annoSel)&&_daIso.slice(5,7)!=='01'){notaPeriodo=` · Assunto da ${nomiMesi[parseInt(_daIso.slice(5,7),10)-1]} ${annoSel}`;}
+    else if(!_daIso&&mesiConGiornate.size>0&&mesiConGiornate.size<12){notaPeriodo=` · Teoriche calcolate su ${mesiConGiornate.size} mesi attivi`;}
+    if(operaioInfo?.data_fine_rapporto&&!(chiusi&&chiusi.length))notaPeriodo+=` · Fine rapporto ${_v18DataCH(operaioInfo.data_fine_rapporto)}`;
+    // v18: ore in mesi fuori dal periodo registrato: si dice, senza inventare ore teoriche.
+    const _mesiFuori=mesi.filter(x=>x.effettive>0&&x.teoriche===0).length;
 
     el.innerHTML=`<div style="padding:16px 0">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -13314,6 +13403,7 @@ async function renderOre(){
       </div>
       <div style="margin-top:10px;font-size:14px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h${notaPeriodo}</div>
       ${senzaInizio?'<div class="warn on" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
+      ${_mesiFuori?`<div class="warn on" id="ore-nota-fuori" style="margin-top:10px">⚠️ ${_mesiFuori===1?'In 1 mese ci sono':'In '+_mesiFuori+' mesi ci sono'} ore ma niente ore teoriche: sono fuori dal periodo di rapporto registrato.${isAdmin?'':' I periodi vecchi li vede l\'ufficio.'}</div>`:''}
     </div>`;
   }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
