@@ -6,20 +6,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=18">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=18">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=18">
+<link rel="manifest" href="manifest.json?v=19">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=19">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=19">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=18"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=19"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=18"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=18"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=18"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=18"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=19"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=19"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=19"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=19"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -2098,7 +2098,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='18';
+const APP_VERSIONE='19';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4415,19 +4415,28 @@ function _v18CantCambiaArchivio(){_v18CantArchivio=!_v18CantArchivio;_p6RenderCh
 function _v18AdmCambiaArchivio(){_v18AdmArchivio=!_v18AdmArchivio;renderAdmin();}
 // ── v18: periodi di rapporto per le ore teoriche ──
 // I periodi CHIUSI stanno in anag_periodi_rapporto (Anagrafiche, ANAG_10: la scrive solo «Riattiva»), quello in corso in operai.
-// La tabella la legge solo l'ufficio e sul vero puo' non esserci ancora: null = non letta, si conta solo dal periodo in corso.
+// v19 (Umberto, 4.11.2026): la tabella, con il motivo di uscita, la leggono solo titolare e responsabile.
+// Tutti gli altri leggono le DATE dei SUOI periodi con anag_periodi_miei() (3 colonne, solo la propria scheda), mai quelli di un altro.
+// Esito: righe = i periodi, oppure null se non letti. perche: letti | assente (ANAG_10 non ancora nel database, si prova una volta sola)
+// | altra (scheda di un altro: va detto a schermo) | errore (va detto a schermo).
 let _v18PeriodiAssenti=false;
+function _v19Assente(error){return ['PGRST202','PGRST205','42P01','42883'].includes(error.code)||error.status===404;}
 async function _v18LeggiPeriodi(opId){
-  if(!opId||_v18PeriodiAssenti||!_v17VedeSchede())return null;
+  const ufficio=_v17VedeSchede();
+  if(!ufficio&&opId&&!(OPERAI_TUTTI||[]).some(o=>o.id===opId&&o.user_id&&o.user_id===USER.id))return {righe:null,perche:'altra'};
+  if(!opId||_v18PeriodiAssenti)return {righe:null,perche:'assente'};
   try{
-    const{data,error}=await sb.from('anag_periodi_rapporto').select('data_inizio,data_fine').eq('operaio_id',opId);
+    const{data,error}=ufficio
+      ?await sb.from('anag_periodi_rapporto').select('data_inizio,data_fine').eq('operaio_id',opId)
+      :await sb.rpc('anag_periodi_miei');
     if(error){
-      if(error.code==='PGRST205'||error.code==='42P01'||error.status===404)_v18PeriodiAssenti=true; // tabella non ancora nel database
       console.warn('Periodi di rapporto non letti:',error.message);
-      return null;
+      if(!_v19Assente(error))return {righe:null,perche:'errore'};
+      _v18PeriodiAssenti=true;
+      return {righe:null,perche:'assente'};
     }
-    return data||[];
-  }catch(e){console.warn('Periodi di rapporto non letti:',e.message);return null;}
+    return {righe:ufficio?(data||[]):(data||[]).filter(p=>p.operaio_id===opId),perche:'letti'};
+  }catch(e){console.warn('Periodi di rapporto non letti:',e.message);return {righe:null,perche:'errore'};}
 }
 // certo = inizio e fine note. Un periodo con una data mancante conta solo nei mesi con giornate vere: mai inventare.
 function _v18PeriodiOre(o,chiusi){
@@ -13336,7 +13345,7 @@ async function renderOre(){
 
     // v18: mesi dentro i periodi di rapporto (i chiusi se leggibili + quello in corso), altrimenti dai mesi con giornate.
     // Prima bastava data_assunzione: dopo «Riattiva» i mesi del periodo vecchio finivano a zero.
-    const chiusi=await _v18LeggiPeriodi(opId);
+    const letti=await _v18LeggiPeriodi(opId),chiusi=letti.righe;
     const periodi=_v18PeriodiOre(operaioInfo,chiusi);
     const mesiInclusi=_v18MesiTeorici(annoSel,periodi,mesiConGiornate);
     // P1b: senza data di inizio e senza giornate non sappiamo da quando contare: nessun arretrato
@@ -13372,6 +13381,8 @@ async function renderOre(){
     if(operaioInfo?.data_fine_rapporto&&!(chiusi&&chiusi.length))notaPeriodo+=` · Fine rapporto ${_v18DataCH(operaioInfo.data_fine_rapporto)}`;
     // v18: ore in mesi fuori dal periodo registrato: si dice, senza inventare ore teoriche.
     const _mesiFuori=mesi.filter(x=>x.effettive>0&&x.teoriche===0).length;
+    // v19: periodi non letti (scheda di un altro, o lettura saltata): i mesi a zero non restano mai in silenzio.
+    const _nonLetti=(letti.perche==='altra'||letti.perche==='errore')&&mesi.some(x=>x.teoriche===0);
 
     el.innerHTML=`<div style="padding:16px 0">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -13402,8 +13413,9 @@ async function renderOre(){
         </table>
       </div>
       <div style="margin-top:10px;font-size:14px;color:var(--t3)">Ore annuali contratto: ${oreAnnuali}h${notaPeriodo}</div>
-      ${senzaInizio?'<div class="warn on" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
-      ${_mesiFuori?`<div class="warn on" id="ore-nota-fuori" style="margin-top:10px">⚠️ ${_mesiFuori===1?'In 1 mese ci sono':'In '+_mesiFuori+' mesi ci sono'} ore ma niente ore teoriche: sono fuori dal periodo di rapporto registrato.${isAdmin?'':' I periodi vecchi li vede l\'ufficio.'}</div>`:''}
+      ${senzaInizio&&letti.perche!=='altra'?'<div class="warn on" style="margin-top:10px">Inserisci la data di inizio rapporto nella scheda Personale</div>':''}
+      ${_nonLetti?`<div class="warn on" id="ore-nota-periodi" style="margin-top:10px">⚠️ Periodi di rapporto non letti: ${letti.perche==='altra'?'li vede solo l\'ufficio':'riprova più tardi'}. I mesi senza ore teoriche possono non essere giusti.</div>`:''}
+      ${_mesiFuori&&!_nonLetti?`<div class="warn on" id="ore-nota-fuori" style="margin-top:10px">⚠️ ${_mesiFuori===1?'In 1 mese ci sono':'In '+_mesiFuori+' mesi ci sono'} ore ma niente ore teoriche: sono fuori dal periodo di rapporto registrato.</div>`:''}
     </div>`;
   }catch(e){el.innerHTML=`<div class="empty">Errore: ${e.message}</div>`;}
 }
