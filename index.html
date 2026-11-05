@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=21">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=21">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=21">
+<link rel="manifest" href="manifest.json?v=22">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=22">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=22">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=21"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=22"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=21"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=21"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=21"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=21"></script>
-<script src="lib/spartizione-formule.js?v=21"></script>
-<script src="lib/spartizione-scheda.js?v=21"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=22"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=22"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=22"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=22"></script>
+<script src="lib/spartizione-formule.js?v=22"></script>
+<script src="lib/spartizione-scheda.js?v=22"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -2171,7 +2171,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='21';
+const APP_VERSIONE='22';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4673,7 +4673,10 @@ async function loadImpostazioni(){
   if(cached)try{IMPOSTAZIONI={...IMPOSTAZIONI,...JSON.parse(cached)};}catch(e){}
   // Carica chiavi remote da Supabase
   try{
-    const{data}=await sb.from('impostazioni').select('chiave,valore');
+    // v22 (Umberto): la tariffa la chiedono solo titolare e responsabile. Con CANT_07 il database la nega agli altri; senza, non la chiedono.
+    let _q=sb.from('impostazioni').select('chiave,valore');
+    if(!['titolare','responsabile'].includes(_ruoloApp()))_q=_q.neq('chiave','tariffa_ora');
+    const{data}=await _q;
     (data||[]).forEach(r=>{IMPOSTAZIONI[r.chiave]=r.valore;});
   }catch(e){}
 }
@@ -4777,10 +4780,10 @@ async function renderCantiere(){
     ]);
     if(ge)throw ge;
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
-    const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+    const _v21VedeChf=['titolare','responsabile'].includes(_ruoloApp()); // v21 (Umberto): il capo squadra vede le ore, non i CHF della manodopera
+    const tariffa=_v21VedeChf?(IMPOSTAZIONI.tariffa_ora||78):0; // v22: a capo squadra e operaio la tariffa non serve
     const _v13c=_v13OreCosto(giornate); // v13: CHF manodopera solo sulle ore dei Dipendenti
     const totCosto=_v13c.ore*tariffa;
-    const _v21VedeChf=['titolare','responsabile'].includes(_ruoloApp()); // v21 (Umberto): il capo squadra vede le ore, non i CHF della manodopera
     const totSpeseDaPagare=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaDaFatt=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const byOp={};
