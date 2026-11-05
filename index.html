@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=20">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=20">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=20">
+<link rel="manifest" href="manifest.json?v=21">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=21">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=21">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=20"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=21"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=20"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=20"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=20"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=20"></script>
-<script src="lib/spartizione-formule.js?v=20"></script>
-<script src="lib/spartizione-scheda.js?v=20"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=21"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=21"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=21"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=21"></script>
+<script src="lib/spartizione-formule.js?v=21"></script>
+<script src="lib/spartizione-scheda.js?v=21"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -355,7 +355,9 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .spz-unita{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 12px}
 .spz-unita-2{grid-template-columns:1fr 1fr}
 .spz-u{min-height:56px;font-size:20px;font-weight:700;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);cursor:pointer}
-.spz-u.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.spz-u.on{background:var(--gold);color:#1a1a1a;border:3px solid #1a1a1a}
+/* v21: il simbolo si disegna (SVG): selezionato si vede a colpo d'occhio, con guanti e occhiali. Mai solo colore. */
+.spz-v{display:inline-block;width:26px;height:26px;vertical-align:-6px;margin-right:6px;flex:0 0 auto}
 .spz-riga{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .spz-riga .spz-tasto{flex:1 1 140px;width:auto}
 .spz-tasto{min-height:56px;font-size:17px}
@@ -367,7 +369,7 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .spz-nome{font-size:20px;font-weight:700;margin:0 0 10px}
 .spz-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .spz-tab{flex:1 1 130px;min-height:56px;font-size:17px;font-weight:700;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);cursor:pointer;padding:6px 8px;word-break:break-word}
-.spz-tab.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.spz-tab.on{background:var(--gold);color:#1a1a1a;border:3px solid #1a1a1a}
 .spz-numeri{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
 .spz-num{background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:10px;min-width:0}
 .spz-num span{display:block;font-size:16px;color:var(--t2)}
@@ -378,16 +380,19 @@ input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .spz-perche summary{min-height:32px;cursor:pointer}
 .spz-perche span{overflow-wrap:anywhere}
 .spz-opz{display:block;width:100%;text-align:left;min-height:56px;font-size:16px;line-height:1.35;background:var(--s2);color:var(--text);border:2px solid var(--border);border-radius:var(--rsm);padding:8px 10px;margin:0 0 8px;cursor:pointer}
-.spz-opz.on{border-color:var(--gold);background:var(--gdim)}
+.spz-opz.on{border:3px solid var(--text);background:var(--gdim);font-weight:700}
 .spz-opz.spenta{opacity:.75;cursor:default;border-style:dashed}
 table.spz-tab{width:100%;border-collapse:collapse;font-size:17px;margin:0 0 12px}
 table.spz-tab th{text-align:left;font-size:15px;color:var(--t2);padding:4px}
 table.spz-tab td{padding:6px 4px;border-top:1px solid var(--border);height:52px}
 table.spz-tab .dx{text-align:right}
-table.spz-tab tr.on td{background:var(--gdim)}
+table.spz-tab tr.on td{background:rgba(30,123,52,.22)}
 table.spz-tab tbody tr{cursor:pointer}
 .spz-sp{width:46px}
-.spz-check{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:3px solid var(--t2);border-radius:8px;font-size:24px;font-weight:700}
+.spz-check{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:3px solid var(--text);border-radius:8px;background:#fff}
+.spz-check.on{background:#1e7b34;border-color:#0d4a1c;color:#fff}
+.spz-check .spz-v{width:34px;height:34px;margin:0;vertical-align:0}
+.spz-fatto{color:var(--green);font-size:15px}
 .spz-diversa{font-size:15px;color:var(--orange);font-weight:700}
 .spz-disegno{background:#fff;border-radius:var(--rsm);padding:6px;margin:0 0 10px}
 .spz-disegno svg{display:block;width:100%;height:auto}
@@ -2166,7 +2171,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='20';
+const APP_VERSIONE='21';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4775,6 +4780,7 @@ async function renderCantiere(){
     const tariffa=IMPOSTAZIONI.tariffa_ora||78;
     const _v13c=_v13OreCosto(giornate); // v13: CHF manodopera solo sulle ore dei Dipendenti
     const totCosto=_v13c.ore*tariffa;
+    const _v21VedeChf=['titolare','responsabile'].includes(_ruoloApp()); // v21 (Umberto): il capo squadra vede le ore, non i CHF della manodopera
     const totSpeseDaPagare=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
     const totRegiaDaFatt=(regia||[]).filter(r=>!r.fatturato).reduce((s,r)=>s+(parseFloat(r.quantita||0)*parseFloat(r.prezzo_unitario||0)),0);
     const byOp={};
@@ -4809,12 +4815,12 @@ async function renderCantiere(){
         </div>
       </div>
       <div id="v17-danni-box"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div id="v21-totali" style="display:grid;grid-template-columns:${_v21VedeChf?'1fr 1fr 1fr':'1fr 1fr'};gap:8px;margin-bottom:14px">
         <div class="sb"><div class="sv">${totOre.toFixed(1)}</div><div class="sl">Ore totali</div></div>
-        <div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>
+        ${_v21VedeChf?`<div class="sb"><div class="sv">${totCosto.toFixed(0)}</div><div class="sl">CHF manodopera</div></div>`:''}
         <div class="sb"><div class="sv">${(giornate||[]).length}</div><div class="sl">Giornate</div></div>
       </div>
-      ${_v13AvvisoEsterni(_v13c.oreEst,_v13c.nEst)}
+      ${_v21VedeChf?_v13AvvisoEsterni(_v13c.oreEst,_v13c.nEst):''}
       ${totSpeseDaPagare>0?`<div style="background:rgba(224,85,85,.08);border:1px solid rgba(224,85,85,.2);border-radius:var(--rsm);padding:10px 14px;font-size:15px;color:var(--red);margin-bottom:8px;cursor:pointer" onclick="apriSpeseCantiere()">🧾 Spese da pagare: <strong>${totSpeseDaPagare.toFixed(2)} CHF</strong> → tocca per vedere</div>`:''}
       ${totRegiaDaFatt>0?`<div style="background:var(--gdim);border:1px solid rgba(200,168,75,.25);border-radius:var(--rsm);padding:10px 14px;font-size:15px;color:var(--gold);margin-bottom:8px;cursor:pointer" onclick="apriRegiaCantiere()">${t('lbl_nessun_regia_banner')}<strong>${totRegiaDaFatt.toFixed(2)} CHF</strong> ${t('lbl_tocca_vedere')}</div>`:''}
       ${utenteHaAccesso(PROF,'committente',null)&&curCant.committente?`
@@ -4871,9 +4877,9 @@ async function renderCantiere(){
       ${Object.values(byOp).length?`
       <div class="sec">${t('sec_ore_op_cant')}</div>
       <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
-        <table class="rtable"><thead><tr><th>${t('th_operaio')}</th><th>${t('th_ore_totali')}</th><th>${t('th_chf_est')}</th></tr></thead>
+        <table class="rtable"><thead><tr><th>${t('th_operaio')}</th><th>${t('th_ore_totali')}</th>${_v21VedeChf?`<th>${t('th_chf_est')}</th>`:''}</tr></thead>
         <tbody>${Object.values(byOp).sort((a,b)=>b.ore-a.ore).map(({op,ore,est})=>
-          `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td><td style="font-family:'DM Mono';font-size:14px;color:var(--t2)">${est?'<span style="color:var(--orange);font-weight:700">Esterno: fattura</span>':(ore*tariffa).toFixed(0)}</td></tr>`
+          `<tr><td>${op?.nome||''} ${op?.cognome||''}</td><td class="mono">${ore.toFixed(2)}h</td>${_v21VedeChf?`<td style="font-family:'DM Mono';font-size:14px;color:var(--t2)">${est?'<span style="color:var(--orange);font-weight:700">Esterno: fattura</span>':(ore*tariffa).toFixed(0)}</td>`:''}</tr>`
         ).join('')}</tbody></table>
       </div>`:''}
       <div class="sec">${t('sec_cronologia_cant')}</div>
