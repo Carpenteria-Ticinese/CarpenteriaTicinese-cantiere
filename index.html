@@ -935,7 +935,7 @@ table.spz-tab tbody tr{cursor:pointer}
       <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--gold)" data-i18n="sett_tariffe">💰 Tariffe</div>
       <div class="fg"><label class="fl" data-i18n="lbl_tariffa_ora">Tariffa oraria manodopera (CHF/h)</label>
         <div style="display:flex;gap:10px;align-items:center">
-          <input type="number" class="fi" id="imp-tariffa" value="78" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px">
+          <input type="number" class="fi" id="imp-tariffa" value="70" min="1" max="999" step="1" style="font-family:'DM Mono',monospace;max-width:120px">
           <button class="btn btn-g btn-sm" onclick="aggiornaTariffa()">Salva</button>
         </div>
       </div>
@@ -3612,7 +3612,7 @@ function nowZurich(){
 }
 let GIO={cantId:null,data:null,meteo:null,ini:'07:00',fine:'17:00',pausa:60,mat:'',visite:'',operaiSalvati:[]};
 let editCid=null,editOid=null;
-let IMPOSTAZIONI={tariffa_ora:78};
+let IMPOSTAZIONI={tariffa_ora:70};
 
 // ── INIT ──
 
@@ -3634,7 +3634,7 @@ async function renderContabilita(cantId){
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
     const cant=CANTIERI.find(c=>c.id===cantId)||curCant;
-    const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+    const tariffa=IMPOSTAZIONI.tariffa_ora||70;
 
     // Carica tutto in parallelo
     const [
@@ -3805,7 +3805,7 @@ async function renderContabilitaGlobale(){
   const el=document.getElementById('cont-content');
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+    const tariffa=IMPOSTAZIONI.tariffa_ora||70;
     const [{data:giornate},{data:spese},{data:regia},{data:gruG},{data:incassiG}]=await Promise.all([
       sb.from('giornate').select('cantiere_id,operaio_id,ore_totali').order('data'), // v13: operaio_id per togliere gli Esterni dal costo
       sb.from('spese').select('cantiere_id,importo,stato_pag').order('data'),
@@ -3861,7 +3861,7 @@ async function renderContabilitaGlobale(){
 async function esportaReportContabilita(cantId){
   const cant=CANTIERI.find(c=>c.id===cantId)||curCant;
   if(!cant){showToast('Nessun cantiere','e');return;}
-  const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+  const tariffa=IMPOSTAZIONI.tariffa_ora||70;
   showToast('⏳ Preparazione report...');
   try{
     const [{data:giornate},{data:spese},{data:regia}]=await Promise.all([
@@ -4781,7 +4781,7 @@ async function renderCantiere(){
     if(ge)throw ge;
     const totOre=(giornate||[]).reduce((s,g)=>s+parseFloat(g.ore_totali||0),0);
     const _v21VedeChf=['titolare','responsabile'].includes(_ruoloApp()); // v21 (Umberto): il capo squadra vede le ore, non i CHF della manodopera
-    const tariffa=_v21VedeChf?(IMPOSTAZIONI.tariffa_ora||78):0; // v22: a capo squadra e operaio la tariffa non serve
+    const tariffa=_v21VedeChf?(IMPOSTAZIONI.tariffa_ora||70):0; // v22: a capo squadra e operaio la tariffa non serve
     const _v13c=_v13OreCosto(giornate); // v13: CHF manodopera solo sulle ore dei Dipendenti
     const totCosto=_v13c.ore*tariffa;
     const totSpeseDaPagare=(spese||[]).filter(s=>s.stato_pag==='Da pagare').reduce((s,x)=>s+(parseFloat(x.importo)||0),0);
@@ -9616,7 +9616,7 @@ async function renderAssenze(){
 
   const motivoColor={'Malattia':'var(--red)','Ferie':'var(--green)','Infortunio':'var(--orange)','Agenzia — operaio temporaneo':'var(--blue)','Permesso':'var(--t2)','Altro':'var(--t3)'};
   const motivoIcon={'Malattia':'🤒','Ferie':'🏖️','Infortunio':'🩹','Agenzia — operaio temporaneo':'👷','Permesso':'📋','Altro':'❓'};
-  const tariffa=IMPOSTAZIONI.tariffa_ora||78;
+  const tariffa=IMPOSTAZIONI.tariffa_ora||70;
 
   // ── STATISTICHE AGGREGATE ──
   const byOp={};
@@ -12909,7 +12909,7 @@ async function caricaImpostazioniSchermata(){
     if(map.telefono_azienda)document.getElementById('imp-telefono').value=map.telefono_azienda;
     if(map.email_azienda)document.getElementById('imp-email-az').value=map.email_azienda;
     // Tariffa
-    const tariffa=map.tariffa_ora||IMPOSTAZIONI.tariffa_ora||78;
+    const tariffa=map.tariffa_ora||IMPOSTAZIONI.tariffa_ora||70;
     document.getElementById('imp-tariffa').value=tariffa;
     // Pasti
     const pastiOn=map.pasti_abilitati==='1';
