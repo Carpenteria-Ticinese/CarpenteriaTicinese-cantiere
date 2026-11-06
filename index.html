@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=23">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=23">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=23">
+<link rel="manifest" href="manifest.json?v=24">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=24">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=24">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=23"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=24"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=23"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=23"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=23"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=23"></script>
-<script src="lib/spartizione-formule.js?v=23"></script>
-<script src="lib/spartizione-scheda.js?v=23"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=24"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=24"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=24"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=24"></script>
+<script src="lib/spartizione-formule.js?v=24"></script>
+<script src="lib/spartizione-scheda.js?v=24"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -72,7 +72,8 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
   .rbadge{display:none}
   .top-r .btn-icon{padding:6px 8px}
   .top{flex-wrap:wrap}
-  #btn-emergenza{order:3;flex:1 0 100%;margin-left:0}
+  #btn-emergenza{margin-left:0}
+  #btn-emergenza.grande{order:3;flex:1 0 100%}
   #navbar .nb{flex:1 1 0;min-width:40px;padding:8px 1px 10px}
   #navbar{scrollbar-width:thin}
   #navbar::-webkit-scrollbar{display:block;height:3px}
@@ -130,7 +131,9 @@ body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var
 .cant-status-vuoto{display:block;font-size:15px;font-weight:700;padding:6px 10px;border-radius:8px;margin:0 0 8px}
 /* P3 punto B: EMERGENZA, solo 144 e 1414. Scritte almeno 18 px, tasti alti almeno 56 px, icona sempre con scritta.
    Telefono: tasti che chiamano. PC (mouse, niente tocco): numero grande, nessun tasto chiama. */
-#btn-emergenza{margin-left:auto;min-height:56px;padding:0 16px;background:#c62828;color:#fff;border:none;border-radius:var(--rsm);font-size:18px;font-weight:800;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px}
+/* v24 (Umberto, 6.11.2026): grande solo in Home; nelle altre pagine stessa misura delle altre voci in alto, e c'e' sempre: la barra resta ferma in alto. */
+#btn-emergenza.grande{min-height:56px;padding:0 16px;font-size:18px}
+#btn-emergenza{margin-left:auto;min-height:48px;padding:8px 10px;background:#c62828;color:#fff;border:none;border-radius:var(--rsm);font-size:15px;font-weight:800;cursor:pointer;font-family:'Bricolage Grotesque',sans-serif;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px}
 #emergenza{display:none;position:fixed;inset:0;z-index:10001;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
 #emergenza.on{display:block}
 .em-box{max-width:640px;margin:0 auto;padding:16px 16px 48px;font-size:18px}
@@ -215,6 +218,18 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0}
 .navbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.navbar::-webkit-scrollbar{display:none}
 .nb{flex:0 0 auto;min-width:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;transition:color .2s;gap:3px}
 .nb-icon{font-size:26px;line-height:1}
+/* v24 (Umberto, 6.11.2026): Giornata e Spese erano caratteri che il telefono disegna grigi. Ora sono disegnate qui, con il loro colore. */
+:root,#navbar{--ico-giornata:#22c55e;--ico-spese:#f59e0b;--ico-segno:#111111}
+/* Temi chiari: i riquadri sono chiari, servono colori scuri. La barra in basso resta scura e tiene i suoi. */
+.tema-bianco,.tema-light{--ico-giornata:#15803d;--ico-spese:#b45309;--ico-segno:#ffffff}
+.ico{display:inline-block;width:1em;height:1em;flex:0 0 auto;vertical-align:-.125em}
+.ico circle{stroke:none}
+.ico path{fill:none;stroke:var(--ico-segno);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ico-giornata path{stroke-width:3.4}
+.ico-giornata circle{fill:var(--ico-giornata)}
+.ico-spese circle{fill:var(--ico-spese)}
+.nb-icon .ico{display:block}
+.ico-su-oro{--ico-giornata:#1a1000;--ico-segno:#ffffff}
 .nb-label{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
 .nb.on .nb-label{color:var(--gold)}
 .nb.on .nb-icon{filter:drop-shadow(0 0 4px rgba(200,168,75,.5))}
@@ -306,6 +321,9 @@ button{min-height:48px;min-width:48px}
 .voce-del{min-width:48px;min-height:48px;color:var(--t2)}
 .chip{font-size:14px;padding:5px 10px}
 .nb-label{color:var(--t2)}
+/* v24: la barra in basso resta scura anche nei temi chiari: le scritte scure non si leggevano (1,9:1). */
+.tema-bianco .nb-label,.tema-light .nb-label{color:#e8e4db}
+.tema-bianco .nb.on .nb-label,.tema-light .nb.on .nb-label{color:#e8c87a}
 input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}
 .row2,.row3{gap:12px}
 .cant-stat,.cant-status{font-size:14px!important}
@@ -477,7 +495,7 @@ table.spz-tab tbody tr{cursor:pointer}
       <button id="btn-back" onclick="goBack()" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 10px;cursor:pointer;color:var(--t2);font-size:17px;line-height:1;flex-shrink:0" title="Indietro">←</button>
       <div class="top-brand"><b id="top-brand-nome">🏗️ Cantieri</b><span id="top-title" data-i18n="top_cantieri">Cantieri</span></div>
     </div>
-    <button type="button" id="btn-emergenza" onclick="apriEmergenza()">🆘 Emergenza</button>
+    <button type="button" id="btn-emergenza" class="grande" onclick="apriEmergenza()">🆘 Emergenza</button>
     <div class="top-r">
       <span class="rbadge" id="rbadge">—</span>
       <span class="ubadge" id="ubadge" onclick="openModalPwd()" style="cursor:pointer" title="Cambia password">—</span><span id="top-versione" style="font-size:13px;color:var(--t3)"></span>
@@ -495,7 +513,7 @@ table.spz-tab tbody tr{cursor:pointer}
     <!-- GRIGLIA NAVIGAZIONE RAPIDA -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
       <button onclick="navTo('nuova')" style="background:var(--gold);color:#1a1000;border:none;border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'Bricolage Grotesque',sans-serif">
-        <span style="font-size:28px">➕</span><span data-i18n="btn_nuova_giornata">Nuova giornata</span>
+        <span class="ico-su-oro" style="font-size:28px;line-height:1;margin-right:6px"><svg class="ico ico-giornata" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="11"/><path d="M12 6v12M6 12h12"/></svg></span><span data-i18n="btn_nuova_giornata">Nuova giornata</span>
       </button>
       <button onclick="navTo('piano')" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
         <span style="font-size:28px">📅</span><span data-i18n="btn_piano_giorno">Piano del giorno</span>
@@ -508,7 +526,7 @@ table.spz-tab tbody tr{cursor:pointer}
         <span id="home-badge-sit" style="display:none;position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font-size:13px;font-weight:700;padding:2px 6px;border-radius:10px">!</span>
       </button>
       <button onclick="navTo('spese')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
-        <span style="font-size:28px">💲</span>Spese
+        <span style="font-size:28px;line-height:1;margin-right:6px"><svg class="ico ico-spese" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="11"/><path d="M16 8.6c-.6-1.5-2.2-2.2-4-2.2-2.2 0-4 1.1-4 2.9 0 4 8 2 8 5.8 0 1.8-1.9 2.9-4 2.9-1.9 0-3.5-.8-4.1-2.4M12 4v16"/></svg></span>Spese
       </button>
       <button onclick="navTo('report')" class="admin-only" style="background:var(--s1);border:2px solid var(--border);border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text);font-family:'Bricolage Grotesque',sans-serif">
         <span style="font-size:28px">📊</span>Report
@@ -1403,8 +1421,8 @@ table.spz-tab tbody tr{cursor:pointer}
   <!-- NAVBAR -->
   <div class="navbar" id="navbar">
     <div class="nb on" id="nb-home" onclick="navTo('home')"><div class="nb-icon">🏠</div><div class="nb-label" data-i18n="nav_cantieri">Cantieri</div></div>
-    <div class="nb" id="nb-giornata" onclick="navTo('nuova')"><div class="nb-icon">➕</div><div class="nb-label" data-i18n="nav_giornata">Giornata</div></div>
-    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon" style="position:relative">💲<span id="sp-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--orange);color:#1a1a1a;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
+    <div class="nb" id="nb-giornata" onclick="navTo('nuova')"><div class="nb-icon"><svg class="ico ico-giornata" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="11"/><path d="M12 6v12M6 12h12"/></svg></div><div class="nb-label" data-i18n="nav_giornata">Giornata</div></div>
+    <div class="nb" id="nb-spese" onclick="navTo('spese')"><div class="nb-icon" style="position:relative"><svg class="ico ico-spese" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="11"/><path d="M16 8.6c-.6-1.5-2.2-2.2-4-2.2-2.2 0-4 1.1-4 2.9 0 4 8 2 8 5.8 0 1.8-1.9 2.9-4 2.9-1.9 0-3.5-.8-4.1-2.4M12 4v16"/></svg><span id="sp-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--orange);color:#1a1a1a;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div><div class="nb-label" data-i18n="nav_spese">Spese</div></div>
     <div class="nb" id="nb-situazione" onclick="navTo('situazione')">
       <div class="nb-icon" style="position:relative">📌<span id="sit-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:12px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;align-items:center;justify-content:center;font-family:'DM Mono'"></span></div>
       <div class="nb-label" data-i18n="nav_situazione">Da sistemare</div>
@@ -2171,7 +2189,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='23';
+const APP_VERSIONE='24';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -4698,7 +4716,7 @@ function setBread(items){
 }
 
 // ── NAVIGAZIONE ──
-function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('scr-'+id).classList.add('on');}
+function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('scr-'+id).classList.add('on');document.getElementById('btn-emergenza')?.classList.toggle('grande',id==='home');}
 function goTo(p){
   showScr(p==='home'?'home':p==='cantiere'?'cantiere':p==='giornata-1'?'giornata-1':p==='giornata-2'?'giornata-2':p==='report'?'report':'admin');
   document.getElementById('top-title').textContent=
