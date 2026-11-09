@@ -4805,7 +4805,8 @@ async function enterCantiere(id){
 async function _v25ApriDaLink(id){
   const forma=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||'');
   if(forma&&_p4FiltraCantieri()){try{await _p4CaricaVisibilita();}catch(e){}}
-  if(forma&&(CANTIERI||[]).some(c=>c.id===id)&&_p4PuoVedereCantiere(id)){await enterCantiere(id);return;}
+  // la Home sta sotto: il tasto ← e l'Indietro del telefono ci tornano
+  if(forma&&(CANTIERI||[]).some(c=>c.id===id)&&_p4PuoVedereCantiere(id)){if(!_navHistory.length)_navHistory=['home'];await enterCantiere(id);return;}
   goHome();
   _v25Avviso(_P2_CANTIERI_ERRORE&&forma?'Cantieri non caricati: controlla la connessione e riapri il link.':'Questa commessa non è fra le tue.');
 }
