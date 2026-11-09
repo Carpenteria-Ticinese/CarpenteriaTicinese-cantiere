@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=25">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=25">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=25">
+<link rel="manifest" href="manifest.json?v=26">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=26">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=26">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=25"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=26"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=25"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=25"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=25"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=25"></script>
-<script src="lib/spartizione-formule.js?v=25"></script>
-<script src="lib/spartizione-scheda.js?v=25"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=26"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=26"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=26"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=26"></script>
+<script src="lib/spartizione-formule.js?v=26"></script>
+<script src="lib/spartizione-scheda.js?v=26"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -426,6 +426,13 @@ table.spz-tab tbody tr{cursor:pointer}
 .spz-mat small{display:block;font-size:15px;color:var(--t2);overflow-wrap:anywhere}
 .spz-q{flex:0 0 44%;text-align:right;font-size:16px}
 .spz-q b{font-size:24px;display:block}
+/* v26: fascia «🔄 Nuova versione: aggiorna» (aggiorna.js, uguale in tutte le app). Resta in alto:
+   la barra in alto, le finestre, Emergenza e l'avviso offline scendono sotto la fascia, non ci finiscono sotto.
+   --ct-agg-h = altezza della fascia (0 se non c'e'), la scrive lo script accanto ad aggiorna.js. */
+#app .top{top:var(--ct-agg-h,0px)}
+.ov,#emergenza{top:var(--ct-agg-h,0px)}
+.mod{max-height:calc(93vh - var(--ct-agg-h,0px))}
+#offline-banner{top:var(--ct-agg-h,0px)!important}
 </style>
 </head>
 <body>
@@ -2194,7 +2201,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='25';
+const APP_VERSIONE='26';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -13577,5 +13584,35 @@ async function renderEccezioniOre(){
   }catch(e){el.innerHTML='<div style="font-size:14px;color:var(--t3);padding:4px 0">Tabella ore_contrattuali non ancora creata</div>';}
 }
 </script>
+<!-- v26 (Umberto, 9.11.2026): mai versioni vecchie bloccate sul telefono o sul PC.
+     aggiorna.js e' lo stesso file in tutte le app: NON si modifica. Qui solo le due cose di Cantieri:
+     1. «Aggiorna» con dati non salvati (giornata in compilazione o una finestra aperta) prima avvisa;
+     2. l'altezza della fascia va in --ct-agg-h, cosi' la barra in alto (Emergenza, Esci, ←) resta visibile.
+     A ogni versione: stesso numero in versione.json, data-versione, ?v= e APP_VERSIONE. -->
+<script>
+(function(){
+  function _v26DatiNonSalvati(){
+    try{
+      if(!document.getElementById('app')?.classList.contains('on'))return false; // non loggato: niente da perdere
+      if(typeof _inGiornata==='function'&&_inGiornata())return true;              // stesso controllo del tasto Indietro
+      return !!document.querySelector('.ov.on');                                    // finestra aperta (spesa, regia, operaio...)
+    }catch(e){return false;}
+  }
+  // Fase di cattura su window: arriva prima del tasto di aggiorna.js. Annulla = il tasto non fa niente, la fascia resta.
+  window.addEventListener('click',function(e){
+    const tasto=e.target&&e.target.closest?e.target.closest('#ct-aggiorna-tasto'):null;
+    if(!tasto||!_v26DatiNonSalvati())return;
+    if(confirm('Hai dati non salvati: salvali prima.\n\nAnnulla = torno a salvarli.\nOK = aggiorno lo stesso: i dati non salvati si perdono.'))return;
+    e.stopImmediatePropagation();e.preventDefault();
+  },true);
+  function _v26Misura(){
+    const b=document.getElementById('ct-aggiorna');
+    document.documentElement.style.setProperty('--ct-agg-h',(b?b.offsetHeight:0)+'px');
+  }
+  new MutationObserver(_v26Misura).observe(document.body,{childList:true});
+  window.addEventListener('resize',_v26Misura);
+})();
+</script>
+<script src="aggiorna.js?v=26" data-versione="26"></script>
 </body>
 </html>
