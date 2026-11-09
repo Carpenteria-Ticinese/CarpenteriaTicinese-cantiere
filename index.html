@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=24">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=24">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=24">
+<link rel="manifest" href="manifest.json?v=25">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=25">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=25">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=24"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=25"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=24"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=24"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=24"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=24"></script>
-<script src="lib/spartizione-formule.js?v=24"></script>
-<script src="lib/spartizione-scheda.js?v=24"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=25"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=25"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=25"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=25"></script>
+<script src="lib/spartizione-formule.js?v=25"></script>
+<script src="lib/spartizione-scheda.js?v=25"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -2194,7 +2194,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='24';
+const APP_VERSIONE='25';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -3619,6 +3619,17 @@ async function changeLang(lang){
 
 
 let USER=null,PROF=null;
+// v25 (Umberto, 9.11.2026): il QR della scheda commessa porta a ?cantiere=<id di cantieri>.
+// Si legge una volta sola, appena si apre la pagina, e si toglie dall'indirizzo: il login non lo perde, Indietro e «ricarica» non lo ripetono.
+let _V25_CANTIERE=(function(){
+  try{
+    const u=new URL(location.href),id=u.searchParams.get('cantiere');
+    if(id===null)return null;
+    u.searchParams.delete('cantiere');
+    history.replaceState(history.state,'',u.pathname+u.search+u.hash);
+    return id.trim();
+  }catch(e){return null;}
+})();
 let AZIENDA_ID=null; // P25 multi-tenant
 let CANTIERI=[],OPERAI=[],OPERAI_TUTTI=[],LAVS=[];
 const _PFLAGS={'IT':'🇮🇹','DE':'🇩🇪','AT':'🇦🇹','FR':'🇫🇷'};
@@ -4252,6 +4263,8 @@ async function afterLogin(){
     // P23/P24: check ?timbra=1
     if(new URLSearchParams(window.location.search).get('timbra')==='1'){mostraTimbratura();}
     else{controllaTimbraturaSerale();}
+    // v25: commessa aperta da un link (QR della scheda commessa)
+    if(_V25_CANTIERE!==null){const id=_V25_CANTIERE;_V25_CANTIERE=null;_v25ApriDaLink(id);}
     // PE: alert settimanale foto archivio — P5: sostituito da "📷 Foto da scaricare" in Da sistemare
     // (il vecchio avviso eliminava le foto senza controllare scaricamento ed esito)
     // PUNTO_59: verifica tabella ore_contrattuali e alert dicembre
@@ -4786,6 +4799,21 @@ async function enterCantiere(id){
   pushNav('cantiere');goTo('cantiere');
   setBread([{label:'Cantieri',onclick:'goHome()'},{label:_cantEtichetta(curCant),active:true}]);
   renderCantiere();
+}
+// v25: apre il cantiere del link con le regole di oggi (operaio e caposquadra solo i loro, piu' gli interni). Se no: Home e un messaggio chiaro.
+// Mai riconoscere il cantiere dal nome: solo l'id.
+async function _v25ApriDaLink(id){
+  const forma=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||'');
+  if(forma&&_p4FiltraCantieri()){try{await _p4CaricaVisibilita();}catch(e){}}
+  if(forma&&(CANTIERI||[]).some(c=>c.id===id)&&_p4PuoVedereCantiere(id)){await enterCantiere(id);return;}
+  goHome();
+  _v25Avviso(_P2_CANTIERI_ERRORE&&forma?'Cantieri non caricati: controlla la connessione e riapri il link.':'Questa commessa non è fra le tue.');
+}
+function _v25Avviso(testo){
+  let el=document.getElementById('v25-avviso-link');
+  if(!el){el=document.createElement('div');el.id='v25-avviso-link';el.setAttribute('role','alert');el.className='warn on';el.style.cssText='margin:0 0 14px;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px;justify-content:space-between';document.getElementById('scr-home').prepend(el);}
+  el.innerHTML='<span>🔗 '+escHtml(testo)+'</span><button type="button" class="btn-icon" onclick="this.parentElement.remove()">✕ Chiudi</button>';
+  showToast(testo,'e');
 }
 function goHome(){curCant=null;_navHistory=['home'];_armaIndietro(); // v16
   const bb=document.getElementById('btn-back');if(bb)bb.style.display='none';goTo('home');renderHome();setBread([{label:'Cantieri'}]);}
