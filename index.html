@@ -6,22 +6,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e8710a">
-<link rel="manifest" href="manifest.json?v=26">
-<link rel="apple-touch-icon" href="icone/icona-180.png?v=26">
-<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=26">
+<link rel="manifest" href="manifest.json?v=27">
+<link rel="apple-touch-icon" href="icone/icona-180.png?v=27">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/icona-32.png?v=27">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cantieri">
 <title>Cantieri · Carpenteria Ticinese</title>
-<script src="lib/sentry-7.99.0.bundle.min.js?v=26"></script>
+<script src="lib/sentry-7.99.0.bundle.min.js?v=27"></script>
 <script>if(typeof Sentry!=='undefined')Sentry.init({dsn:'https://examplePublicKey@o0.ingest.sentry.io/0',tracesSampleRate:0.1});</script>
 <!-- Leaflet — mappa cantieri (P26) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=26"></script>
-<script src="lib/xlsx-0.18.5.full.min.js?v=26"></script>
-<script src="lib/qrcode-1.0.0.min.js?v=26"></script>
-<script src="lib/chart-4.4.0.umd.min.js?v=26"></script>
-<script src="lib/spartizione-formule.js?v=26"></script>
-<script src="lib/spartizione-scheda.js?v=26"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="lib/supabase-js-2.118.0.js?v=27"></script>
+<script src="lib/xlsx-0.18.5.full.min.js?v=27"></script>
+<script src="lib/qrcode-1.0.0.min.js?v=27"></script>
+<script src="lib/chart-4.4.0.umd.min.js?v=27"></script>
+<script src="lib/spartizione-formule.js?v=27"></script>
+<script src="lib/spartizione-scheda.js?v=27"></script>
 <!-- P3: le librerie in lib/ sono copie esatte (stessa versione) di quelle che prima arrivavano da internet. Leaflet resta da internet (carica 5 immagini). -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -889,7 +889,7 @@ table.spz-tab tbody tr{cursor:pointer}
     </div>
     <hr style="margin-bottom:14px">
     <button class="btn btn-g" onclick="apriAnagrafiche('commesse')" style="margin-bottom:6px;width:100%;font-size:17px;padding:14px">🗂️ Apri Anagrafiche — commesse</button>
-    <div style="font-size:14px;color:var(--t2);margin-bottom:20px;line-height:1.4">Nuove commesse, nome, indirizzo, cliente: si fanno in Anagrafiche. Qui si cambia solo lo «Stato nell'App Cantieri» (✏️ Stato).</div>
+    <div style="font-size:14px;color:var(--t2);margin-bottom:20px;line-height:1.4">Nuove commesse, nome, indirizzo, cliente e stato della commessa: si fanno in Anagrafiche. Qui si leggono e basta (📋 Scheda).</div>
     <div class="sec" data-i18n="sec_personale_admin">Personale</div>
     <button class="btn btn-s" onclick="navTo('personale')" style="margin-bottom:12px;width:100%" data-i18n="btn_gestisci_personale">👷 Gestisci personale →</button>
     <div class="sec admin-only" data-i18n="sec_utenti_admin">Utenti</div>
@@ -1554,16 +1554,12 @@ table.spz-tab tbody tr{cursor:pointer}
   <div class="mod">
     <div class="mod-h"></div>
     <div class="mod-t" id="mod-cant-t">Cantiere</div>
-    <!-- v14: nome, indirizzo, cliente, numero si cambiano SOLO in Anagrafiche. Qui: lettura + «Stato nell'App Cantieri». -->
+    <!-- v14: nome, indirizzo, cliente, numero si cambiano SOLO in Anagrafiche. v27: lo stato e' uno solo (stato della
+         commessa, in Anagrafiche): qui niente si scrive, la scheda e' solo da leggere. -->
     <div id="c-dati" style="margin-bottom:12px"></div>
     <div id="c-anag" style="margin-bottom:14px"></div>
-    <div class="fg"><label class="fl">Stato nell'App Cantieri</label><select class="fs" id="c-stato"><option>Attivo</option><option>In pausa</option><option>Completato</option></select>
-      <div style="font-size:14px;color:var(--t2);margin-top:4px;line-height:1.4">Decide se il cantiere compare fra i lavori di questa app. Lo stato della commessa (In corso, Conclusa…) si mette in Anagrafiche.</div></div>
-    <hr>
-    <div class="row2">
-      <button class="btn btn-s" onclick="closeModal('mod-cant')" data-i18n="btn_annulla">Annulla</button>
-      <button class="btn btn-g" onclick="saveCant()">💾 Salva stato</button>
-    </div>
+    <div id="c-stato-nota" style="font-size:15px;color:var(--t2);margin-bottom:12px;line-height:1.4">Le commesse con stato «✅ Lavoro da iniziare», «🔨 Lavoro in corso» o senza stato si scelgono per ore, spese e regia.</div>
+    <button class="btn btn-s" onclick="closeModal('mod-cant')" data-i18n="btn_chiudi">Chiudi</button>
   </div>
 </div>
 
@@ -2201,7 +2197,7 @@ table.spz-tab tbody tr{cursor:pointer}
 
 <script>
 // Versione visibile (login e barra in alto): aumentarla a ogni passaggio
-const APP_VERSIONE='26';
+const APP_VERSIONE='27';
 try{
   document.getElementById('login-versione').textContent='versione '+APP_VERSIONE;
   document.getElementById('top-versione').textContent='v'+APP_VERSIONE;
@@ -3854,7 +3850,7 @@ async function renderContabilitaGlobale(){
       sb.from('tiri_gru').select('cantiere_id,importo,tipo').order('data'),
       sb.from('pagamenti_ricevuti').select('cantiere_id,importo').order('data'),
     ]);
-    const cantAttivi=CANTIERI.filter(c=>c.stato==='Attivo'||c.stato==='In pausa');
+    const cantAttivi=CANTIERI.filter(_cantSceglibileOre); // v27: commesse aperte (stato_commessa) + interni, mai la colonna vecchia «stato»
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>'+t('empty_cant_attivo')+'</p></div>';return;}
     const byCant={};
     cantAttivi.forEach(c=>byCant[c.id]={id:c.id,nome:c.nome,ore:0,spese:0,ricavi:0,da:0,gru:0,incassi:0});
@@ -4630,8 +4626,7 @@ function _v13NomeDitta(c){if(!c)return '';return String(c.ragione_sociale||'').t
 // ── v14 (punto 8): persone e commesse si scrivono SOLO in Anagrafiche ──────────────────────────
 // Qui si leggono e basta. Al posto di «Nuovo», «Modifica», «Rimuovi», «Crea accesso», «Nuova password»,
 // «Ruolo app» c'e' il tasto «🗂️ Apri Anagrafiche», che apre la scheda giusta (link con # all'id).
-// Restano scritte dal Cantiere (le altre app non le gestiscono): cantieri.stato («Stato nell'App Cantieri»,
-// regola «due padroni» di Anagrafiche), cantieri.lat/lng (posizione in mappa), cantieri_visibili e
+// Restano scritte dal Cantiere (le altre app non le gestiscono): cantieri.lat/lng (posizione in mappa), cantieri_visibili e
 // operai.vede_tutti_cantieri (chi vede quale cantiere nell'App Cantieri).
 const V14_ANAGRAFICHE='https://carpenteria-ticinese.github.io/CT-rubrica/';
 const V14_FINESTRA='ct_app_rubrica'; // stesso nome che usa l'Hub: un secondo clic riusa la stessa scheda
@@ -4872,7 +4867,7 @@ async function renderCantiere(){
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
             ${_mapsUrl?`<button onclick="window.open('${_mapsUrl}','_blank')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;white-space:nowrap">📍 Maps</button>`:''}
             ${['titolare','responsabile'].includes(_ruoloApp())?`<button onclick="p7ApriPosizione('${curCant.id}')" style="background:var(--s3);border:1px solid var(--border);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;white-space:nowrap">🗺️ Posizione${curCant.lat&&curCant.lng?' ✓':''}</button>`:''}
-            ${['titolare','responsabile'].includes(_ruoloApp())?`<button onclick="openModalCantiere('${curCant.id}')" style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;color:var(--gold);font-weight:700;white-space:nowrap">✏️ Stato · 🗂️ Anagrafiche</button>`:''}
+            ${['titolare','responsabile'].includes(_ruoloApp())?`<button onclick="openModalCantiere('${curCant.id}')" style="background:var(--gdim);border:1px solid rgba(200,168,75,.3);border-radius:var(--rsm);padding:6px 10px;cursor:pointer;font-size:14px;color:var(--gold);font-weight:700;white-space:nowrap">📋 Scheda · 🗂️ Anagrafiche</button>`:''}
           </div>
         </div>
       </div>
@@ -6025,7 +6020,7 @@ async function exportPdfCantiere(cantId){
       +'<div style="margin-bottom:20px">'
       +'<div style="font-size:22px;font-weight:800;margin-bottom:3px">'+escHtml(_cantEtichetta(cant))+'</div>'
       +(indrCant?'<div style="font-size:14px;color:#666;margin-bottom:3px">'+escHtml(indrCant)+'</div>':'')
-      +(cant.stato?'<span style="display:inline-block;font-size:14px;background:#e8e0cc;color:#7a6030;padding:2px 8px;border-radius:3px;font-weight:600;text-transform:uppercase">'+escHtml(cant.stato)+'</span>':'')
+      +(_v27StatoTesto(cant)&&!_cantInterno(cant)?'<span style="display:inline-block;font-size:14px;background:#e8e0cc;color:#7a6030;padding:2px 8px;border-radius:3px;font-weight:600;text-transform:uppercase">'+escHtml(_v27StatoTesto(cant))+'</span>':'') // v27: stato della commessa, mai la colonna vecchia
       +'</div>'
       +'<h2>📅 Giornate ('+dateKeys.length+' giorni · '+totalOre.toFixed(2)+'h)</h2>'
       +(giornateHtml||'<p style="color:#888;font-size:15px">Nessuna giornata registrata.</p>')
@@ -7330,7 +7325,7 @@ async function renderAdmin(){
   // v16: l'elenco persone dell'Admin (#adm-operai) non e' mai esistito nell'HTML (i due elenchi non si vedevano mai):
   // le persone stanno in Personale, con «Apri Anagrafiche». Tolta la parte morta (operai e blocco «Impostazioni»,
   // gia' coperto dal tasto «Impostazioni →»). Qui restano: cantieri, nome azienda, utenti.
-  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center"><div style="flex:1 1 200px;min-width:0"><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${[c.luogo?escHtml(c.luogo):'','Stato nell\'app: '+escHtml(c.stato||'—')].filter(Boolean).join(' · ')}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')" title="Stato nell'App Cantieri">✏️ Stato</button><button class="btn-icon btn-sm" onclick="apriAnagrafiche({commessa:'${c.id}'})" title="Apri la commessa in Anagrafiche">🗂️ Anagrafiche</button></div></div>`).join('');
+  _admc.innerHTML=CANTIERI.map(c=>`<div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 14px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center"><div style="flex:1 1 200px;min-width:0"><div style="font-weight:700">${_cantEtichetta(c)}</div><div style="font-size:14px;color:var(--t2)">${[c.luogo?escHtml(c.luogo):'','Stato: '+escHtml(_v16StatoCantiere(c).testo||'—')].filter(Boolean).join(' · ')}</div></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn-icon btn-sm" onclick="openModalCantiere('${c.id}')" title="Scheda del cantiere, solo da leggere">📋 Scheda</button><button class="btn-icon btn-sm" onclick="apriAnagrafiche({commessa:'${c.id}'})" title="Apri la commessa in Anagrafiche">🗂️ Anagrafiche</button></div></div>`).join('');
   if(PROF?.ruolo==='titolare'){
     const {data:profili}=await sb.from('profili').select('*');
   // Carica nome azienda nel campo Admin
@@ -7351,9 +7346,10 @@ async function aggiornaTariffa(){
     saveImpostazioni(); // aggiorna la cache localStorage e conferma con toast
   }catch(e){showToast('Errore salvataggio tariffa: '+e.message,'e');}
 }
-// v14 (punto 8): un cantiere nuovo si crea in Anagrafiche; qui si apre la sua scheda in sola lettura
-// e si cambia solo lo «Stato nell'App Cantieri» (cantieri.stato: «due padroni», lo scrive solo il Cantiere).
-// Niente si cancella: «Elimina cantiere» non c'e' piu' (si archivia in Anagrafiche: Conclusa o Persa).
+// v14 (punto 8): un cantiere nuovo si crea in Anagrafiche; qui si apre la sua scheda in sola lettura.
+// v27 (ANAG_12, Umberto 10.11.2026: «lo stato e' uno solo»): tolto «Stato nell'App Cantieri». L'app non scrive
+// piu' cantieri.stato (lo calcola il database dallo stato della commessa) e non lo mostra. saveCant non c'e' piu'.
+// Niente si cancella: «Elimina cantiere» non c'e' piu' (si archivia in Anagrafiche: Lavoro finito o Persa).
 function openModalCantiere(id){
   const c=id?(CANTIERI||[]).find(x=>x.id===id):null;
   if(!c){apriAnagrafiche('nuova-commessa');return;}
@@ -7363,24 +7359,11 @@ function openModalCantiere(id){
   const _r=(lbl,val)=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:15px"><span style="color:var(--t2);flex-shrink:0">'+lbl+'</span><span style="font-weight:600;text-align:right;word-break:break-word">'+(val||'—')+'</span></div>';
   const indirizzo=[c.via,[c.cap,c.citta].filter(Boolean).join(' '),c.paese&&c.paese!=='CH'?c.paese:''].filter(Boolean).join(', ');
   document.getElementById('c-dati').innerHTML=
-    (_cantInterno(c)?_r('Tipo','Interno (ore e spese della ditta)'):_r('Numero commessa',escHtml(c.numero_commessa))+_r('Stato commessa',escHtml(c.stato_commessa)))
+    (_cantInterno(c)?_r('Tipo','Interno (ore e spese della ditta)'):_r('Numero commessa',escHtml(c.numero_commessa))+_r('Stato commessa',escHtml(_v27StatoTesto(c)||'Stato da mettere in Anagrafiche')))
     +_r('Località',escHtml(c.luogo))+_r('Indirizzo',escHtml(indirizzo))+(_cantInterno(c)?'':_r('Committente',escHtml(c.committente)));
   document.getElementById('c-anag').innerHTML=_v14TastoAnagrafiche({commessa:c.id},'Apri Anagrafiche — questa commessa','Nome, numero, indirizzo, cliente e stato della commessa si cambiano in Anagrafiche.');
-  document.getElementById('c-stato').value=c.stato||'Attivo';
+  const _sn=document.getElementById('c-stato-nota');if(_sn)_sn.style.display=_cantInterno(c)?'none':'';
   openModal('mod-cant');
-}
-async function saveCant(){
-  if(!editCid)return;
-  if(!['titolare','responsabile'].includes(_ruoloApp())){showToast('Solo titolare e responsabile','e');return;}
-  const c=(CANTIERI||[]).find(x=>x.id===editCid);
-  const stato=document.getElementById('c-stato').value;
-  if(!['Attivo','In pausa','Completato'].includes(stato)){showToast('Stato non valido','e');return;}
-  if(c&&c.stato===stato){closeModal('mod-cant');return;} // niente da salvare
-  try{
-    // v14: SOLO la colonna stato. Il resto della commessa lo scrive Anagrafiche.
-    _p7Righe(await sb.from('cantieri').update({stato}).eq('id',editCid).select('id'),'cantieri');
-  }catch(e){if(!e.giaMostrato)showToast('Stato NON salvato: '+e.message,'e');return;}
-  await loadCantieri();closeModal('mod-cant');renderAdmin();renderHome();showToast('Stato salvato ✓');
 }
 // v14 (punto 8): le persone si scrivono SOLO in Anagrafiche (nuova, modifica, fine rapporto, accesso,
 // password, documenti). Qui la finestra della persona tiene solo i «Cantieri visibili» (decisione dell'App
@@ -8835,7 +8818,7 @@ async function _p4CompilaVisibilitaScheda(o){
   lista.dataset.prima=JSON.stringify([...spuntati]);
   lista.innerHTML=cant.length?cant.map(c=>'<label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:15px">'
     +'<input type="checkbox" class="o-vis-cb" value="'+c.id+'"'+(spuntati.has(c.id)?' checked':'')+' style="width:18px;height:18px;accent-color:var(--gold)">'
-    +'<span>'+escHtml(_cantEtichetta(c))+(c.stato!=='Attivo'?' <span style="color:var(--t3)">('+escHtml(c.stato||'')+')</span>':'')+'</span></label>').join('')
+    +'<span>'+escHtml(_cantEtichetta(c))+(!_cantCommessaInCorso(c)?' <span style="color:var(--t2)">('+escHtml(_v27StatoTesto(c))+')</span>':'')+'</span></label>').join('')
     :'<div style="font-size:14px;color:var(--t2);padding:6px 0">Nessun cantiere attivo</div>';
 }
 function _p4AggiornaVisSection(){
@@ -9142,24 +9125,45 @@ function _cantInterno(c){return !!c&&c.tipo==='interno';}
 // Punto 3 (P2): numero commessa accanto al nome ovunque si vede un cantiere. Interni: solo il nome.
 function _cantEtichetta(c){if(!c)return '';const n=String(c.numero_commessa||'').trim();return (!_cantInterno(c)&&n?n+' ':'')+(c.nome||'');}
 function _cantEtichettaDaId(id,nome){const c=id?(CANTIERI||[]).find(x=>x.id===id):null;return c?_cantEtichetta(c):(nome||'');}
-// Commessa sceglibile: stato_commessa «In corso» o vuoto. Da fare, Inviata, Persa: mai. Conclusa: solo storico e riepiloghi.
-// La colonna vecchia «stato» (Attivo, In pausa, Completato) qui non conta: l'app la scrive come prima.
-function _cantCommessaInCorso(c){const st=String(c?.stato_commessa||'').trim();return !!c&&!_cantInterno(c)&&(st===''||st==='In corso');}
+// v27 (ANAG_12, Umberto 10.11.2026): gli stati della commessa sono 7, una lista sola, sempre icona + parola.
+// Prima di ANAG_12 il database ha ancora le parole vecchie: Da fare, Inviata, In corso, Conclusa, Da iniziare.
+// L'app capisce le due serie; maiuscole e spazi non contano (come la traduzione del database).
+// aperta:true = la commessa si sceglie per ore, spese, regia, assenze, materiali.
+// Funzione (non una costante): vale anche se una lista si disegna prima che lo script arrivi a questa riga.
+function _v27Stati(){return [
+  {p:'Offerta da fare',   i:'📝',cls:'st-compl', vecchie:['da fare']},
+  {p:'Offerta inviata',   i:'📤',cls:'st-compl', vecchie:['inviata']},
+  {p:'Rimandata',         i:'⏸️',cls:'st-pausa', vecchie:[]},
+  {p:'Lavoro da iniziare',i:'✅',cls:'st-attivo',vecchie:['da iniziare'],aperta:true},
+  {p:'Lavoro in corso',   i:'🔨',cls:'st-attivo',vecchie:['in corso'],aperta:true},
+  {p:'Lavoro finito',     i:'🏁',cls:'st-compl', vecchie:['conclusa']},
+  {p:'Persa',             i:'❌',cls:'st-compl', vecchie:[]}
+];}
+function _v27Chiave(s){return String(s==null?'':s).trim().replace(/\s+/g,' ').toLowerCase();}
+// Stato della commessa → voce della lista. null = vuoto. Parola che la lista non ha: ❔ e la parola com'e'.
+function _v27Stato(c){
+  const k=_v27Chiave(c&&c.stato_commessa);
+  if(!k)return null;
+  return _v27Stati().find(s=>_v27Chiave(s.p)===k||s.vecchie.includes(k))
+    ||{p:String(c.stato_commessa).trim(),i:'❔',cls:'st-compl',vecchie:[],sconosciuto:true};
+}
+function _v27StatoTesto(c){const s=_v27Stato(c);return s?s.i+' '+s.p:'';}
+// Commessa sceglibile («aperta per il cantiere»): stato vuoto, Lavoro in corso (In corso), Lavoro da iniziare (Da iniziare).
+// Offerte, Rimandata, Lavoro finito, Persa, stato sconosciuto: no (solo storico e riepiloghi). Interni: mai qui.
+// La colonna vecchia «stato» (Attivo, In pausa, Completato) non conta piu' niente e l'app non la scrive (v27).
+function _cantCommessaInCorso(c){if(!c||_cantInterno(c))return false;const s=_v27Stato(c);return !s||!!s.aperta;}
 // Scelta del cantiere per le ORE: commesse in corso + interni (per tutti i ruoli). Spese e il resto: solo commesse in corso.
 function _cantSceglibileOre(c){return _cantInterno(c)||_cantCommessaInCorso(c);}
 // v16: etichetta di stato di un cantiere nelle liste (Home, scelta cantiere). Lo stato vero e' `stato_commessa`
-// (Anagrafiche); la vecchia colonna `cantieri.stato` non decide piu' niente. Torna {testo, cls, nota}:
-// - interno: «Interno»; commessa «In corso»: «In corso»; stato_commessa vuoto: «Stato da mettere in Anagrafiche»
-//   (cls 'st-pausa' = arancio, `vuoto:true`); altro stato: il suo testo. `nota` = vecchio stato solo se dice
-//   qualcosa di diverso da «Attivo» (In pausa, Completato), come informazione.
+// (Anagrafiche). Torna {testo, cls, nota, vuoto}:
+// - interno: «Interno»; stato_commessa vuoto: «Stato da mettere in Anagrafiche» (cls 'st-pausa' = arancio, `vuoto:true`);
+//   altro stato: icona + parola della lista sola (v27). `nota` resta vuota: il vecchio «stato» non si mostra piu' (v27).
 function _v16StatoCantiere(c){
   if(!c)return {testo:'',cls:'st-compl',nota:'',vuoto:false};
-  const st=String(c.stato_commessa||'').trim();
-  const vecchio=String(c.stato||'').trim();
-  const nota=(vecchio&&vecchio!=='Attivo')?'Nell\'app Cantieri: '+vecchio:'';
-  if(_cantInterno(c))return {testo:'Interno',cls:'st-attivo',nota:nota,vuoto:false};
-  if(st==='')return {testo:'Stato da mettere in Anagrafiche',cls:'st-pausa',nota:nota,vuoto:true};
-  return {testo:st,cls:st==='In corso'?'st-attivo':'st-compl',nota:nota,vuoto:false};
+  if(_cantInterno(c))return {testo:'Interno',cls:'st-attivo',nota:'',vuoto:false};
+  const s=_v27Stato(c);
+  if(!s)return {testo:'Stato da mettere in Anagrafiche',cls:'st-pausa',nota:'',vuoto:true};
+  return {testo:s.i+' '+s.p,cls:s.cls,nota:'',vuoto:false};
 }
 // In modifica: se il cantiere gia' salvato non e' piu' nella scelta, lo si aggiunge e resta com'era.
 function _selTieniCantiere(sel,id){
@@ -11725,7 +11729,7 @@ async function renderMagazzino(){
   if(!el)return;
   el.innerHTML='<div class="empty"><div class="spin" style="margin:0 auto"></div></div>';
   try{
-    const cantAttivi=_cantVisibiliComePrima().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';}); // P2: come prima
+    const cantAttivi=_cantVisibiliComePrima().filter(_cantSceglibileOre); // v27: commesse aperte + interni (prima: colonna vecchia «stato»)
     if(!cantAttivi.length){el.innerHTML='<div class="empty"><div class="empty-i">🏗️</div><p>Nessun cantiere attivo</p></div>';return;}
     const{data:tutti,error}=await sb.from('materiali_cantiere').select('*')
       .in('cantiere_id',cantAttivi.map(function(c){return c.id;}))
@@ -11779,7 +11783,7 @@ async function _toggleMatMagazzino(id, fatto, cantiereId, containerEl){
 
 async function aggiornaBadgeMagazzino(){
   try{
-    const cantAttivi=_cantVisibiliComePrima().filter(function(c){return c.stato==='Attivo'||c.stato==='In pausa';}); // P2: come prima
+    const cantAttivi=_cantVisibiliComePrima().filter(_cantSceglibileOre); // v27: commesse aperte + interni (prima: colonna vecchia «stato»)
     if(!cantAttivi.length)return;
     const{data}=await sb.from('materiali_cantiere').select('id')
       .in('cantiere_id',cantAttivi.map(function(c){return c.id;})).eq('fatto',false);
@@ -13193,7 +13197,7 @@ async function renderMappa(){
   // P7b: TUTTI i cantieri attivi (mai gli interni, riconosciuti da tipo='interno').
   // "Oggi" decide solo quali si disegnano sulla mappa: l'elenco sotto li mostra sempre tutti,
   // e chi non ha posizione compare con l'avviso per metterla a mano.
-  const tuttiAttivi = (CANTIERI || []).filter(c => /^(attivo|in pausa)$/i.test(String(c.stato||'').trim()) && !_cantInterno(c)); // P2: interni da tipo
+  const tuttiAttivi = (CANTIERI || []).filter(_cantCommessaInCorso); // v27: commesse aperte (stato_commessa), mai gli interni (tipo)
 
   // chi lavora oggi = ultima assegnazione del Piano (come "Oggi la squadra")
   let pianOggi = [];
@@ -13245,7 +13249,7 @@ async function renderMappa(){
         const righe = pianOggi.filter(p => p.cantiere_id === cant.id);
         const squadraInfo = filtro === 'oggi'
           ? (righe.length ? (righe.find(r => r.squadra)?.squadra ? '🏗️ ' + righe.find(r => r.squadra).squadra : righe.map(r => (r.operai?.nome||'') + ' ' + (r.operai?.cognome||'')).filter(Boolean).slice(0,3).join(', ')) : 'Nessuna squadra')
-          : (cant.stato || 'Attivo');
+          : _v16StatoCantiere(cant).testo; // v27
         const icon = L.divIcon({
           html: '<div style="background:#c8a84b;color:#1a1000;font-size:14px;font-weight:700;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4);max-width:160px;overflow:hidden;text-overflow:ellipsis">' + escHtml(_cantEtichetta(cant)||'Cantiere') + '</div>',
           className: '', iconAnchor: [0, 0]
@@ -13256,7 +13260,7 @@ async function renderMappa(){
           + '<div style="font-size:14px;color:#555;margin-bottom:4px">📍 ' + escHtml(indir(cant)||'—') + (cant.posizione_manuale ? ' (posizione messa a mano)' : '') + '</div>'
           + '<div style="font-size:14px;color:#555;margin-bottom:4px">👷 ' + escHtml(squadraInfo) + '</div>'
           + (cant.responsabile ? '<div style="font-size:14px;color:#555">📋 ' + escHtml(cant.responsabile) + '</div>' : '')
-          + '<div style="margin-top:8px"><span style="background:' + (cant.stato==='Attivo'?'#e8f5e9':'#fff3e0') + ';color:' + (cant.stato==='Attivo'?'#2e7d32':'#e65100') + ';font-size:14px;font-weight:700;padding:2px 8px;border-radius:10px">' + escHtml(cant.stato||'—') + '</span></div></div>');
+          + '<div style="margin-top:8px"><span style="background:' + (_v27Stato(cant)?'#e8f5e9':'#fff3e0') + ';color:' + (_v27Stato(cant)?'#2e7d32':'#e65100') + ';font-size:14px;font-weight:700;padding:2px 8px;border-radius:10px">' + escHtml(_v16StatoCantiere(cant).testo||'—') + '</span></div></div>'); // v27: stato della commessa
         bounds.push([cant.lat, cant.lng]);
       }
       if(bounds.length === 1) _mappaLeaflet.setView(bounds[0], 14);
@@ -13613,6 +13617,6 @@ async function renderEccezioniOre(){
   window.addEventListener('resize',_v26Misura);
 })();
 </script>
-<script src="aggiorna.js?v=26" data-versione="26"></script>
+<script src="aggiorna.js?v=27" data-versione="27"></script>
 </body>
 </html>
